@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Indicadores e Projeção de Compras</title>
+    <title>NEXXA conveniências - Painel de Indicadores</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- SheetJS -->
@@ -20,11 +20,11 @@
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
                 <div class="bg-indigo-600 p-2.5 rounded-lg shadow-inner">
-                    <i class="fa-solid fa-chart-line text-2xl text-indigo-100"></i>
+                    <i class="fa-solid fa-store text-2xl text-indigo-100"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight">Painel de Vendas & Projeção de Compras</h1>
-                    <p class="text-xs text-indigo-200">Gestão inteligente de estoque, faturamento e reposição</p>
+                    <h1 class="text-xl font-bold tracking-tight">NEXXA conveniências</h1>
+                    <p class="text-xs text-indigo-200">Painel de Indicadores, Vendas & Projeção de Compras</p>
                 </div>
             </div>
             
@@ -211,18 +211,18 @@
     <!-- Rodapé -->
     <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
         <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
-            Painel de Indicadores Web &copy; 2026 — Desenvolvido sob medida para gestão comercial.
+            NEXXA conveniências &copy; 2026 — Painel de Indicadores Comercial.
         </div>
     </footer>
 
     <!-- Script de Funcionalidades -->
     <script>
         let globalData = [
-            { cliente: "Cliente Alfa", categoria: "Vestuário", produto: "Camiseta Algodão P", data: "2026-06-01", qtd: 25, vlrUnit: 45.00, custoUnit: 20.00, estoque: 30 },
-            { cliente: "Comércio Beta", categoria: "Vestuário", produto: "Calça Jeans M", data: "2026-06-02", qtd: 12, vlrUnit: 120.00, custoUnit: 70.00, estoque: 5 },
-            { cliente: "Cliente Alfa", categoria: "Calçados", produto: "Tênis Esportivo", data: "2026-06-03", qtd: 18, vlrUnit: 250.00, custoUnit: 140.00, estoque: 8 },
-            { cliente: "Loja Gama", categoria: "Acessórios", produto: "Boné Aba Reta", data: "2026-06-04", qtd: 30, vlrUnit: 35.00, custoUnit: 15.00, estoque: 15 },
-            { cliente: "Cliente Delta", categoria: "Calçados", produto: "Sapato Social", data: "2026-06-05", qtd: 7, vlrUnit: 210.00, custoUnit: 110.00, estoque: 4 }
+            { cliente: "Cliente Alfa", categoria: "Bebidas", produto: "Cerveja Lata 350ml", data: "2026-06-01", qtd: 120, vlrUnit: 5.00, custoUnit: 3.00, estoque: 80 },
+            { cliente: "Comércio Beta", categoria: "Bebidas", produto: "Água Mineral 500ml", data: "2026-06-02", qtd: 80, vlrUnit: 3.00, custoUnit: 1.20, estoque: 50 },
+            { cliente: "Cliente Alfa", categoria: "Snacks", produto: "Batata Frita 90g", data: "2026-06-03", qtd: 45, vlrUnit: 9.00, custoUnit: 4.50, estoque: 15 },
+            { cliente: "Loja Gama", categoria: "Bomboniere", produto: "Chocolate Barra", data: "2026-06-04", qtd: 60, vlrUnit: 7.50, custoUnit: 4.00, estoque: 10 },
+            { cliente: "Cliente Delta", categoria: "Bebidas", produto: "Energético 250ml", data: "2026-06-05", qtd: 35, vlrUnit: 10.00, custoUnit: 5.50, estoque: 6 }
         ];
 
         let chartTopValueInst = null;
@@ -290,15 +290,15 @@
         function downloadTemplateCSV() {
             const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + 
                 "Cliente;Categoria;Nome do Produto;Data;Quantidade;Valor Unitário;Preço de Custo;Qtd. em Estoque\n" +
-                "Empresa Alfa Ltda;Vestuário;Camiseta Algodão P;2026-06-01;25;45,00;20,00;30\n" +
-                "Comércio Beta;Vestuário;Calça Jeans M;2026-06-02;12;120,00;70,00;5\n" +
-                "Empresa Alfa Ltda;Calçados;Tênis Esportivo;2026-06-03;18;250,00;140,00;8\n" +
-                "Loja Gama;Acessórios;Boné Aba Reta;2026-06-04;30;35,00;15,00;15";
+                "Cliente Alfa;Bebidas;Cerveja Lata 350ml;2026-06-01;120;5,00;3,00;80\n" +
+                "Comércio Beta;Bebidas;Água Mineral 500ml;2026-06-02;80;3,00;1,20;50\n" +
+                "Cliente Alfa;Snacks;Batata Frita 90g;2026-06-03;45;9,00;4,50;15\n" +
+                "Loja Gama;Bomboniere;Chocolate Barra;2026-06-04;60;7,50;4,00;10";
 
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "modelo_indicadores_produtos.csv");
+            link.setAttribute("download", "modelo_nexxa_conveniencias.csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -331,7 +331,6 @@
                 totalFaturamento += faturamento;
                 totalCustoVendas += custo;
 
-                // Agrupamentos
                 prodValueMap[row.produto] = (prodValueMap[row.produto] || 0) + faturamento;
                 prodQtyMap[row.produto] = (prodQtyMap[row.produto] || 0) + row.qtd;
                 catValueMap[row.categoria] = (catValueMap[row.categoria] || 0) + faturamento;
@@ -374,7 +373,6 @@
         }
 
         function renderCharts(prodVal, prodQty, catVal, clientVal) {
-            // 1. Top 10 Produtos por Valor
             const topVal = Object.entries(prodVal).sort((a,b) => b[1] - a[1]).slice(0, 10);
             const ctxVal = document.getElementById('chartTopValue').getContext('2d');
             if(chartTopValueInst) chartTopValueInst.destroy();
@@ -397,7 +395,6 @@
                 }
             });
 
-            // 2. Top 10 Produtos por Quantidade
             const topQty = Object.entries(prodQty).sort((a,b) => b[1] - a[1]).slice(0, 10);
             const ctxQty = document.getElementById('chartTopQty').getContext('2d');
             if(chartTopQtyInst) chartTopQtyInst.destroy();
@@ -420,7 +417,6 @@
                 }
             });
 
-            // 3. Faturamento por Categoria
             const topCat = Object.entries(catVal).sort((a,b) => b[1] - a[1]);
             const ctxCat = document.getElementById('chartCategory').getContext('2d');
             if(chartCategoryInst) chartCategoryInst.destroy();
@@ -439,7 +435,6 @@
                 }
             });
 
-            // 4. Top Clientes por Valor
             const topClient = Object.entries(clientVal).sort((a,b) => b[1] - a[1]).slice(0, 5);
             const ctxClient = document.getElementById('chartClients').getContext('2d');
             if(chartClientsInst) chartClientsInst.destroy();
