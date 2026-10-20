@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Indicadores e Projeção de Compras</title>
-    <!-- Tailwind CSS para design moderno -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS para ler Excel/CSV -->
+    <!-- SheetJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Chart.js para os gráficos -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- FontAwesome para ícones -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
@@ -59,7 +59,7 @@
             
             <div class="text-xs text-slate-500 flex items-center space-x-2">
                 <i class="fa-solid fa-circle-info text-indigo-500"></i>
-                <span>Colunas esperadas: Cliente, Nome do Produto, Data, Quantidade, Valor Unitário, Preço de Custo, Qtd. em Estoque</span>
+                <span>Colunas esperadas: Cliente, Categoria, Nome do Produto, Data, Quantidade, Valor Unitário, Preço de Custo, Qtd. em Estoque</span>
             </div>
         </div>
 
@@ -89,26 +89,48 @@
                 </div>
             </div>
 
-            <!-- Filtros e Gráficos -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Gráfico Faturamento por Produto -->
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 lg:col-span-2 flex flex-col">
+            <!-- Seção de Gráficos (Top 10) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Top 10 Produtos por Valor -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="font-bold text-slate-800 text-base">Top Produtos por Faturamento</h2>
-                        <span class="text-xs text-slate-400">Automático</span>
+                        <h2 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-ranking-star text-amber-500 mr-2"></i>Top 10 Produtos (Valor R$)</h2>
+                        <span class="text-xs text-slate-400">Faturamento</span>
                     </div>
-                    <div class="relative flex-grow h-72">
-                        <canvas id="chartProducts"></canvas>
+                    <div class="relative flex-grow h-80">
+                        <canvas id="chartTopValue"></canvas>
                     </div>
                 </div>
 
-                <!-- Gráfico Top Clientes -->
+                <!-- Top 10 Produtos por Quantidade -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="font-bold text-slate-800 text-base">Top Clientes</h2>
+                        <h2 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-boxes-packing text-indigo-500 mr-2"></i>Top 10 Produtos (Quantidade)</h2>
+                        <span class="text-xs text-slate-400">Unidades Vendidas</span>
+                    </div>
+                    <div class="relative flex-grow h-80">
+                        <canvas id="chartTopQty"></canvas>
+                    </div>
+                </div>
+
+                <!-- Top Categorias por Valor -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-layer-group text-emerald-500 mr-2"></i>Faturamento por Categoria</h2>
+                        <span class="text-xs text-slate-400">Participação</span>
+                    </div>
+                    <div class="relative flex-grow h-80">
+                        <canvas id="chartCategory"></canvas>
+                    </div>
+                </div>
+
+                <!-- Top Clientes por Valor -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-users text-blue-500 mr-2"></i>Top Clientes</h2>
                         <span class="text-xs text-slate-400">Faturamento</span>
                     </div>
-                    <div class="relative flex-grow h-72">
+                    <div class="relative flex-grow h-80">
                         <canvas id="chartClients"></canvas>
                     </div>
                 </div>
@@ -119,7 +141,7 @@
                 <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <h2 class="font-bold text-slate-800 text-base">Detalhamento das Vendas</h2>
                     <div class="flex items-center space-x-3 w-full sm:w-auto">
-                        <input type="text" id="searchInput" placeholder="Pesquisar produto ou cliente..." onkeyup="filterTable()" class="px-4 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-64">
+                        <input type="text" id="searchInput" placeholder="Pesquisar produto, cliente ou categoria..." onkeyup="filterTable()" class="px-4 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-72">
                     </div>
                 </div>
                 <div class="overflow-x-auto">
@@ -127,6 +149,7 @@
                         <thead>
                             <tr class="bg-slate-100 text-slate-600 uppercase text-xs tracking-wider">
                                 <th class="p-4 font-semibold">Cliente</th>
+                                <th class="p-4 font-semibold">Categoria</th>
                                 <th class="p-4 font-semibold">Produto</th>
                                 <th class="p-4 font-semibold">Data</th>
                                 <th class="p-4 font-semibold text-center">Qtd</th>
@@ -166,7 +189,8 @@
                     <table class="w-full text-left border-collapse text-sm">
                         <thead>
                             <tr class="bg-indigo-50 text-indigo-900 uppercase text-xs tracking-wider">
-                                <th class="p-4 font-semibold">Nome do Produto</th>
+                                <th class="p-4 font-semibold">Produto</th>
+                                <th class="p-4 font-semibold">Categoria</th>
                                 <th class="p-4 font-semibold text-center">Estoque Atual</th>
                                 <th class="p-4 font-semibold text-center">Média Venda / Semana</th>
                                 <th class="p-4 font-semibold text-center">Cobertura (Semanas)</th>
@@ -194,13 +218,17 @@
     <!-- Script de Funcionalidades -->
     <script>
         let globalData = [
-            { cliente: "Cliente Exemplo A", produto: "Produto X", data: "2026-06-01", qtd: 10, vlrUnit: 50.00, custoUnit: 30.00, estoque: 15 },
-            { cliente: "Cliente Exemplo B", produto: "Produto Y", data: "2026-06-03", qtd: 5, vlrUnit: 120.00, custoUnit: 80.00, estoque: 4 },
-            { cliente: "Cliente Exemplo A", produto: "Produto Z", data: "2026-06-05", qtd: 20, vlrUnit: 25.00, custoUnit: 15.00, estoque: 2 }
+            { cliente: "Cliente Alfa", categoria: "Vestuário", produto: "Camiseta Algodão P", data: "2026-06-01", qtd: 25, vlrUnit: 45.00, custoUnit: 20.00, estoque: 30 },
+            { cliente: "Comércio Beta", categoria: "Vestuário", produto: "Calça Jeans M", data: "2026-06-02", qtd: 12, vlrUnit: 120.00, custoUnit: 70.00, estoque: 5 },
+            { cliente: "Cliente Alfa", categoria: "Calçados", produto: "Tênis Esportivo", data: "2026-06-03", qtd: 18, vlrUnit: 250.00, custoUnit: 140.00, estoque: 8 },
+            { cliente: "Loja Gama", categoria: "Acessórios", produto: "Boné Aba Reta", data: "2026-06-04", qtd: 30, vlrUnit: 35.00, custoUnit: 15.00, estoque: 15 },
+            { cliente: "Cliente Delta", categoria: "Calçados", produto: "Sapato Social", data: "2026-06-05", qtd: 7, vlrUnit: 210.00, custoUnit: 110.00, estoque: 4 }
         ];
 
-        let chartProductsInstance = null;
-        let chartClientsInstance = null;
+        let chartTopValueInst = null;
+        let chartTopQtyInst = null;
+        let chartCategoryInst = null;
+        let chartClientsInst = null;
 
         function switchTab(tabName) {
             const dashTab = document.getElementById('tab-dashboard');
@@ -238,6 +266,7 @@
                     if(json.length > 0) {
                         globalData = json.map(item => ({
                             cliente: item['Cliente'] || item['cliente'] || 'Geral',
+                            categoria: item['Categoria'] || item['categoria'] || 'Geral',
                             produto: item['Nome do Produto'] || item['produto'] || item['Produto'] || 'Não informado',
                             data: item['Data'] || item['data'] || new Date().toISOString().split('T')[0],
                             qtd: parseFloat(item['Quantidade'] || item['quantidade'] || item['Qtd'] || 0),
@@ -255,10 +284,248 @@
                     alert("Erro ao ler o arquivo Excel. Verifique o formato das colunas.");
                 }
             };
-            reader.readAsArrayBuffer(file);
+            reader.readAsBuffer ? reader.readAsArrayBuffer(file) : reader.readAsBinaryString(file);
         }
 
-        // Função de download do modelo em CSV nativo (funciona em 100% dos navegadores)
         function downloadTemplateCSV() {
             const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + 
-                "Cliente;Nome do Produto;Data;
+                "Cliente;Categoria;Nome do Produto;Data;Quantidade;Valor Unitário;Preço de Custo;Qtd. em Estoque\n" +
+                "Empresa Alfa Ltda;Vestuário;Camiseta Algodão P;2026-06-01;25;45,00;20,00;30\n" +
+                "Comércio Beta;Vestuário;Calça Jeans M;2026-06-02;12;120,00;70,00;5\n" +
+                "Empresa Alfa Ltda;Calçados;Tênis Esportivo;2026-06-03;18;250,00;140,00;8\n" +
+                "Loja Gama;Acessórios;Boné Aba Reta;2026-06-04;30;35,00;15,00;15";
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "modelo_indicadores_produtos.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function formatCurrency(val) {
+            return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function renderDashboard() {
+            let totalFaturamento = 0;
+            let totalCustoVendas = 0;
+            let totalEstoqueVal = 0;
+            let totalVendasCount = globalData.length;
+
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '';
+
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+            const prodValueMap = {};
+            const prodQtyMap = {};
+            const catValueMap = {};
+            const clientValueMap = {};
+            const stockByProduct = {};
+
+            globalData.forEach(row => {
+                const faturamento = row.qtd * row.vlrUnit;
+                const custo = row.qtd * row.custoUnit;
+                totalFaturamento += faturamento;
+                totalCustoVendas += custo;
+
+                // Agrupamentos
+                prodValueMap[row.produto] = (prodValueMap[row.produto] || 0) + faturamento;
+                prodQtyMap[row.produto] = (prodQtyMap[row.produto] || 0) + row.qtd;
+                catValueMap[row.categoria] = (catValueMap[row.categoria] || 0) + faturamento;
+                clientValueMap[row.cliente] = (clientValueMap[row.cliente] || 0) + faturamento;
+                stockByProduct[row.produto] = row.estoque;
+
+                if(row.produto.toLowerCase().includes(searchTerm) || row.cliente.toLowerCase().includes(searchTerm) || row.categoria.toLowerCase().includes(searchTerm)) {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 transition-colors";
+                    tr.innerHTML = `
+                        <td class="p-4 font-medium text-slate-800">${row.cliente}</td>
+                        <td class="p-4"><span class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-medium">${row.categoria}</span></td>
+                        <td class="p-4 font-medium text-indigo-600">${row.produto}</td>
+                        <td class="p-4 text-slate-500">${row.data}</td>
+                        <td class="p-4 text-center font-semibold">${row.qtd}</td>
+                        <td class="p-4 text-right">${formatCurrency(row.vlrUnit)}</td>
+                        <td class="p-4 text-right font-bold text-slate-800">${formatCurrency(faturamento)}</td>
+                        <td class="p-4 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${row.estoque <= 5 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">${row.estoque}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+
+            const lucroBruto = totalFaturamento - totalCustoVendas;
+            const margem = totalFaturamento > 0 ? (lucroBruto / totalFaturamento) * 100 : 0;
+
+            Object.keys(stockByProduct).forEach(prod => {
+                const item = globalData.find(i => i.produto === prod);
+                const custoRef = item ? item.custoUnit : 0;
+                totalEstoqueVal += stockByProduct[prod] * custoRef;
+            });
+
+            document.getElementById('card-faturamento').innerText = formatCurrency(totalFaturamento);
+            document.getElementById('card-lucro').innerText = formatCurrency(lucroBruto);
+            document.getElementById('card-margem').innerText = `Margem: ${margem.toFixed(1)}%`;
+            document.getElementById('card-estoque-val').innerText = formatCurrency(totalEstoqueVal);
+            document.getElementById('card-vendas').innerText = totalVendasCount;
+
+            renderCharts(prodValueMap, prodQtyMap, catValueMap, clientValueMap);
+        }
+
+        function renderCharts(prodVal, prodQty, catVal, clientVal) {
+            // 1. Top 10 Produtos por Valor
+            const topVal = Object.entries(prodVal).sort((a,b) => b[1] - a[1]).slice(0, 10);
+            const ctxVal = document.getElementById('chartTopValue').getContext('2d');
+            if(chartTopValueInst) chartTopValueInst.destroy();
+            chartTopValueInst = new Chart(ctxVal, {
+                type: 'bar',
+                data: {
+                    labels: topVal.map(i => i[0]),
+                    datasets: [{
+                        label: 'Faturamento (R$)',
+                        data: topVal.map(i => i[1]),
+                        backgroundColor: '#6366f1',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // 2. Top 10 Produtos por Quantidade
+            const topQty = Object.entries(prodQty).sort((a,b) => b[1] - a[1]).slice(0, 10);
+            const ctxQty = document.getElementById('chartTopQty').getContext('2d');
+            if(chartTopQtyInst) chartTopQtyInst.destroy();
+            chartTopQtyInst = new Chart(ctxQty, {
+                type: 'bar',
+                data: {
+                    labels: topQty.map(i => i[0]),
+                    datasets: [{
+                        label: 'Unidades Vendidas',
+                        data: topQty.map(i => i[1]),
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // 3. Faturamento por Categoria
+            const topCat = Object.entries(catVal).sort((a,b) => b[1] - a[1]);
+            const ctxCat = document.getElementById('chartCategory').getContext('2d');
+            if(chartCategoryInst) chartCategoryInst.destroy();
+            chartCategoryInst = new Chart(ctxCat, {
+                type: 'doughnut',
+                data: {
+                    labels: topCat.map(i => i[0]),
+                    datasets: [{
+                        data: topCat.map(i => i[1]),
+                        backgroundColor: ['#10b981', '#6366f1', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            // 4. Top Clientes por Valor
+            const topClient = Object.entries(clientVal).sort((a,b) => b[1] - a[1]).slice(0, 5);
+            const ctxClient = document.getElementById('chartClients').getContext('2d');
+            if(chartClientsInst) chartClientsInst.destroy();
+            chartClientsInst = new Chart(ctxClient, {
+                type: 'pie',
+                data: {
+                    labels: topClient.map(i => i[0]),
+                    datasets: [{
+                        data: topClient.map(i => i[1]),
+                        backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#3b82f6']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function renderProjection() {
+            const targetWeeks = parseInt(document.getElementById('targetWeeks').value) || 4;
+            const tbody = document.getElementById('projectionTableBody');
+            tbody.innerHTML = '';
+
+            const productStats = {};
+
+            globalData.forEach(row => {
+                if(!productStats[row.produto]) {
+                    productStats[row.produto] = {
+                        categoria: row.categoria,
+                        totalQtdVivida: 0,
+                        estoqueAtual: row.estoque,
+                        datas: []
+                    };
+                }
+                productStats[row.produto].totalQtdVivida += row.qtd;
+                productStats[row.produto].estoqueAtual = row.estoque;
+                productStats[row.produto].categoria = row.categoria;
+                productStats[row.produto].datas.push(new Date(row.data));
+            });
+
+            Object.keys(productStats).forEach(prodName => {
+                const stats = productStats[prodName];
+                
+                let weeksSpan = 4;
+                if(stats.datas.length > 1) {
+                    const minDate = new Date(Math.min.apply(null, stats.datas));
+                    const maxDate = new Date(Math.max.apply(null, stats.datas));
+                    const diffTime = Math.abs(maxDate - minDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    weeksSpan = Math.max(1, Math.ceil(diffDays / 7));
+                }
+
+                const avgWeeklySales = stats.totalQtdVivida / weeksSpan;
+                const coverageWeeks = avgWeeklySales > 0 ? (stats.estoqueAtual / avgWeeklySales).toFixed(1) : '∞';
+                
+                const demandNeeded = avgWeeklySales * targetWeeks;
+                const suggestion = Math.max(0, Math.ceil(demandNeeded - stats.estoqueAtual));
+
+                let statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Estoque OK</span>';
+                if(stats.estoqueAtual === 0 || (typeof coverageWeeks === 'number' && coverageWeeks < 1)) {
+                    statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">Urgente / Zerado</span>';
+                } else if(parseFloat(coverageWeeks) < 2) {
+                    statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Atenção</span>';
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="p-4 font-semibold text-indigo-600">${prodName}</td>
+                    <td class="p-4"><span class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-medium">${stats.categoria}</span></td>
+                    <td class="p-4 text-center font-bold text-slate-800">${stats.estoqueAtual}</td>
+                    <td class="p-4 text-center text-slate-600">${avgWeeklySales.toFixed(1)} /sem</td>
+                    <td class="p-4 text-center font-semibold text-slate-700">${coverageWeeks} sem</td>
+                    <td class="p-4 text-center"><span class="px-3 py-1 bg-indigo-50 text-indigo-700 font-bold rounded-lg border border-indigo-200">${suggestion} un</span></td>
+                    <td class="p-4 text-center">${statusBadge}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterTable() {
+            renderDashboard();
+        }
+
+        renderDashboard();
+    </script>
+</body>
+</html>
