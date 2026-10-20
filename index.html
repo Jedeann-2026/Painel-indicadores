@@ -1,1 +1,333 @@
-sandbox:/index.html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Indicadores e Projeção de Compras</title>
+    <!-- Tailwind CSS para design moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS para ler Excel/CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Chart.js para os gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Cabeçalho -->
+    <header class="bg-indigo-700 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 p-2.5 rounded-lg shadow-inner">
+                    <i class="fa-solid fa-chart-line text-2xl text-indigo-100"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">Painel de Vendas & Projeção de Compras</h1>
+                    <p class="text-xs text-indigo-200">Gestão inteligente de estoque, faturamento e reposição</p>
+                </div>
+            </div>
+            
+            <!-- Navegação de Abas -->
+            <div class="flex bg-indigo-900/60 p-1 rounded-xl border border-indigo-500/30">
+                <button onclick="switchTab('dashboard')" id="btn-tab-dashboard" class="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-white text-indigo-700 shadow-sm">
+                    <i class="fa-solid fa-chart-pie mr-2"></i>Dashboard
+                </button>
+                <button onclick="switchTab('projection')" id="btn-tab-projection" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-indigo-200 hover:text-white">
+                    <i class="fa-solid fa-cart-shopping mr-2"></i>Projeção de Compras
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
+
+        <!-- Barra de Ações / Importação -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-3 w-full md:w-auto">
+                <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-all flex items-center justify-center space-x-2 w-full md:w-auto">
+                    <i class="fa-solid fa-file-excel"></i>
+                    <span>Importar Planilha (Excel/CSV)</span>
+                    <input type="file" id="excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFile(event)">
+                </label>
+                <button onclick="downloadTemplate()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center space-x-2 border border-slate-300">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Baixar Modelo Exemplo</span>
+                </button>
+            </div>
+            
+            <div class="text-xs text-slate-500 flex items-center space-x-2">
+                <i class="fa-solid fa-circle-info text-indigo-500"></i>
+                <span>Colunas esperadas: Cliente, Nome do Produto, Data, Quantidade, Valor Unitário, Preço de Custo, Qtd. em Estoque</span>
+            </div>
+        </div>
+
+        <!-- ABA 1: DASHBOARD -->
+        <div id="tab-dashboard" class="space-y-6">
+            <!-- Cards de Indicadores -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-indigo-600">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Faturamento Total</p>
+                    <h3 id="card-faturamento" class="text-2xl font-bold text-slate-800 mt-1">R$ 0,00</h3>
+                    <span class="text-xs text-emerald-600 font-medium mt-2 inline-flex items-center"><i class="fa-solid fa-arrow-trend-up mr-1"></i> Receita calculada</span>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Lucro Bruto Estimado</p>
+                    <h3 id="card-lucro" class="text-2xl font-bold text-slate-800 mt-1">R$ 0,00</h3>
+                    <span id="card-margem" class="text-xs text-emerald-600 font-medium mt-2 inline-flex items-center">Margem: 0%</span>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-blue-500">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Valor em Estoque</p>
+                    <h3 id="card-estoque-val" class="text-2xl font-bold text-slate-800 mt-1">R$ 0,00</h3>
+                    <span class="text-xs text-blue-600 font-medium mt-2 inline-flex items-center"><i class="fa-solid fa-boxes-stacked mr-1"></i> Baseado no custo</span>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-amber-500">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total de Vendas</p>
+                    <h3 id="card-vendas" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                    <span class="text-xs text-amber-600 font-medium mt-2 inline-flex items-center"><i class="fa-solid fa-receipt mr-1"></i> Registros</span>
+                </div>
+            </div>
+
+            <!-- Filtros e Gráficos -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Gráfico Faturamento por Produto -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 lg:col-span-2 flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-bold text-slate-800 text-base">Top Produtos por Faturamento</h2>
+                        <span class="text-xs text-slate-400">Automático</span>
+                    </div>
+                    <div class="relative flex-grow h-72">
+                        <canvas id="chartProducts"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico Top Clientes -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-bold text-slate-800 text-base">Top Clientes</h2>
+                        <span class="text-xs text-slate-400">Faturamento</span>
+                    </div>
+                    <div class="relative flex-grow h-72">
+                        <canvas id="chartClients"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabela Detalhada -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <h2 class="font-bold text-slate-800 text-base">Detalhamento das Vendas</h2>
+                    <div class="flex items-center space-x-3 w-full sm:w-auto">
+                        <input type="text" id="searchInput" placeholder="Pesquisar produto ou cliente..." onkeyup="filterTable()" class="px-4 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-64">
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 uppercase text-xs tracking-wider">
+                                <th class="p-4 font-semibold">Cliente</th>
+                                <th class="p-4 font-semibold">Produto</th>
+                                <th class="p-4 font-semibold">Data</th>
+                                <th class="p-4 font-semibold text-center">Qtd</th>
+                                <th class="p-4 font-semibold text-right">Vlr. Unit</th>
+                                <th class="p-4 font-semibold text-right">Vlr. Total</th>
+                                <th class="p-4 font-semibold text-center">Estoque Atual</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody" class="divide-y divide-slate-200 text-slate-700">
+                            <!-- Inserido dinamicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 2: PROJEÇÃO DE COMPRAS -->
+        <div id="tab-projection" class="space-y-6 hidden">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Sugestão e Projeção de Compras por Semana</h2>
+                        <p class="text-xs text-slate-500 mt-1">Cálculo preditivo baseado na média de consumo semanal e no estoque atual.</p>
+                    </div>
+                    
+                    <!-- Configurações de Projeção -->
+                    <div class="flex items-center space-x-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Semanas de Cobertura:</label>
+                            <input type="number" id="targetWeeks" value="4" min="1" max="52" onchange="renderProjection()" class="w-20 px-3 py-1.5 text-sm bg-white border border-slate-300 rounded-lg text-center font-bold text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela de Projeção -->
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-indigo-50 text-indigo-900 uppercase text-xs tracking-wider">
+                                <th class="p-4 font-semibold">Nome do Produto</th>
+                                <th class="p-4 font-semibold text-center">Estoque Atual</th>
+                                <th class="p-4 font-semibold text-center">Média Venda / Semana</th>
+                                <th class="p-4 font-semibold text-center">Cobertura (Semanas)</th>
+                                <th class="p-4 font-semibold text-center">Sugestão de Compra</th>
+                                <th class="p-4 font-semibold text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projectionTableBody" class="divide-y divide-slate-200 text-slate-700">
+                            <!-- Inserido dinamicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
+            Painel de Indicadores Web &copy; 2026 — Desenvolvido sob medida para gestão comercial.
+        </div>
+    </footer>
+
+    <!-- Script de Funcionalidades -->
+    <script>
+        let globalData = [
+            { cliente: "Cliente Exemplo A", produto: "Produto X", data: "2026-06-01", qtd: 10, vlrUnit: 50.00, custoUnit: 30.00, estoque: 15 },
+            { cliente: "Cliente Exemplo B", produto: "Produto Y", data: "2026-06-03", qtd: 5, vlrUnit: 120.00, custoUnit: 80.00, estoque: 4 },
+            { cliente: "Cliente Exemplo A", produto: "Produto Z", data: "2026-06-05", qtd: 20, vlrUnit: 25.00, custoUnit: 15.00, estoque: 2 }
+        ];
+
+        let chartProductsInstance = null;
+        let chartClientsInstance = null;
+
+        function switchTab(tabName) {
+            const dashTab = document.getElementById('tab-dashboard');
+            const projTab = document.getElementById('tab-projection');
+            const btnDash = document.getElementById('btn-tab-dashboard');
+            const btnProj = document.getElementById('btn-tab-projection');
+
+            if(tabName === 'dashboard') {
+                dashTab.classList.remove('hidden');
+                projTab.classList.add('hidden');
+                btnDash.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all bg-white text-indigo-700 shadow-sm";
+                btnProj.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all text-indigo-200 hover:text-white";
+                renderDashboard();
+            } else {
+                dashTab.classList.add('hidden');
+                projTab.classList.remove('hidden');
+                btnProj.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all bg-white text-indigo-700 shadow-sm";
+                btnDash.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all text-indigo-200 hover:text-white";
+                renderProjection();
+            }
+        }
+
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const data = new Uint8Array(evt.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    if(json.length > 0) {
+                        globalData = json.map(item => ({
+                            cliente: item['Cliente'] || item['cliente'] || 'Geral',
+                            produto: item['Nome do Produto'] || item['produto'] || item['Produto'] || 'Não informado',
+                            data: item['Data'] || item['data'] || new Date().toISOString().split('T')[0],
+                            qtd: parseFloat(item['Quantidade'] || item['quantidade'] || item['Qtd'] || 0),
+                            vlrUnit: parseFloat(item['Valor Unitário'] || item['valor_unitario'] || item['Valor Unitario'] || 0),
+                            custoUnit: parseFloat(item['Preço de Custo'] || item['preco_custo'] || item['Preco Custo'] || 0),
+                            estoque: parseFloat(item['Qtd. em Estoque'] || item['estoque'] || item['Qtd em Estoque'] || 0)
+                        }));
+                        renderDashboard();
+                        alert("Planilha importada com sucesso!");
+                    } else {
+                        alert("A planilha parece estar vazia.");
+                    }
+                } catch(err) {
+                    console.error(err);
+                    alert("Erro ao ler o arquivo Excel. Verifique o formato das colunas.");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function downloadTemplate() {
+            const templateData = [
+                { "Cliente": "Empresa Alfa Ltda", "Nome do Produto": "Camiseta Algodão P", "Data": "2026-06-01", "Quantidade": 10, "Valor Unitário": 45.00, "Preço de Custo": 20.00, "Qtd. em Estoque": 25 },
+                { "Cliente": "Comércio Beta", "Nome do Produto": "Calça Jeans M", "Data": "2026-06-02", "Quantidade": 5, "Valor Unitário": 120.00, "Preço de Custo": 70.00, "Qtd. em Estoque": 3 },
+                { "Cliente": "Empresa Alfa Ltda", "Nome do Produto": "Tênis Esportivo", "Data": "2026-06-03", "Quantidade": 8, "Valor Unitário": 250.00, "Preço de Custo": 140.00, "Qtd. em Estoque": 6 }
+            ];
+            const ws = XLSX.utils.json_to_sheet(templateData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Vendas");
+            XLSX.writeFile(wb, "modelo_indicadores_produtos.xlsx");
+        }
+
+        function formatCurrency(val) {
+            return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function renderDashboard() {
+            let totalFaturamento = 0;
+            let totalCustoVendas = 0;
+            let totalEstoqueVal = 0;
+            let totalVendasCount = globalData.length;
+
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '';
+
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+            // Mapa para gráficos
+            const productRevenue = {};
+            const clientRevenue = {};
+            const stockByProduct = {};
+
+            globalData.forEach(row => {
+                const faturamento = row.qtd * row.vlrUnit;
+                const custo = row.qtd * row.custoUnit;
+                totalFaturamento += faturamento;
+                totalCustoVendas += custo;
+
+                // Agregar por produto
+                productRevenue[row.produto] = (productRevenue[row.produto] || 0) + faturamento;
+                clientRevenue[row.cliente] = (clientRevenue[row.cliente] || 0) + faturamento;
+                stockByProduct[row.produto] = row.estoque; // Mantém o estoque mais recente
+
+                // Filtro de busca na tabela
+                if(row.produto.toLowerCase().includes(searchTerm) || row.cliente.toLowerCase().includes(searchTerm)) {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 transition-colors";
+                    tr.innerHTML = `
+                        <td class="p-4 font-medium text-slate-800">${row.cliente}</td>
+                        <td class="p-4 font-medium text-indigo-600">${row.produto}</td>
+                        <td class="p-4 text-slate-500">${row.data}</td>
+                        <td class="p-4 text-center font-semibold">${row.qtd}</td>
+                        <td class="p-4 text-right">${formatCurrency(row.vlrUnit)}</td>
+                        <td class="p-4 text-right font-bold text-slate-800">${formatCurrency(faturamento)}</td>
+                        <td class="p-4 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${row.estoque <= 5 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">${row.estoque}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+
+            const lucroBruto = totalFaturamento - totalCustoVendas;
+            const margem = totalFaturamento > 0 ? (lucroBruto / totalFaturamento) * 100 : 0;
+
+            // Calcular valor total em estoque (usando custo médio ou unitário)
+            Object.keys(stockByProduct).forEach(prod => {
+                const item = globalData.find(i => i.produto === prod);
+                const custoRef = item ? item.custoUnit : 0;
+                totalEstoqueVal += stockByProduct[prod] * custoRef;
+            });
+
+            document.getElementById('card-faturamento').innerText = formatCurrency(totalFaturamento);
+            document.getElementById('card-lucro').innerText = formatCurrency(lucroBruto);
+            document.getElementById('card-margem
