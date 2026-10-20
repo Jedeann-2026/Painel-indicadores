@@ -51,7 +51,7 @@
                     <span>Importar Planilha (Excel/CSV)</span>
                     <input type="file" id="excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFile(event)">
                 </label>
-                <button onclick="downloadTemplate()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center space-x-2 border border-slate-300">
+                <button onclick="downloadTemplateCSV()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center space-x-2 border border-slate-300">
                     <i class="fa-solid fa-download"></i>
                     <span>Baixar Modelo Exemplo</span>
                 </button>
@@ -258,76 +258,7 @@
             reader.readAsArrayBuffer(file);
         }
 
-        function downloadTemplate() {
-            const templateData = [
-                { "Cliente": "Empresa Alfa Ltda", "Nome do Produto": "Camiseta Algodão P", "Data": "2026-06-01", "Quantidade": 10, "Valor Unitário": 45.00, "Preço de Custo": 20.00, "Qtd. em Estoque": 25 },
-                { "Cliente": "Comércio Beta", "Nome do Produto": "Calça Jeans M", "Data": "2026-06-02", "Quantidade": 5, "Valor Unitário": 120.00, "Preço de Custo": 70.00, "Qtd. em Estoque": 3 },
-                { "Cliente": "Empresa Alfa Ltda", "Nome do Produto": "Tênis Esportivo", "Data": "2026-06-03", "Quantidade": 8, "Valor Unitário": 250.00, "Preço de Custo": 140.00, "Qtd. em Estoque": 6 }
-            ];
-            const ws = XLSX.utils.json_to_sheet(templateData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Vendas");
-            XLSX.writeFile(wb, "modelo_indicadores_produtos.xlsx");
-        }
-
-        function formatCurrency(val) {
-            return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        }
-
-        function renderDashboard() {
-            let totalFaturamento = 0;
-            let totalCustoVendas = 0;
-            let totalEstoqueVal = 0;
-            let totalVendasCount = globalData.length;
-
-            const tbody = document.getElementById('dataTableBody');
-            tbody.innerHTML = '';
-
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-
-            // Mapa para gráficos
-            const productRevenue = {};
-            const clientRevenue = {};
-            const stockByProduct = {};
-
-            globalData.forEach(row => {
-                const faturamento = row.qtd * row.vlrUnit;
-                const custo = row.qtd * row.custoUnit;
-                totalFaturamento += faturamento;
-                totalCustoVendas += custo;
-
-                // Agregar por produto
-                productRevenue[row.produto] = (productRevenue[row.produto] || 0) + faturamento;
-                clientRevenue[row.cliente] = (clientRevenue[row.cliente] || 0) + faturamento;
-                stockByProduct[row.produto] = row.estoque; // Mantém o estoque mais recente
-
-                // Filtro de busca na tabela
-                if(row.produto.toLowerCase().includes(searchTerm) || row.cliente.toLowerCase().includes(searchTerm)) {
-                    const tr = document.createElement('tr');
-                    tr.className = "hover:bg-slate-50 transition-colors";
-                    tr.innerHTML = `
-                        <td class="p-4 font-medium text-slate-800">${row.cliente}</td>
-                        <td class="p-4 font-medium text-indigo-600">${row.produto}</td>
-                        <td class="p-4 text-slate-500">${row.data}</td>
-                        <td class="p-4 text-center font-semibold">${row.qtd}</td>
-                        <td class="p-4 text-right">${formatCurrency(row.vlrUnit)}</td>
-                        <td class="p-4 text-right font-bold text-slate-800">${formatCurrency(faturamento)}</td>
-                        <td class="p-4 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${row.estoque <= 5 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">${row.estoque}</span></td>
-                    `;
-                    tbody.appendChild(tr);
-                }
-            });
-
-            const lucroBruto = totalFaturamento - totalCustoVendas;
-            const margem = totalFaturamento > 0 ? (lucroBruto / totalFaturamento) * 100 : 0;
-
-            // Calcular valor total em estoque (usando custo médio ou unitário)
-            Object.keys(stockByProduct).forEach(prod => {
-                const item = globalData.find(i => i.produto === prod);
-                const custoRef = item ? item.custoUnit : 0;
-                totalEstoqueVal += stockByProduct[prod] * custoRef;
-            });
-
-            document.getElementById('card-faturamento').innerText = formatCurrency(totalFaturamento);
-            document.getElementById('card-lucro').innerText = formatCurrency(lucroBruto);
-            document.getElementById('card-margem
+        // Função de download do modelo em CSV nativo (funciona em 100% dos navegadores)
+        function downloadTemplateCSV() {
+            const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + 
+                "Cliente;Nome do Produto;Data;
