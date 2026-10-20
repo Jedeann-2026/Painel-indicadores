@@ -20,11 +20,11 @@
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
                 <div class="bg-indigo-600 p-2.5 rounded-lg shadow-inner">
-                    <i class="fa-solid fa-store text-2xl text-indigo-100"></i>
+                    <i class="fa-solid fa-chart-line text-2xl text-indigo-100"></i>
                 </div>
                 <div>
                     <h1 class="text-xl font-bold tracking-tight">NEXXA conveniências</h1>
-                    <p class="text-xs text-indigo-200">Painel de Indicadores, Vendas & Projeção de Compras</p>
+                    <p class="text-xs text-indigo-200">Gestão inteligente de estoque, faturamento e reposição</p>
                 </div>
             </div>
             
@@ -59,7 +59,7 @@
             
             <div class="text-xs text-slate-500 flex items-center space-x-2">
                 <i class="fa-solid fa-circle-info text-indigo-500"></i>
-                <span>Colunas esperadas: Cliente, Categoria, Nome do Produto, Data, Quantidade, Valor Unitário, Preço de Custo, Qtd. em Estoque</span>
+                <span>Colunas esperadas: Cliente, Categoria, Nome do Produto, Data, Quantidade, Valor Unitário, Preço de Custo, Qtd. em Estoque, Estoque Mínimo, Estoque Máximo</span>
             </div>
         </div>
 
@@ -156,6 +156,7 @@
                                 <th class="p-4 font-semibold text-right">Vlr. Unit</th>
                                 <th class="p-4 font-semibold text-right">Vlr. Total</th>
                                 <th class="p-4 font-semibold text-center">Estoque Atual</th>
+                                <th class="p-4 font-semibold text-center">Mín / Máx</th>
                             </tr>
                         </thead>
                         <tbody id="dataTableBody" class="divide-y divide-slate-200 text-slate-700">
@@ -171,8 +172,8 @@
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <div>
-                        <h2 class="text-lg font-bold text-slate-800">Sugestão e Projeção de Compras por Semana</h2>
-                        <p class="text-xs text-slate-500 mt-1">Cálculo preditivo baseado na média de consumo semanal e no estoque atual.</p>
+                        <h2 class="text-lg font-bold text-slate-800">Sugestão e Projeção de Compras por Estoque Mínimo/Máximo</h2>
+                        <p class="text-xs text-slate-500 mt-1">Cálculo preditivo alinhado aos limites de estoque mínimo e máximo configurados.</p>
                     </div>
                     
                     <!-- Configurações de Projeção -->
@@ -192,8 +193,8 @@
                                 <th class="p-4 font-semibold">Produto</th>
                                 <th class="p-4 font-semibold">Categoria</th>
                                 <th class="p-4 font-semibold text-center">Estoque Atual</th>
+                                <th class="p-4 font-semibold text-center">Mín / Máx</th>
                                 <th class="p-4 font-semibold text-center">Média Venda / Semana</th>
-                                <th class="p-4 font-semibold text-center">Cobertura (Semanas)</th>
                                 <th class="p-4 font-semibold text-center">Sugestão de Compra</th>
                                 <th class="p-4 font-semibold text-center">Status</th>
                             </tr>
@@ -218,11 +219,11 @@
     <!-- Script de Funcionalidades -->
     <script>
         let globalData = [
-            { cliente: "Cliente Alfa", categoria: "Bebidas", produto: "Cerveja Lata 350ml", data: "2026-06-01", qtd: 120, vlrUnit: 5.00, custoUnit: 3.00, estoque: 80 },
-            { cliente: "Comércio Beta", categoria: "Bebidas", produto: "Água Mineral 500ml", data: "2026-06-02", qtd: 80, vlrUnit: 3.00, custoUnit: 1.20, estoque: 50 },
-            { cliente: "Cliente Alfa", categoria: "Snacks", produto: "Batata Frita 90g", data: "2026-06-03", qtd: 45, vlrUnit: 9.00, custoUnit: 4.50, estoque: 15 },
-            { cliente: "Loja Gama", categoria: "Bomboniere", produto: "Chocolate Barra", data: "2026-06-04", qtd: 60, vlrUnit: 7.50, custoUnit: 4.00, estoque: 10 },
-            { cliente: "Cliente Delta", categoria: "Bebidas", produto: "Energético 250ml", data: "2026-06-05", qtd: 35, vlrUnit: 10.00, custoUnit: 5.50, estoque: 6 }
+            { cliente: "Cliente Alfa", categoria: "Bebidas", produto: "Cerveja Lata 350ml", data: "2026-06-01", qtd: 120, vlrUnit: 5.00, custoUnit: 3.00, estoque: 80, minStock: 30, maxStock: 150 },
+            { cliente: "Comércio Beta", categoria: "Bebidas", produto: "Água Mineral 500ml", data: "2026-06-02", qtd: 80, vlrUnit: 3.00, custoUnit: 1.20, estoque: 50, minStock: 25, maxStock: 120 },
+            { cliente: "Cliente Alfa", categoria: "Snacks", produto: "Batata Frita 90g", data: "2026-06-03", qtd: 45, vlrUnit: 9.00, custoUnit: 4.50, estoque: 15, minStock: 20, maxStock: 80 },
+            { cliente: "Loja Gama", categoria: "Bomboniere", produto: "Chocolate Barra", data: "2026-06-04", qtd: 60, vlrUnit: 7.50, custoUnit: 4.00, estoque: 10, minStock: 15, maxStock: 70 },
+            { cliente: "Cliente Delta", categoria: "Bebidas", produto: "Energético 250ml", data: "2026-06-05", qtd: 35, vlrUnit: 10.00, custoUnit: 5.50, estoque: 6, minStock: 10, maxStock: 50 }
         ];
 
         let chartTopValueInst = null;
@@ -272,7 +273,9 @@
                             qtd: parseFloat(item['Quantidade'] || item['quantidade'] || item['Qtd'] || 0),
                             vlrUnit: parseFloat(item['Valor Unitário'] || item['valor_unitario'] || item['Valor Unitario'] || 0),
                             custoUnit: parseFloat(item['Preço de Custo'] || item['preco_custo'] || item['Preco Custo'] || 0),
-                            estoque: parseFloat(item['Qtd. em Estoque'] || item['estoque'] || item['Qtd em Estoque'] || 0)
+                            estoque: parseFloat(item['Qtd. em Estoque'] || item['estoque'] || item['Qtd em Estoque'] || 0),
+                            minStock: parseFloat(item['Estoque Mínimo'] || item['estoque_minimo'] || item['Min Stock'] || 0),
+                            maxStock: parseFloat(item['Estoque Máximo'] || item['estoque_maximo'] || item['Max Stock'] || 100)
                         }));
                         renderDashboard();
                         alert("Planilha importada com sucesso!");
@@ -284,16 +287,16 @@
                     alert("Erro ao ler o arquivo Excel. Verifique o formato das colunas.");
                 }
             };
-            reader.readAsBuffer ? reader.readAsArrayBuffer(file) : reader.readAsBinaryString(file);
+            reader.readAsArrayBuffer(file);
         }
 
         function downloadTemplateCSV() {
             const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + 
-                "Cliente;Categoria;Nome do Produto;Data;Quantidade;Valor Unitário;Preço de Custo;Qtd. em Estoque\n" +
-                "Cliente Alfa;Bebidas;Cerveja Lata 350ml;2026-06-01;120;5,00;3,00;80\n" +
-                "Comércio Beta;Bebidas;Água Mineral 500ml;2026-06-02;80;3,00;1,20;50\n" +
-                "Cliente Alfa;Snacks;Batata Frita 90g;2026-06-03;45;9,00;4,50;15\n" +
-                "Loja Gama;Bomboniere;Chocolate Barra;2026-06-04;60;7,50;4,00;10";
+                "Cliente;Categoria;Nome do Produto;Data;Quantidade;Valor Unitário;Preço de Custo;Qtd. em Estoque;Estoque Mínimo;Estoque Máximo\n" +
+                "Cliente Alfa;Bebidas;Cerveja Lata 350ml;2026-06-01;120;5,00;3,00;80;30;150\n" +
+                "Comércio Beta;Bebidas;Água Mineral 500ml;2026-06-02;80;3,00;1,20;50;25;120\n" +
+                "Cliente Alfa;Snacks;Batata Frita 90g;2026-06-03;45;9,00;4,50;15;20;80\n" +
+                "Loja Gama;Bomboniere;Chocolate Barra;2026-06-04;60;7,50;4,00;10;15;70";
 
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
@@ -335,7 +338,7 @@
                 prodQtyMap[row.produto] = (prodQtyMap[row.produto] || 0) + row.qtd;
                 catValueMap[row.categoria] = (catValueMap[row.categoria] || 0) + faturamento;
                 clientValueMap[row.cliente] = (clientValueMap[row.cliente] || 0) + faturamento;
-                stockByProduct[row.produto] = row.estoque;
+                stockByProduct[row.produto] = { estoque: row.estoque, minStock: row.minStock, maxStock: row.maxStock };
 
                 if(row.produto.toLowerCase().includes(searchTerm) || row.cliente.toLowerCase().includes(searchTerm) || row.categoria.toLowerCase().includes(searchTerm)) {
                     const tr = document.createElement('tr');
@@ -348,7 +351,8 @@
                         <td class="p-4 text-center font-semibold">${row.qtd}</td>
                         <td class="p-4 text-right">${formatCurrency(row.vlrUnit)}</td>
                         <td class="p-4 text-right font-bold text-slate-800">${formatCurrency(faturamento)}</td>
-                        <td class="p-4 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${row.estoque <= 5 ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">${row.estoque}</span></td>
+                        <td class="p-4 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${row.estoque <= row.minStock ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">${row.estoque}</span></td>
+                        <td class="p-4 text-center text-xs text-slate-600">Mín: <b>${row.minStock}</b> / Máx: <b>${row.maxStock}</b></td>
                     `;
                     tbody.appendChild(tr);
                 }
@@ -360,7 +364,7 @@
             Object.keys(stockByProduct).forEach(prod => {
                 const item = globalData.find(i => i.produto === prod);
                 const custoRef = item ? item.custoUnit : 0;
-                totalEstoqueVal += stockByProduct[prod] * custoRef;
+                totalEstoqueVal += stockByProduct[prod].estoque * custoRef;
             });
 
             document.getElementById('card-faturamento').innerText = formatCurrency(totalFaturamento);
@@ -455,7 +459,6 @@
         }
 
         function renderProjection() {
-            const targetWeeks = parseInt(document.getElementById('targetWeeks').value) || 4;
             const tbody = document.getElementById('projectionTableBody');
             tbody.innerHTML = '';
 
@@ -467,11 +470,15 @@
                         categoria: row.categoria,
                         totalQtdVivida: 0,
                         estoqueAtual: row.estoque,
+                        minStock: row.minStock,
+                        maxStock: row.maxStock,
                         datas: []
                     };
                 }
                 productStats[row.produto].totalQtdVivida += row.qtd;
                 productStats[row.produto].estoqueAtual = row.estoque;
+                productStats[row.produto].minStock = row.minStock;
+                productStats[row.produto].maxStock = row.maxStock;
                 productStats[row.produto].categoria = row.categoria;
                 productStats[row.produto].datas.push(new Date(row.data));
             });
@@ -489,16 +496,13 @@
                 }
 
                 const avgWeeklySales = stats.totalQtdVivida / weeksSpan;
-                const coverageWeeks = avgWeeklySales > 0 ? (stats.estoqueAtual / avgWeeklySales).toFixed(1) : '∞';
-                
-                const demandNeeded = avgWeeklySales * targetWeeks;
-                const suggestion = Math.max(0, Math.ceil(demandNeeded - stats.estoqueAtual));
+                let suggestion = Math.max(0, stats.maxStock - stats.estoqueAtual);
 
                 let statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Estoque OK</span>';
-                if(stats.estoqueAtual === 0 || (typeof coverageWeeks === 'number' && coverageWeeks < 1)) {
-                    statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">Urgente / Zerado</span>';
-                } else if(parseFloat(coverageWeeks) < 2) {
-                    statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Atenção</span>';
+                if(stats.estoqueAtual <= stats.minStock) {
+                    statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">Abaixo do Mínimo</span>';
+                } else if(stats.estoqueAtual >= stats.maxStock) {
+                    statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Estoque Cheio</span>';
                 }
 
                 const tr = document.createElement('tr');
@@ -507,8 +511,8 @@
                     <td class="p-4 font-semibold text-indigo-600">${prodName}</td>
                     <td class="p-4"><span class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-medium">${stats.categoria}</span></td>
                     <td class="p-4 text-center font-bold text-slate-800">${stats.estoqueAtual}</td>
+                    <td class="p-4 text-center text-xs text-slate-600">Mín: <b>${stats.minStock}</b> / Máx: <b>${stats.maxStock}</b></td>
                     <td class="p-4 text-center text-slate-600">${avgWeeklySales.toFixed(1)} /sem</td>
-                    <td class="p-4 text-center font-semibold text-slate-700">${coverageWeeks} sem</td>
                     <td class="p-4 text-center"><span class="px-3 py-1 bg-indigo-50 text-indigo-700 font-bold rounded-lg border border-indigo-200">${suggestion} un</span></td>
                     <td class="p-4 text-center">${statusBadge}</td>
                 `;
