@@ -28,6 +28,7 @@ width: 100%;
 margin: 0;
 padding: 0;
 background: white !important;
+color: black !important;
 }
 .no-print {
 display: none !important;
@@ -35,30 +36,31 @@ display: none !important;
 }
 </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col">
 
 <!-- Cabeçalho -->
-<header class="bg-indigo-700 text-white shadow-md no-print">
+<header class="bg-slate-900 text-white shadow-md border-b border-slate-800 no-print">
 <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
 <div class="flex items-center space-x-3">
-<div class="bg-indigo-600 p-2.5 rounded-lg shadow-inner">
-<i class="fa-solid fa-chart-line text-2xl text-indigo-100"></i>
+<div class="bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
+<i class="fa-solid fa-chart-line text-2xl text-amber-400"></i>
 </div>
 <div>
-<h1 class="text-xl font-bold tracking-tight">NEXXA conveniências</h1>
-<p class="text-xs text-indigo-200">Gestão inteligente de estoque, faturamento e reposição</p>
+<!-- Nome em Amarelo -->
+<h1 class="text-xl font-bold tracking-tight text-amber-400">NEXXA conveniências</h1>
+<p class="text-xs text-slate-400">Gestão inteligente de estoque, faturamento e reposição</p>
 </div>
 </div>
 
 <!-- Navegação de Abas -->
-<div class="flex bg-indigo-900/60 p-1 rounded-xl border border-indigo-500/30 gap-1">
-<button onclick="switchTab('dashboard')" id="btn-tab-dashboard" class="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-white text-indigo-700 shadow-sm">
+<div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 gap-1">
+<button onclick="switchTab('dashboard')" id="btn-tab-dashboard" class="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-amber-400 text-slate-950 font-bold shadow-sm">
 <i class="fa-solid fa-chart-pie mr-2"></i>Dashboard
 </button>
-<button onclick="switchTab('projection')" id="btn-tab-projection" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-indigo-200 hover:text-white">
+<button onclick="switchTab('projection')" id="btn-tab-projection" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white">
 <i class="fa-solid fa-cart-shopping mr-2"></i>Projeção de Compras
 </button>
-<button onclick="switchTab('entries')" id="btn-tab-entries" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-indigo-200 hover:text-white">
+<button onclick="switchTab('entries')" id="btn-tab-entries" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white">
 <i class="fa-solid fa-file-invoice-dollar mr-2"></i>Notas de Entrada
 </button>
 </div>
@@ -69,66 +71,79 @@ display: none !important;
 <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
 
 <!-- Barra de Ações / Importação -->
-<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4 no-print">
-<div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
-<label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-all flex items-center justify-center space-x-2">
+<div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 no-print">
+<div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+<label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-medium shadow-sm transition-all flex items-center justify-center space-x-2">
 <i class="fa-solid fa-file-excel"></i>
-<span>Importar Planilha (Excel/CSV)</span>
+<span>Importar Planilha</span>
 <input type="file" id="excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFile(event)">
 </label>
-<button onclick="downloadTemplateCSV()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center space-x-2 border border-slate-300">
+<button onclick="downloadTemplateCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-center space-x-2 border border-slate-700">
 <i class="fa-solid fa-download"></i>
-<span>Modelo Exemplo</span>
+<span>Modelo</span>
 </button>
-<button onclick="exportFullDatabaseJSON()" class="bg-slate-900 hover:bg-black text-amber-400 px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-all flex items-center justify-center space-x-2 border border-amber-500/30">
+<button onclick="exportFullDatabaseJSON()" class="bg-slate-950 hover:bg-black text-amber-400 px-3.5 py-2 rounded-xl text-xs font-medium shadow-sm transition-all flex items-center justify-center space-x-2 border border-amber-500/30">
 <i class="fa-solid fa-floppy-disk"></i>
-<span>Exportar Base Completa (Backup)</span>
+<span>Backup (.json)</span>
 </button>
-<label class="cursor-pointer bg-amber-500 hover:bg-amber-600 text-slate-950 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center space-x-2">
+<label class="cursor-pointer bg-amber-500 hover:bg-amber-600 text-slate-950 px-3.5 py-2 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center justify-center space-x-2">
 <i class="fa-solid fa-upload"></i>
-<span>Carregar Backup (.json)</span>
+<span>Carregar Backup</span>
 <input type="file" id="backup-file" accept=".json" class="hidden" onchange="importFullDatabaseJSON(event)">
 </label>
+
+<!-- Botão Limpar Base -->
+<button onclick="clearFullDatabase()" class="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/40 px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-1.5 shadow-sm" title="Limpar todos os dados cadastrados">
+<i class="fa-solid fa-trash-can text-xs"></i>
+<span>Limpar Base</span>
+</button>
 </div>
 
-<div class="text-xs text-slate-500 flex items-center space-x-2">
-<i class="fa-solid fa-circle-info text-indigo-500"></i>
+<div class="text-xs text-slate-400 flex items-center space-x-2">
+<i class="fa-solid fa-circle-info text-amber-400"></i>
 <span>Colunas esperadas: Cliente, Categoria, Nome do Produto, Data, Quantidade, Valor Unitário, Preço de Custo, Qtd. em Estoque, Estoque Mínimo, Estoque Máximo</span>
 </div>
 </div>
 
 <!-- ABA 1: DASHBOARD -->
 <div id="tab-dashboard" class="space-y-6">
-<!-- Cards de Indicadores -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-indigo-600">
+<!-- Cards de Indicadores (Agora com 5 Cards em Grid Responsivo) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+<div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-amber-400">
 <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Faturamento Total</p>
-<h3 id="card-faturamento" class="text-2xl font-bold text-slate-800 mt-1">R$ 0,00</h3>
-<span class="text-xs text-emerald-600 font-medium mt-2 inline-flex items-center"><i class="fa-solid fa-arrow-trend-up mr-1"></i> Receita calculada</span>
+<h3 id="card-faturamento" class="text-xl font-bold text-white mt-1">R$ 0,00</h3>
+<span class="text-xs text-emerald-400 font-medium mt-2 inline-flex items-center"><i class="fa-solid fa-arrow-trend-up mr-1"></i> Receita calculada</span>
 </div>
-<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500">
+<div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-emerald-500">
 <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Lucro Bruto Estimado</p>
-<h3 id="card-lucro" class="text-2xl font-bold text-slate-800 mt-1">R$ 0,00</h3>
-<span id="card-margem" class="text-xs text-emerald-600 font-medium mt-2 inline-flex items-center">Margem: 0%</span>
+<h3 id="card-lucro" class="text-xl font-bold text-white mt-1">R$ 0,00</h3>
+<span id="card-margem" class="text-xs text-emerald-400 font-medium mt-2 inline-flex items-center">Margem: 0%</span>
 </div>
-<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-blue-500">
+<div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-blue-500">
 <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Valor em Estoque</p>
-<h3 id="card-estoque-val" class="text-2xl font-bold text-slate-800 mt-1">R$ 0,00</h3>
-<span class="text-xs text-blue-600 font-medium mt-2 inline-flex items-center"><i class="fa-solid fa-boxes-stacked mr-1"></i> Baseado no custo</span>
+<h3 id="card-estoque-val" class="text-xl font-bold text-white mt-1">R$ 0,00</h3>
+<span class="text-xs text-blue-400 font-medium mt-2 inline-flex items-center"><i class="fa-solid fa-boxes-stacked mr-1"></i> Baseado no custo</span>
 </div>
-<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-amber-500">
+<div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-amber-500">
 <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total de Vendas</p>
-<h3 id="card-vendas" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
-<span class="text-xs text-amber-600 font-medium mt-2 inline-flex items-center"><i class="fa-solid fa-receipt mr-1"></i> Registros</span>
+<h3 id="card-vendas" class="text-xl font-bold text-white mt-1">0</h3>
+<span class="text-xs text-amber-400 font-medium mt-2 inline-flex items-center"><i class="fa-solid fa-receipt mr-1"></i> Registros</span>
+</div>
+
+<!-- NOVO CARD: Preço Médio / Ticket Médio por Item -->
+<div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-purple-500">
+<p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Preço Médio / Unidade</p>
+<h3 id="card-preco-medio" class="text-xl font-bold text-white mt-1">R$ 0,00</h3>
+<span class="text-xs text-purple-400 font-medium mt-2 inline-flex items-center"><i class="fa-solid fa-tag mr-1"></i> Média praticada</span>
 </div>
 </div>
 
-<!-- Seção de Gráficos (Top 10) -->
+<!-- Seção de Gráficos -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 <!-- Top 10 Produtos por Valor -->
-<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+<div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col">
 <div class="flex justify-between items-center mb-4">
-<h2 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-ranking-star text-amber-500 mr-2"></i>Top 10 Produtos (Valor R$)</h2>
+<h2 class="font-bold text-white text-base"><i class="fa-solid fa-ranking-star text-amber-400 mr-2"></i>Top 10 Produtos (Valor R$)</h2>
 <span class="text-xs text-slate-400">Faturamento</span>
 </div>
 <div class="relative flex-grow h-80">
@@ -137,9 +152,9 @@ display: none !important;
 </div>
 
 <!-- Top 10 Produtos por Quantidade -->
-<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+<div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col">
 <div class="flex justify-between items-center mb-4">
-<h2 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-boxes-packing text-indigo-500 mr-2"></i>Top 10 Produtos (Quantidade)</h2>
+<h2 class="font-bold text-white text-base"><i class="fa-solid fa-boxes-packing text-indigo-400 mr-2"></i>Top 10 Produtos (Quantidade)</h2>
 <span class="text-xs text-slate-400">Unidades Vendidas</span>
 </div>
 <div class="relative flex-grow h-80">
@@ -148,9 +163,9 @@ display: none !important;
 </div>
 
 <!-- Top Categorias por Valor -->
-<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+<div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col">
 <div class="flex justify-between items-center mb-4">
-<h2 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-layer-group text-emerald-500 mr-2"></i>Faturamento por Categoria</h2>
+<h2 class="font-bold text-white text-base"><i class="fa-solid fa-layer-group text-emerald-400 mr-2"></i>Faturamento por Categoria</h2>
 <span class="text-xs text-slate-400">Participação</span>
 </div>
 <div class="relative flex-grow h-80">
@@ -159,9 +174,9 @@ display: none !important;
 </div>
 
 <!-- Top Clientes por Valor -->
-<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+<div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col">
 <div class="flex justify-between items-center mb-4">
-<h2 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-users text-blue-500 mr-2"></i>Top Clientes</h2>
+<h2 class="font-bold text-white text-base"><i class="fa-solid fa-users text-blue-400 mr-2"></i>Top Clientes</h2>
 <span class="text-xs text-slate-400">Faturamento</span>
 </div>
 <div class="relative flex-grow h-80">
@@ -171,18 +186,18 @@ display: none !important;
 </div>
 
 <!-- Tabela de Desempenho por Loja / Cliente -->
-<div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-<div class="p-5 border-b border-slate-200 flex justify-between items-center">
+<div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
+<div class="p-5 border-b border-slate-800 flex justify-between items-center">
 <div>
-<h2 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-store text-indigo-600 mr-2"></i>Desempenho por Loja / Cliente</h2>
-<p class="text-xs text-slate-500 mt-0.5">Indicadores de faturamento, total de vendas e ticket médio calculados com base nos filtros ativos.</p>
+<h2 class="font-bold text-white text-base"><i class="fa-solid fa-store text-amber-400 mr-2"></i>Desempenho por Loja / Cliente</h2>
+<p class="text-xs text-slate-400 mt-0.5">Indicadores de faturamento, total de vendas e ticket médio calculados com base nos filtros ativos.</p>
 </div>
-<span class="text-xs font-semibold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg border border-indigo-200">Resumo de Indicadores</span>
+<span class="text-xs font-semibold bg-amber-400/10 text-amber-400 px-3 py-1 rounded-lg border border-amber-400/20">Resumo de Indicadores</span>
 </div>
 <div class="overflow-x-auto">
 <table class="w-full text-left border-collapse text-sm">
 <thead>
-<tr class="bg-slate-100 text-slate-600 uppercase text-xs tracking-wider">
+<tr class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800">
 <th class="p-4 font-semibold">Loja / Cliente</th>
 <th class="p-4 font-semibold text-center">Qtd. Vendas</th>
 <th class="p-4 font-semibold text-right">Faturamento Total</th>
@@ -190,7 +205,7 @@ display: none !important;
 <th class="p-4 font-semibold text-center">Participação (%)</th>
 </tr>
 </thead>
-<tbody id="storePerfTableBody" class="divide-y divide-slate-200 text-slate-700">
+<tbody id="storePerfTableBody" class="divide-y divide-slate-800 text-slate-200">
 <!-- Preenchido dinamicamente -->
 </tbody>
 </table>
@@ -198,49 +213,49 @@ display: none !important;
 </div>
 
 <!-- Tabela Detalhada com Filtros Avançados -->
-<div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-<div class="p-5 border-b border-slate-200 flex flex-col lg:flex-row justify-between items-center gap-4">
-<h2 class="font-bold text-slate-800 text-base">Detalhamento das Vendas</h2>
+<div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
+<div class="p-5 border-b border-slate-800 flex flex-col lg:flex-row justify-between items-center gap-4">
+<h2 class="font-bold text-white text-base">Detalhamento das Vendas</h2>
 <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
 <!-- Filtro de Período Rápido e Personalizado -->
-<div class="flex items-center space-x-2 bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 shadow-sm">
-<select id="dateRangePreset" onchange="applyDatePreset()" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-indigo-700 cursor-pointer">
+<div class="flex items-center space-x-2 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 shadow-sm">
+<select id="dateRangePreset" onchange="applyDatePreset()" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer">
 <option value="all">Todo o Período</option>
 <option value="7">Últimos 7 dias</option>
 <option value="15">Últimos 15 dias</option>
 <option value="30">Últimos 30 dias</option>
 <option value="custom" selected>Personalizado</option>
 </select>
-<div class="flex items-center space-x-1 border-l border-slate-200 pl-2">
-<span class="text-xs text-slate-500 font-medium">De:</span>
-<input type="date" id="startDate" onchange="onCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-700">
-<span class="text-xs text-slate-500 font-medium ml-1">Até:</span>
-<input type="date" id="endDate" onchange="onCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-700">
+<div class="flex items-center space-x-1 border-l border-slate-800 pl-2">
+<span class="text-xs text-slate-400 font-medium">De:</span>
+<input type="date" id="startDate" onchange="onCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+<span class="text-xs text-slate-400 font-medium ml-1">Até:</span>
+<input type="date" id="endDate" onchange="onCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
 </div>
 </div>
 <!-- Filtro de Cliente -->
-<select id="clientFilter" onchange="updateAllViews()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
+<select id="clientFilter" onchange="updateAllViews()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 font-medium text-slate-200">
 <option value="all">Todos os Clientes</option>
 </select>
 <!-- Filtro de Categoria -->
-<select id="catFilter" onchange="updateAllViews()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
+<select id="catFilter" onchange="updateAllViews()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 font-medium text-slate-200">
 <option value="all">Todas as Categorias</option>
 </select>
 <!-- Filtro de Produto -->
 <div class="relative">
-<input type="text" id="prodFilter" list="prodList" placeholder="Filtrar produto..." oninput="updateAllViews()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700 w-44">
+<input type="text" id="prodFilter" list="prodList" placeholder="Filtrar produto..." oninput="updateAllViews()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 font-medium text-slate-200 w-44">
 <datalist id="prodList">
 <!-- Preenchido dinamicamente -->
 </datalist>
 </div>
 <!-- Pesquisa por texto -->
-<input type="text" id="searchInput" placeholder="Pesquisar..." onkeyup="updateAllViews()" class="px-4 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-44">
+<input type="text" id="searchInput" placeholder="Pesquisar..." onkeyup="updateAllViews()" class="px-4 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 text-slate-200 w-full sm:w-44">
 </div>
 </div>
 <div class="overflow-x-auto">
 <table class="w-full text-left border-collapse text-sm">
 <thead>
-<tr class="bg-slate-100 text-slate-600 uppercase text-xs tracking-wider">
+<tr class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800">
 <th class="p-4 font-semibold">Cliente</th>
 <th class="p-4 font-semibold">Categoria</th>
 <th class="p-4 font-semibold">Produto</th>
@@ -252,7 +267,7 @@ display: none !important;
 <th class="p-4 font-semibold text-center">Mín / Máx</th>
 </tr>
 </thead>
-<tbody id="dataTableBody" class="divide-y divide-slate-200 text-slate-700">
+<tbody id="dataTableBody" class="divide-y divide-slate-800 text-slate-200">
 <!-- Inserido dinamicamente -->
 </tbody>
 </table>
@@ -262,81 +277,77 @@ display: none !important;
 
 <!-- ABA 2: PROJEÇÃO DE COMPRAS -->
 <div id="tab-projection" class="space-y-6 hidden">
-<div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+<div class="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
 <div class="mb-4">
-<h2 class="text-lg font-bold text-slate-800">Sugestão e Projeção de Compras por Estoque Mínimo/Máximo</h2>
-<p class="text-xs text-slate-500 mt-1">Cálculo preditivo alinhado aos limites de estoque mínimo e máximo configurados.</p>
+<h2 class="text-lg font-bold text-white">Sugestão e Projeção Sintética de Compras por Produto</h2>
+<p class="text-xs text-slate-400 mt-1">Consolidação de vendas e sugestão de compra por produto no período selecionado.</p>
 </div>
 
 <!-- Filtros Específicos da Projeção de Compras -->
-<div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 flex flex-wrap items-center justify-between gap-4 no-print">
+<div class="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6 flex flex-wrap items-center justify-between gap-4 no-print">
 <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-<div class="flex items-center space-x-2 bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 shadow-sm">
-<select id="projDatePreset" onchange="applyProjDatePreset()" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-indigo-700 cursor-pointer">
+<div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 shadow-sm">
+<select id="projDatePreset" onchange="applyProjDatePreset()" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer">
 <option value="all">Todo o Período</option>
 <option value="7">Últimos 7 dias</option>
 <option value="15">Últimos 15 dias</option>
 <option value="30">Últimos 30 dias</option>
 <option value="custom" selected>Personalizado</option>
 </select>
-<div class="flex items-center space-x-1 border-l border-slate-200 pl-2">
-<span class="text-xs text-slate-500 font-medium">De:</span>
-<input type="date" id="projStartDate" onchange="onProjCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-700">
-<span class="text-xs text-slate-500 font-medium ml-1">Até:</span>
-<input type="date" id="projEndDate" onchange="onProjCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-700">
+<div class="flex items-center space-x-1 border-l border-slate-800 pl-2">
+<span class="text-xs text-slate-400 font-medium">De:</span>
+<input type="date" id="projStartDate" onchange="onProjCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+<span class="text-xs text-slate-400 font-medium ml-1">Até:</span>
+<input type="date" id="projEndDate" onchange="onProjCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
 </div>
 </div>
 
 <!-- Filtro de Cliente na Projeção -->
-<select id="projClientFilter" onchange="renderProjection()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
+<select id="projClientFilter" onchange="renderProjection()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 font-medium text-slate-200">
 <option value="all">Todos os Clientes</option>
 </select>
 
 <!-- Filtro de Categoria na Projeção -->
-<select id="projCatFilter" onchange="renderProjection()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
+<select id="projCatFilter" onchange="renderProjection()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 font-medium text-slate-200">
 <option value="all">Todas as Categorias</option>
 </select>
 
 <!-- Campo de Pesquisa na Projeção -->
-<input type="text" id="projSearchInput" placeholder="Pesquisar produto..." onkeyup="renderProjection()" class="px-4 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-44">
+<input type="text" id="projSearchInput" placeholder="Pesquisar produto..." onkeyup="renderProjection()" class="px-4 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 text-slate-200 w-full sm:w-44">
 </div>
 
 <div class="flex flex-wrap items-center gap-4">
-<label class="flex items-center space-x-2 text-xs font-semibold text-slate-700 cursor-pointer select-none">
-<input type="checkbox" id="filterOnlySuggestion" onchange="renderProjection()" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+<label class="flex items-center space-x-2 text-xs font-semibold text-slate-300 cursor-pointer select-none">
+<input type="checkbox" id="filterOnlySuggestion" onchange="renderProjection()" class="rounded text-amber-400 focus:ring-amber-400 w-4 h-4 bg-slate-900 border-slate-700">
 <span>Apenas Sugestão > 0</span>
 </label>
-<div class="flex items-center space-x-2">
-<label class="text-xs font-medium text-slate-600">Semanas:</label>
-<input type="number" id="targetWeeks" value="4" min="1" max="52" onchange="renderProjection()" class="w-16 px-2 py-1 text-sm bg-white border border-slate-300 rounded-lg text-center font-bold text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-</div>
 <button onclick="exportProjectionToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-2">
 <i class="fa-solid fa-file-excel"></i>
 <span>Excel</span>
 </button>
-<button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-2">
+<button onclick="window.print()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition-all flex items-center space-x-2">
 <i class="fa-solid fa-print"></i>
 <span>Imprimir</span>
 </button>
 </div>
 </div>
 
-<!-- Tabela de Projeção -->
-<div class="overflow-x-auto rounded-xl border border-slate-200">
+<!-- Tabela de Projeção Sintética -->
+<div class="overflow-x-auto rounded-xl border border-slate-800">
 <table class="w-full text-left border-collapse text-sm">
 <thead>
-<tr class="bg-indigo-50 text-indigo-900 uppercase text-xs tracking-wider">
+<tr class="bg-slate-950 text-slate-300 uppercase text-xs tracking-wider border-b border-slate-800">
 <th class="p-4 font-semibold">Produto</th>
 <th class="p-4 font-semibold">Categoria</th>
 <th class="p-4 font-semibold text-center">Estoque Atual</th>
 <th class="p-4 font-semibold text-center">Mín / Máx</th>
-<th class="p-4 font-semibold text-center">Qtd Vendida</th>
+<th class="p-4 font-semibold text-center">Qtd. Total Vendida (Período)</th>
 <th class="p-4 font-semibold text-center">Média Venda / Semana</th>
 <th class="p-4 font-semibold text-center">Sugestão de Compra</th>
 <th class="p-4 font-semibold text-center">Status</th>
 </tr>
 </thead>
-<tbody id="projectionTableBody" class="divide-y divide-slate-200 text-slate-700">
+<tbody id="projectionTableBody" class="divide-y divide-slate-800 text-slate-200">
 <!-- Inserido dinamicamente -->
 </tbody>
 </table>
@@ -346,11 +357,11 @@ display: none !important;
 
 <!-- ABA 3: NOTAS DE ENTRADA -->
 <div id="tab-entries" class="space-y-6 hidden">
-<div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+<div class="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800 space-y-6">
 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
 <div>
-<h2 class="text-lg font-bold text-slate-800">Importação e Gestão de Notas de Entrada</h2>
-<p class="text-xs text-slate-500 mt-1">Cadastre ou importe notas fiscais de fornecedores contendo: Fornecedor, Data, Quantidade, Preço Unitário, Produto e Descrição.</p>
+<h2 class="text-lg font-bold text-white">Importação e Gestão de Notas de Entrada</h2>
+<p class="text-xs text-slate-400 mt-1">Cadastre ou importe notas fiscais de fornecedores contendo: Fornecedor, Data, Quantidade, Preço Unitário, Produto e Descrição.</p>
 </div>
 
 <div class="flex items-center space-x-3 w-full md:w-auto">
@@ -359,7 +370,7 @@ display: none !important;
 <span>Importar Notas de Entrada</span>
 <input type="file" id="entry-excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleEntryFile(event)">
 </label>
-<button onclick="downloadEntryTemplateCSV()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center space-x-2 border border-slate-300">
+<button onclick="downloadEntryTemplateCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center space-x-2 border border-slate-700">
 <i class="fa-solid fa-download"></i>
 <span>Baixar Modelo Excel/CSV</span>
 </button>
@@ -367,10 +378,10 @@ display: none !important;
 </div>
 
 <!-- Tabela de Notas de Entrada -->
-<div class="overflow-x-auto rounded-xl border border-slate-200">
+<div class="overflow-x-auto rounded-xl border border-slate-800">
 <table class="w-full text-left border-collapse text-sm">
 <thead>
-<tr class="bg-slate-100 text-slate-600 uppercase text-xs tracking-wider">
+<tr class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800">
 <th class="p-4 font-semibold">Fornecedor</th>
 <th class="p-4 font-semibold">Produto</th>
 <th class="p-4 font-semibold">Descrição</th>
@@ -380,7 +391,7 @@ display: none !important;
 <th class="p-4 font-semibold text-right">Valor Total</th>
 </tr>
 </thead>
-<tbody id="entryTableBody" class="divide-y divide-slate-200 text-slate-700">
+<tbody id="entryTableBody" class="divide-y divide-slate-800 text-slate-200">
 <!-- Inserido dinamicamente -->
 </tbody>
 </table>
@@ -391,9 +402,9 @@ display: none !important;
 </main>
 
 <!-- Rodapé -->
-<footer class="bg-white border-t border-slate-200 py-4 mt-auto no-print">
+<footer class="bg-slate-900 border-t border-slate-800 py-4 mt-auto no-print">
 <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
-NEXXA conveniências &copy; 2026 — Painel de Indicadores Comercial.
+<span class="text-amber-400 font-bold">NEXXA conveniências</span> &copy; 2026 — Painel de Indicadores Comercial.
 </div>
 </footer>
 
@@ -426,6 +437,20 @@ renderDashboard();
 renderProjection();
 }
 
+function clearFullDatabase() {
+if (confirm("Tem certeza que deseja apagar TODOS os dados da base de vendas e notas de entrada? Esta ação não pode ser desfeita.")) {
+globalData = [];
+globalEntries = [];
+localStorage.removeItem('nexxa_data');
+localStorage.removeItem('nexxa_entries');
+populateFilterDropdowns();
+populateProjFilterDropdowns();
+updateAllViews();
+renderEntries();
+alert("Base de dados limpa com sucesso!");
+}
+}
+
 function switchTab(tabName) {
 const dashTab = document.getElementById('tab-dashboard');
 const projTab = document.getElementById('tab-projection');
@@ -437,21 +462,21 @@ const btnEntry = document.getElementById('btn-tab-entries');
 dashTab.classList.add('hidden');
 projTab.classList.add('hidden');
 entryTab.classList.add('hidden');
-btnDash.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all text-indigo-200 hover:text-white";
-btnProj.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all text-indigo-200 hover:text-white";
-btnEntry.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all text-indigo-200 hover:text-white";
+btnDash.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white";
+btnProj.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white";
+btnEntry.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white";
 
 if(tabName === 'dashboard') {
 dashTab.classList.remove('hidden');
-btnDash.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all bg-white text-indigo-700 shadow-sm";
+btnDash.className = "px-4 py-2 rounded-lg text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm";
 renderDashboard();
 } else if(tabName === 'projection') {
 projTab.classList.remove('hidden');
-btnProj.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all bg-white text-indigo-700 shadow-sm";
+btnProj.className = "px-4 py-2 rounded-lg text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm";
 renderProjection();
 } else if(tabName === 'entries') {
 entryTab.classList.remove('hidden');
-btnEntry.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all bg-white text-indigo-700 shadow-sm";
+btnEntry.className = "px-4 py-2 rounded-lg text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm";
 renderEntries();
 }
 }
@@ -535,10 +560,7 @@ maxStock: parseDecimal(item['Estoque Máximo'] || item['estoque_maximo'] || item
 })).filter(row => row.data !== null);
 
 if(importedRows.length > 0) {
-// Identifica os clientes na nova planilha
 const importedClients = new Set(importedRows.map(r => r.cliente));
-
-// Remove apenas os dados antigos dos clientes importados e insere os novos
 globalData = globalData.filter(row => !importedClients.has(row.cliente)).concat(importedRows);
 
 localStorage.setItem('nexxa_data', JSON.stringify(globalData));
@@ -640,6 +662,7 @@ filteredData = filteredData.filter(row => row.produto.toLowerCase().includes(sel
 let totalFaturamento = 0;
 let totalCustoVendas = 0;
 let totalEstoqueVal = 0;
+let totalQtdUnidades = 0;
 let totalVendasCount = filteredData.length;
 
 const tbody = document.getElementById('dataTableBody');
@@ -657,6 +680,7 @@ const faturamento = row.qtd * row.vlrUnit;
 const custo = row.qtd * row.custoUnit;
 totalFaturamento += faturamento;
 totalCustoVendas += custo;
+totalQtdUnidades += row.qtd;
 
 prodValueMap[row.produto] = (prodValueMap[row.produto] || 0) + faturamento;
 prodQtyMap[row.produto] = (prodQtyMap[row.produto] || 0) + row.qtd;
@@ -665,17 +689,17 @@ clientValueMap[row.cliente] = (clientValueMap[row.cliente] || 0) + faturamento;
 
 if(row.produto.toLowerCase().includes(searchTerm) || row.cliente.toLowerCase().includes(searchTerm) || row.categoria.toLowerCase().includes(searchTerm)) {
 const tr = document.createElement('tr');
-tr.className = "hover:bg-slate-50 transition-colors";
+tr.className = "hover:bg-slate-800/50 transition-colors";
 tr.innerHTML = `
-<td class="p-4 font-medium text-slate-800">${row.cliente}</td>
-<td class="p-4"><span class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-medium">${row.categoria}</span></td>
-<td class="p-4 font-medium text-indigo-600">${row.produto}</td>
-<td class="p-4 text-slate-500">${row.data}</td>
-<td class="p-4 text-center font-semibold">${row.qtd}</td>
-<td class="p-4 text-right">${formatCurrency(row.vlrUnit)}</td>
-<td class="p-4 text-right font-bold text-slate-800">${formatCurrency(faturamento)}</td>
-<td class="p-4 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${row.estoque <= row.minStock ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">${row.estoque}</span></td>
-<td class="p-4 text-center text-xs text-slate-600">Mín: <b>${row.minStock}</b> / Máx: <b>${row.maxStock}</b></td>
+<td class="p-4 font-medium text-slate-100">${row.cliente}</td>
+<td class="p-4"><span class="px-2.5 py-1 bg-slate-800 text-slate-300 rounded-md text-xs font-medium border border-slate-700">${row.categoria}</span></td>
+<td class="p-4 font-medium text-amber-400">${row.produto}</td>
+<td class="p-4 text-slate-400">${row.data}</td>
+<td class="p-4 text-center font-semibold text-slate-100">${row.qtd}</td>
+<td class="p-4 text-right text-slate-300">${formatCurrency(row.vlrUnit)}</td>
+<td class="p-4 text-right font-bold text-slate-100">${formatCurrency(faturamento)}</td>
+<td class="p-4 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${row.estoque <= row.minStock ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${row.estoque}</span></td>
+<td class="p-4 text-center text-xs text-slate-400">Mín: <b>${row.minStock}</b> / Máx: <b>${row.maxStock}</b></td>
 `;
 tbody.appendChild(tr);
 }
@@ -683,6 +707,7 @@ tbody.appendChild(tr);
 
 const lucroBruto = totalFaturamento - totalCustoVendas;
 const margem = totalFaturamento > 0 ? (lucroBruto / totalFaturamento) * 100 : 0;
+const precoMedioUnitario = totalQtdUnidades > 0 ? (totalFaturamento / totalQtdUnidades) : 0;
 
 const globalStockMap = {};
 globalData.forEach(row => {
@@ -697,6 +722,7 @@ document.getElementById('card-lucro').innerText = formatCurrency(lucroBruto);
 document.getElementById('card-margem').innerText = `Margem: ${margem.toFixed(1)}%`;
 document.getElementById('card-estoque-val').innerText = formatCurrency(totalEstoqueVal);
 document.getElementById('card-vendas').innerText = totalVendasCount;
+document.getElementById('card-preco-medio').innerText = formatCurrency(precoMedioUnitario);
 
 renderCharts(prodValueMap, prodQtyMap, catValueMap, clientValueMap);
 renderStorePerformance(clientValueMap, filteredData, totalFaturamento);
@@ -724,7 +750,7 @@ clientStats[row.cliente].vendasCount += 1;
 const sortedStores = Object.entries(clientStats).sort((a,b) => b[1].faturamento - a[1].faturamento);
 
 if(sortedStores.length === 0) {
-tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Nenhum dado encontrado para o filtro selecionado.</td></tr>`;
+tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Nenhum dado encontrado para o filtro selecionado.</td></tr>`;
 return;
 }
 
@@ -733,21 +759,21 @@ const ticketMedio = stats.vendasCount > 0 ? (stats.faturamento / stats.vendasCou
 const participacao = grandTotal > 0 ? ((stats.faturamento / grandTotal) * 100) : 0;
 
 const tr = document.createElement('tr');
-tr.className = "hover:bg-slate-50 transition-colors";
+tr.className = "hover:bg-slate-800/50 transition-colors";
 tr.innerHTML = `
-<td class="p-4 font-bold text-slate-800 flex items-center space-x-2">
-<i class="fa-solid fa-shop text-indigo-500 text-xs"></i>
+<td class="p-4 font-bold text-slate-100 flex items-center space-x-2">
+<i class="fa-solid fa-shop text-amber-400 text-xs"></i>
 <span>${storeName}</span>
 </td>
-<td class="p-4 text-center font-semibold text-slate-700">${stats.vendasCount}</td>
-<td class="p-4 text-right font-bold text-slate-800">${formatCurrency(stats.faturamento)}</td>
-<td class="p-4 text-right font-semibold text-emerald-600">${formatCurrency(ticketMedio)}</td>
+<td class="p-4 text-center font-semibold text-slate-300">${stats.vendasCount}</td>
+<td class="p-4 text-right font-bold text-slate-100">${formatCurrency(stats.faturamento)}</td>
+<td class="p-4 text-right font-semibold text-emerald-400">${formatCurrency(ticketMedio)}</td>
 <td class="p-4 text-center">
 <div class="flex items-center justify-center space-x-2">
-<div class="w-16 bg-slate-200 h-2 rounded-full overflow-hidden">
-<div class="bg-indigo-600 h-2" style="width: ${participacao.toFixed(1)}%"></div>
+<div class="w-16 bg-slate-800 h-2 rounded-full overflow-hidden">
+<div class="bg-amber-400 h-2" style="width: ${participacao.toFixed(1)}%"></div>
 </div>
-<span class="text-xs font-bold text-slate-600">${participacao.toFixed(1)}%</span>
+<span class="text-xs font-bold text-slate-300">${participacao.toFixed(1)}%</span>
 </div>
 </td>
 `;
@@ -756,6 +782,9 @@ tbody.appendChild(tr);
 }
 
 function renderCharts(prodVal, prodQty, catVal, clientVal) {
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = '#1e293b';
+
 const topVal = Object.entries(prodVal).sort((a,b) => b[1] - a[1]).slice(0, 10);
 const ctxVal = document.getElementById('chartTopValue').getContext('2d');
 if(chartTopValueInst) chartTopValueInst.destroy();
@@ -766,7 +795,7 @@ labels: topVal.map(i => i[0]),
 datasets: [{
 label: 'Faturamento (R$)',
 data: topVal.map(i => i[1]),
-backgroundColor: '#6366f1',
+backgroundColor: '#fbbf24',
 borderRadius: 6
 }]
 },
@@ -788,7 +817,7 @@ labels: topQty.map(i => i[0]),
 datasets: [{
 label: 'Unidades Vendidas',
 data: topQty.map(i => i[1]),
-backgroundColor: '#3b82f6',
+backgroundColor: '#818cf8',
 borderRadius: 6
 }]
 },
@@ -809,7 +838,7 @@ data: {
 labels: topCat.map(i => i[0]),
 datasets: [{
 data: topCat.map(i => i[1]),
-backgroundColor: ['#10b981', '#6366f1', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4']
+backgroundColor: ['#34d399', '#fbbf24', '#818cf8', '#f472b6', '#a78bfa', '#22d3ee']
 }]
 },
 options: {
@@ -827,7 +856,7 @@ data: {
 labels: topClient.map(i => i[0]),
 datasets: [{
 data: topClient.map(i => i[1]),
-backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#3b82f6']
+backgroundColor: ['#fbbf24', '#34d399', '#818cf8', '#f87171', '#38bdf8']
 }]
 },
 options: {
@@ -877,14 +906,14 @@ filteredData.forEach(row => {
 if(!productStats[row.produto]) {
 productStats[row.produto] = {
 categoria: row.categoria,
-totalQtdVivida: 0,
+totalQtdVendida: 0,
 estoqueAtual: row.estoque,
 minStock: row.minStock,
 maxStock: row.maxStock,
 datas: []
 };
 }
-productStats[row.produto].totalQtdVivida += row.qtd;
+productStats[row.produto].totalQtdVendida += row.qtd;
 productStats[row.produto].estoqueAtual = row.estoque;
 productStats[row.produto].minStock = row.minStock;
 productStats[row.produto].maxStock = row.maxStock;
@@ -892,7 +921,12 @@ productStats[row.produto].categoria = row.categoria;
 productStats[row.produto].datas.push(new Date(row.data));
 });
 
-const sortedProds = Object.keys(productStats).sort((a, b) => productStats[b].totalQtdVivida - productStats[a].totalQtdVivida);
+const sortedProds = Object.keys(productStats).sort((a, b) => productStats[b].totalQtdVendida - productStats[a].totalQtdVendida);
+
+if (sortedProds.length === 0) {
+tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Nenhum produto encontrado para o filtro selecionado.</td></tr>`;
+return;
+}
 
 sortedProds.forEach(prodName => {
 const stats = productStats[prodName];
@@ -906,30 +940,30 @@ const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 weeksSpan = Math.max(1, Math.ceil(diffDays / 7));
 }
 
-const avgWeeklySales = stats.totalQtdVivida / weeksSpan;
+const avgWeeklySales = stats.totalQtdVendida / weeksSpan;
 let suggestion = Math.max(0, stats.maxStock - stats.estoqueAtual);
 
 if (onlySuggestionFilter && suggestion <= 0) {
 return;
 }
 
-let statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Estoque OK</span>';
+let statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Estoque OK</span>';
 if(stats.estoqueAtual <= stats.minStock) {
-statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">Abaixo do Mínimo</span>';
+statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">Abaixo do Mínimo</span>';
 } else if(stats.estoqueAtual >= stats.maxStock) {
-statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Estoque Cheio</span>';
+statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">Estoque Cheio</span>';
 }
 
 const tr = document.createElement('tr');
-tr.className = "hover:bg-slate-50 transition-colors";
+tr.className = "hover:bg-slate-800/50 transition-colors";
 tr.innerHTML = `
-<td class="p-4 font-semibold text-indigo-600">${prodName}</td>
-<td class="p-4"><span class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-medium">${stats.categoria}</span></td>
-<td class="p-4 text-center font-bold text-slate-800">${stats.estoqueAtual}</td>
-<td class="p-4 text-center text-xs text-slate-600">Mín: <b>${stats.minStock}</b> / Máx: <b>${stats.maxStock}</b></td>
-<td class="p-4 text-center font-semibold text-slate-800">${stats.totalQtdVivida}</td>
-<td class="p-4 text-center text-slate-600">${avgWeeklySales.toFixed(1)} /sem</td>
-<td class="p-4 text-center"><span class="px-3 py-1 bg-indigo-50 text-indigo-700 font-bold rounded-lg border border-indigo-200">${suggestion} un</span></td>
+<td class="p-4 font-semibold text-amber-400">${prodName}</td>
+<td class="p-4"><span class="px-2.5 py-1 bg-slate-800 text-slate-300 rounded-md text-xs font-medium border border-slate-700">${stats.categoria}</span></td>
+<td class="p-4 text-center font-bold text-slate-100">${stats.estoqueAtual}</td>
+<td class="p-4 text-center text-xs text-slate-400">Mín: <b>${stats.minStock}</b> / Máx: <b>${stats.maxStock}</b></td>
+<td class="p-4 text-center font-bold text-white">${stats.totalQtdVendida}</td>
+<td class="p-4 text-center text-slate-400">${avgWeeklySales.toFixed(1)} /sem</td>
+<td class="p-4 text-center"><span class="px-3 py-1 bg-amber-500/10 text-amber-400 font-bold rounded-lg border border-amber-500/20">${suggestion} un</span></td>
 <td class="p-4 text-center">${statusBadge}</td>
 `;
 tbody.appendChild(tr);
@@ -1015,15 +1049,15 @@ tbody.innerHTML = '';
 globalEntries.forEach(row => {
 const total = row.qtd * row.precoUnit;
 const tr = document.createElement('tr');
-tr.className = "hover:bg-slate-50 transition-colors";
+tr.className = "hover:bg-slate-800/50 transition-colors";
 tr.innerHTML = `
-<td class="p-4 font-semibold text-slate-800">${row.fornecedor}</td>
-<td class="p-4 font-medium text-indigo-600">${row.produto}</td>
-<td class="p-4 text-slate-500 text-xs">${row.descricao}</td>
-<td class="p-4 text-slate-600">${row.data}</td>
-<td class="p-4 text-center font-bold text-slate-800">${row.qtd}</td>
-<td class="p-4 text-right">${formatCurrency(row.precoUnit)}</td>
-<td class="p-4 text-right font-bold text-slate-800">${formatCurrency(total)}</td>
+<td class="p-4 font-semibold text-slate-100">${row.fornecedor}</td>
+<td class="p-4 font-medium text-amber-400">${row.produto}</td>
+<td class="p-4 text-slate-400 text-xs">${row.descricao}</td>
+<td class="p-4 text-slate-400">${row.data}</td>
+<td class="p-4 text-center font-bold text-slate-100">${row.qtd}</td>
+<td class="p-4 text-right text-slate-300">${formatCurrency(row.precoUnit)}</td>
+<td class="p-4 text-right font-bold text-slate-100">${formatCurrency(total)}</td>
 `;
 tbody.appendChild(tr);
 });
@@ -1055,14 +1089,14 @@ filteredData.forEach(row => {
 if(!productStats[row.produto]) {
 productStats[row.produto] = {
 categoria: row.categoria,
-totalQtdVivida: 0,
+totalQtdVendida: 0,
 estoqueAtual: row.estoque,
 minStock: row.minStock,
 maxStock: row.maxStock,
 datas: []
 };
 }
-productStats[row.produto].totalQtdVivida += row.qtd;
+productStats[row.produto].totalQtdVendida += row.qtd;
 productStats[row.produto].estoqueAtual = row.estoque;
 productStats[row.produto].minStock = row.minStock;
 productStats[row.produto].maxStock = row.maxStock;
@@ -1071,7 +1105,7 @@ productStats[row.produto].datas.push(new Date(row.data));
 });
 
 const exportData = [];
-const sortedProds = Object.keys(productStats).sort((a, b) => productStats[b].totalQtdVivida - productStats[a].totalQtdVivida);
+const sortedProds = Object.keys(productStats).sort((a, b) => productStats[b].totalQtdVendida - productStats[a].totalQtdVendida);
 
 sortedProds.forEach(prodName => {
 const stats = productStats[prodName];
@@ -1083,7 +1117,7 @@ const diffTime = Math.abs(maxDate - minDate);
 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 weeksSpan = Math.max(1, Math.ceil(diffDays / 7));
 }
-const avgWeeklySales = stats.totalQtdVivida / weeksSpan;
+const avgWeeklySales = stats.totalQtdVendida / weeksSpan;
 let suggestion = Math.max(0, stats.maxStock - stats.estoqueAtual);
 
 if (onlySuggestionFilter && suggestion <= 0) return;
@@ -1098,7 +1132,7 @@ exportData.push({
 "Estoque Atual": stats.estoqueAtual,
 "Estoque Mínimo": stats.minStock,
 "Estoque Máximo": stats.maxStock,
-"Qtd Vendida": stats.totalQtdVivida,
+"Qtd Total Vendida": stats.totalQtdVendida,
 "Média Venda / Semana": parseFloat(avgWeeklySales.toFixed(1)),
 "Sugestão de Compra": suggestion,
 "Status": status
@@ -1113,7 +1147,7 @@ return;
 const worksheet = XLSX.utils.json_to_sheet(exportData);
 const workbook = XLSX.utils.book_new();
 XLSX.utils.book_append_sheet(workbook, worksheet, "Projeção de Compras");
-XLSX.writeFile(workbook, "projecao_compras_nexxa.xlsx");
+XLSX.writeFile(workbook, "projecao_compras_sintetico_nexxa.xlsx");
 }
 
 function exportFullDatabaseJSON() {
