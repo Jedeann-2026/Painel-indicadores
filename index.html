@@ -321,13 +321,22 @@ display: none !important;
 <div id="tab-projection" class="space-y-6 hidden">
 <div class="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
 <div class="mb-4">
-<h2 class="text-lg font-bold text-white">Sugestão e Projeção Sintética de Compras por Produto</h2>
-<p class="text-xs text-slate-400 mt-1">Consolidação de vendas e sugestão de compra por produto no período selecionado.</p>
+<h2 class="text-lg font-bold text-white">Sugestão e Projeção de Compras por Produto</h2>
+<p class="text-xs text-slate-400 mt-1">Consolidação de vendas e sugestão de reposição (Sintético sem cliente ou Analítico com cliente).</p>
 </div>
 
 <!-- Filtros Específicos da Projeção de Compras -->
 <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6 flex flex-wrap items-center justify-between gap-4 no-print">
 <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+<!-- Seletor Sintético / Analítico -->
+<div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 shadow-sm">
+<span class="text-xs text-slate-400 font-medium">Modo:</span>
+<select id="projMode" onchange="renderProjection()" class="text-xs border-0 focus:outline-none bg-transparent font-bold text-amber-400 cursor-pointer">
+<option value="synthetic">Sintético (Sem Cliente)</option>
+<option value="analytic">Analítico (Com Cliente)</option>
+</select>
+</div>
+
 <div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 shadow-sm">
 <select id="projDatePreset" onchange="applyProjDatePreset()" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer">
 <option value="all">Todo o Período</option>
@@ -374,11 +383,12 @@ display: none !important;
 </div>
 </div>
 
-<!-- Tabela de Projeção Sintética -->
+<!-- Tabela de Projeção -->
 <div class="overflow-x-auto rounded-xl border border-slate-800">
 <table class="w-full text-left border-collapse text-sm">
 <thead>
 <tr class="bg-slate-950 text-slate-300 uppercase text-xs tracking-wider border-b border-slate-800">
+<th class="p-4 font-semibold" id="thProjClient">Cliente</th>
 <th class="p-4 font-semibold">Produto</th>
 <th class="p-4 font-semibold">Categoria</th>
 <th class="p-4 font-semibold text-center">Estoque Atual</th>
@@ -543,7 +553,6 @@ document.getElementById('dateRangePreset').value = 'custom';
 updateAllViews();
 }
 
-// Função de leitura de data corrigida para evitar inversão de Dia e Mês (DD/MM/AAAA)
 function parseExcelDate(val) {
 if (val === 0 || val === '0' || !val) return null;
 if (typeof val === 'number') {
@@ -553,7 +562,6 @@ return excelDate.toISOString().split('T')[0];
 let str = String(val).trim();
 if (str === '0' || str === '') return null;
 
-// Formato DD/MM/AAAA ou D/M/AAAA
 if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) {
 const parts = str.split('/');
 const day = parts[0].padStart(2, '0');
@@ -562,7 +570,6 @@ const year = parts[2];
 return `${year}-${month}-${day}`;
 }
 
-// Formato YYYY-MM-DD
 if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
 return str;
 }
@@ -586,7 +593,6 @@ const reader = new FileReader();
 reader.onload = function(evt) {
 try {
 const data = new Uint8Array(evt.target.result);
-// raw: false para forçar o SheetJS a manter as datas formatadas em texto
 const workbook = XLSX.read(data, {type: 'array', cellDates: false});
 const firstSheetName = workbook.SheetNames[0];
 const worksheet = workbook.Sheets[firstSheetName];
@@ -972,6 +978,12 @@ const tbody = document.getElementById('projectionTableBody');
 if(!tbody) return;
 tbody.innerHTML = '';
 
+const mode = document.getElementById('projMode') ? document.getElementById('projMode').value : 'synthetic';
+const thClient = document.getElementById('thProjClient');
+if (thClient) {
+thClient.style.display = (mode === 'analytic') ? '' : 'none';
+}
+
 const startDateVal = document.getElementById('projStartDate') ? document.getElementById('projStartDate').value : '';
 const endDateVal = document.getElementById('projEndDate') ? document.getElementById('projEndDate').value : '';
 const selectedClient = document.getElementById('projClientFilter') ? document.getElementById('projClientFilter').value : 'all';
@@ -1004,29 +1016,32 @@ row.categoria.toLowerCase().includes(projSearchTerm)
 const productStats = {};
 
 filteredData.forEach(row => {
-if(!productStats[row.produto]) {
-productStats[row.produto] = {
+const key = (mode === 'analytic') ? `${row.cliente}___${row.produto}` : row.produto;
+
+if(!productStats[key]) {
+productStats[key] = {
+cliente: row.cliente,
+produto: row.produto,
 categoria: row.categoria,
 totalQtdVendida: 0,
 estoqueAtual: row.estoque,
 datas: []
 };
 }
-productStats[row.produto].totalQtdVendida += row.qtd;
-productStats[row.produto].estoqueAtual = row.estoque;
-productStats[row.produto].categoria = row.categoria;
-productStats[row.produto].datas.push(new Date(row.data));
+productStats[key].totalQtdVendida += row.qtd;
+productStats[key].estoqueAtual = row.estoque;
+productStats[key].datas.push(new Date(row.data));
 });
 
-const sortedProds = Object.keys(productStats).sort((a, b) => productStats[b].totalQtdVendida - productStats[a].totalQtdVendida);
+const sortedKeys = Object.keys(productStats).sort((a, b) => productStats[b].totalQtdVendida - productStats[a].totalQtdVendida);
 
-if (sortedProds.length === 0) {
-tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">Nenhum produto encontrado para o filtro selecionado.</td></tr>`;
+if (sortedKeys.length === 0) {
+tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Nenhum produto encontrado para o filtro selecionado.</td></tr>`;
 return;
 }
 
-sortedProds.forEach(prodName => {
-const stats = productStats[prodName];
+sortedKeys.forEach(key => {
+const stats = productStats[key];
 
 let weeksSpan = 4;
 if(stats.datas.length > 1) {
@@ -1047,7 +1062,10 @@ return;
 const tr = document.createElement('tr');
 tr.className = "hover:bg-slate-800/50 transition-colors";
 tr.innerHTML = `
-<td class="p-4 font-semibold text-amber-400">${prodName}</td>
+<td class="p-4 font-semibold text-slate-100" style="display: ${mode === 'analytic' ? '' : 'none'};">
+<i class="fa-solid fa-shop text-amber-400 text-xs mr-1.5"></i>${stats.cliente}
+</td>
+<td class="p-4 font-semibold text-amber-400">${stats.produto}</td>
 <td class="p-4"><span class="px-2.5 py-1 bg-slate-800 text-slate-300 rounded-md text-xs font-medium border border-slate-700">${stats.categoria}</span></td>
 <td class="p-4 text-center font-bold text-slate-100">${stats.estoqueAtual}</td>
 <td class="p-4 text-center font-bold text-white">${stats.totalQtdVendida}</td>
@@ -1152,6 +1170,7 @@ tbody.appendChild(tr);
 }
 
 function exportProjectionToExcel() {
+const mode = document.getElementById('projMode') ? document.getElementById('projMode').value : 'synthetic';
 const onlySuggestionFilter = document.getElementById('filterOnlySuggestion').checked;
 const productStats = {};
 const startDateVal = document.getElementById('projStartDate') ? document.getElementById('projStartDate').value : '';
@@ -1174,25 +1193,28 @@ row.categoria.toLowerCase().includes(projSearchTerm)
 }
 
 filteredData.forEach(row => {
-if(!productStats[row.produto]) {
-productStats[row.produto] = {
+const key = (mode === 'analytic') ? `${row.cliente}___${row.produto}` : row.produto;
+
+if(!productStats[key]) {
+productStats[key] = {
+cliente: row.cliente,
+produto: row.produto,
 categoria: row.categoria,
 totalQtdVendida: 0,
 estoqueAtual: row.estoque,
 datas: []
 };
 }
-productStats[row.produto].totalQtdVendida += row.qtd;
-productStats[row.produto].estoqueAtual = row.estoque;
-productStats[row.produto].categoria = row.categoria;
-productStats[row.produto].datas.push(new Date(row.data));
+productStats[key].totalQtdVendida += row.qtd;
+productStats[key].estoqueAtual = row.estoque;
+productStats[key].datas.push(new Date(row.data));
 });
 
 const exportData = [];
-const sortedProds = Object.keys(productStats).sort((a, b) => productStats[b].totalQtdVendida - productStats[a].totalQtdVendida);
+const sortedKeys = Object.keys(productStats).sort((a, b) => productStats[b].totalQtdVendida - productStats[a].totalQtdVendida);
 
-sortedProds.forEach(prodName => {
-const stats = productStats[prodName];
+sortedKeys.forEach(key => {
+const stats = productStats[key];
 let weeksSpan = 4;
 if(stats.datas.length > 1) {
 const minDate = new Date(Math.min.apply(null, stats.datas));
@@ -1206,14 +1228,18 @@ let suggestion = Math.max(0, stats.totalQtdVendida - stats.estoqueAtual);
 
 if (onlySuggestionFilter && suggestion <= 0) return;
 
-exportData.push({
-"Produto": prodName,
-"Categoria": stats.categoria,
-"Estoque Atual": stats.estoqueAtual,
-"Qtd Total Vendida": stats.totalQtdVendida,
-"Média Venda / Semana": parseFloat(avgWeeklySales.toFixed(1)),
-"Sugestão de Compra": suggestion
-});
+let rowObj = {};
+if (mode === 'analytic') {
+rowObj["Cliente"] = stats.cliente;
+}
+rowObj["Produto"] = stats.produto;
+rowObj["Categoria"] = stats.categoria;
+rowObj["Estoque Atual"] = stats.estoqueAtual;
+rowObj["Qtd Total Vendida"] = stats.totalQtdVendida;
+rowObj["Média Venda / Semana"] = parseFloat(avgWeeklySales.toFixed(1));
+rowObj["Sugestão de Compra"] = suggestion;
+
+exportData.push(rowObj);
 });
 
 if(exportData.length === 0) {
@@ -1224,7 +1250,7 @@ return;
 const worksheet = XLSX.utils.json_to_sheet(exportData);
 const workbook = XLSX.utils.book_new();
 XLSX.utils.book_append_sheet(workbook, worksheet, "Projeção de Compras");
-XLSX.writeFile(workbook, "projecao_compras_sintetico_nexxa.xlsx");
+XLSX.writeFile(workbook, `projecao_compras_${mode}_nexxa.xlsx`);
 }
 
 function exportFullDatabaseJSON() {
