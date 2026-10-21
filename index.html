@@ -108,7 +108,7 @@ display: none !important;
 <!-- ABA 1: DASHBOARD -->
 <div id="tab-dashboard" class="space-y-6">
 
-<!-- 1º BLOCO: Filtros Gerais do Dashboard (Movido para o topo) -->
+<!-- 1º BLOCO: Filtros Gerais do Dashboard (No topo) -->
 <div class="bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-800 flex flex-col lg:flex-row justify-between items-center gap-4">
 <div class="flex items-center space-x-2">
 <i class="fa-solid fa-filter text-amber-400"></i>
@@ -146,7 +146,7 @@ display: none !important;
 <!-- Preenchido dinamicamente -->
 </datalist>
 </div>
-<!-- Pesquisa por texto -->
+<!-- Pesquisa Geral por Texto -->
 <input type="text" id="searchInput" placeholder="Pesquisar..." onkeyup="updateAllViews()" class="px-4 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 text-slate-200 w-full sm:w-44">
 </div>
 </div>
@@ -523,6 +523,7 @@ renderEntries();
 }
 }
 
+// Aplicação do preset de datas baseado estritamente na DATA ATUAL (Hoje)
 function applyDatePreset() {
 const preset = document.getElementById('dateRangePreset').value;
 if (preset === 'all') {
@@ -530,17 +531,11 @@ document.getElementById('startDate').value = '';
 document.getElementById('endDate').value = '';
 } else if (preset === '7' || preset === '15' || preset === '30') {
 const days = parseInt(preset);
-let maxDate = new Date();
-if (globalData.length > 0) {
-const dates = globalData.map(i => new Date(i.data)).filter(d => !isNaN(d));
-if (dates.length > 0) {
-maxDate = new Date(Math.max.apply(null, dates));
-}
-}
-const startDate = new Date(maxDate);
-startDate.setDate(startDate.getDate() - days);
+const today = new Date();
+const startDate = new Date();
+startDate.setDate(today.getDate() - days);
 
-document.getElementById('endDate').value = maxDate.toISOString().split('T')[0];
+document.getElementById('endDate').value = today.toISOString().split('T')[0];
 document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
 }
 updateAllViews();
@@ -680,25 +675,37 @@ const startDateVal = document.getElementById('startDate') ? document.getElementB
 const endDateVal = document.getElementById('endDate') ? document.getElementById('endDate').value : '';
 const selectedClient = document.getElementById('clientFilter') ? document.getElementById('clientFilter').value : 'all';
 const selectedCat = document.getElementById('catFilter') ? document.getElementById('catFilter').value : 'all';
-const selectedProd = document.getElementById('prodFilter') ? document.getElementById('prodFilter').value : 'all';
-const searchTerm = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase() : '';
+const selectedProd = document.getElementById('prodFilter') ? document.getElementById('prodFilter').value.trim().toLowerCase() : '';
+const searchTerm = document.getElementById('searchInput') ? document.getElementById('searchInput').value.trim().toLowerCase() : '';
 
 let filteredData = globalData;
 
+// Filtro por Data Inicial / Final
 if (startDateVal) {
 filteredData = filteredData.filter(row => row.data >= startDateVal);
 }
 if (endDateVal) {
 filteredData = filteredData.filter(row => row.data <= endDateVal);
 }
+// Filtro por Cliente
 if (selectedClient !== 'all') {
 filteredData = filteredData.filter(row => row.cliente === selectedClient);
 }
+// Filtro por Categoria
 if (selectedCat !== 'all') {
 filteredData = filteredData.filter(row => row.categoria === selectedCat);
 }
-if (selectedProd && selectedProd !== 'all' && selectedProd.trim() !== '') {
-filteredData = filteredData.filter(row => row.produto.toLowerCase().includes(selectedProd.toLowerCase()));
+// Filtro de Produto em Modo "CONTÉM" (Parcial e case-insensitive)
+if (selectedProd !== '') {
+filteredData = filteredData.filter(row => row.produto.toLowerCase().includes(selectedProd));
+}
+// Pesquisa Geral por Texto
+if (searchTerm !== '') {
+filteredData = filteredData.filter(row =>
+row.produto.toLowerCase().includes(searchTerm) ||
+row.cliente.toLowerCase().includes(searchTerm) ||
+row.categoria.toLowerCase().includes(searchTerm)
+);
 }
 
 let totalFaturamento = 0;
@@ -741,10 +748,8 @@ minStock: row.minStock
 }
 consolidatedProdMap[row.produto].qtdTotal += row.qtd;
 consolidatedProdMap[row.produto].faturamentoTotal += faturamento;
-consolidatedProdMap[row.produto].estoque = row.estoque;
-consolidatedProdMap[row.produto].minStock = row.minStock;
 
-if(row.produto.toLowerCase().includes(searchTerm) || row.cliente.toLowerCase().includes(searchTerm) || row.categoria.toLowerCase().includes(searchTerm)) {
+// Tabela de Lançamentos
 const tr = document.createElement('tr');
 tr.className = "hover:bg-slate-800/50 transition-colors";
 tr.innerHTML = `
@@ -759,7 +764,6 @@ tr.innerHTML = `
 <td class="p-4 text-center text-xs text-slate-400">Mín: <b>${row.minStock}</b> / Máx: <b>${row.maxStock}</b></td>
 `;
 tbody.appendChild(tr);
-}
 });
 
 const lucroBruto = totalFaturamento - totalCustoVendas;
@@ -786,7 +790,6 @@ renderCharts(prodValueMap, prodQtyMap, catValueMap, clientValueMap);
 renderConsolidatedProducts(consolidatedProdMap);
 }
 
-// Renderiza o card consolidado com opção de ordenação (Faturamento ou Quantidade)
 function renderConsolidatedProducts(consolidatedMap) {
 const tbody = document.getElementById('consolidatedProdTableBody');
 if(!tbody) return;
@@ -1313,6 +1316,7 @@ catSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
 catSelect.value = categories.includes(currentCat) ? currentCat : 'all';
 }
 
+// Preset de datas na aba de projeção baseado estritamente na DATA ATUAL (Hoje)
 function applyProjDatePreset() {
 const preset = document.getElementById('projDatePreset').value;
 if (preset === 'all') {
@@ -1320,17 +1324,11 @@ document.getElementById('projStartDate').value = '';
 document.getElementById('projEndDate').value = '';
 } else if (preset === '7' || preset === '15' || preset === '30') {
 const days = parseInt(preset);
-let maxDate = new Date();
-if (globalData.length > 0) {
-const dates = globalData.map(i => new Date(i.data)).filter(d => !isNaN(d));
-if (dates.length > 0) {
-maxDate = new Date(Math.max.apply(null, dates));
-}
-}
-const startDate = new Date(maxDate);
-startDate.setDate(startDate.getDate() - days);
+const today = new Date();
+const startDate = new Date();
+startDate.setDate(today.getDate() - days);
 
-document.getElementById('projEndDate').value = maxDate.toISOString().split('T')[0];
+document.getElementById('projEndDate').value = today.toISOString().split('T')[0];
 document.getElementById('projStartDate').value = startDate.toISOString().split('T')[0];
 }
 renderProjection();
