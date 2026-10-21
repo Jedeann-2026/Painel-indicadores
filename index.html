@@ -40,13 +40,15 @@
     <!-- Cabeçalho -->
     <header class="bg-indigo-700 text-white shadow-md no-print">
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex items-center space-x-3">
-                <div class="bg-indigo-600 p-2.5 rounded-lg shadow-inner">
-                    <i class="fa-solid fa-chart-line text-2xl text-indigo-100"></i>
+            
+            <!-- Card de Marca / Logo em Fundo Preto com Amarelo -->
+            <div class="flex items-center space-x-3 bg-slate-950 border border-amber-500/40 px-4 py-2.5 rounded-2xl shadow-lg">
+                <div class="bg-amber-400 p-2 rounded-xl text-slate-950 shadow-md">
+                    <i class="fa-solid fa-chart-line text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight">NEXXA conveniências</h1>
-                    <p class="text-xs text-indigo-200">Gestão inteligente de estoque, faturamento e reposição</p>
+                    <h1 class="text-xl font-extrabold tracking-wide text-amber-400 uppercase">NEXXA conveniências</h1>
+                    <p class="text-[10px] text-slate-300 font-medium">Gestão inteligente de estoque, faturamento e reposição</p>
                 </div>
             </div>
             
@@ -344,7 +346,6 @@
             { cliente: "Cliente Delta", categoria: "Bebidas", produto: "Energético 250ml", data: "2026-06-05", qtd: 35, vlrUnit: 10.00, custoUnit: 5.50, estoque: 6, minStock: 10, maxStock: 50 }
         ];
 
-        // Carrega dados salvos anteriormente no navegador se existirem
         const savedData = localStorage.getItem('nexxa_data');
         if (savedData) {
             try {
