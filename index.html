@@ -107,7 +107,51 @@ display: none !important;
 
 <!-- ABA 1: DASHBOARD -->
 <div id="tab-dashboard" class="space-y-6">
-<!-- 1º BLOCO: Cards de Indicadores (5 Cards) -->
+
+<!-- 1º BLOCO: Filtros Gerais do Dashboard (Movido para o topo) -->
+<div class="bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-800 flex flex-col lg:flex-row justify-between items-center gap-4">
+<div class="flex items-center space-x-2">
+<i class="fa-solid fa-filter text-amber-400"></i>
+<h2 class="font-bold text-white text-sm">Filtros Gerais do Painel:</h2>
+</div>
+<div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+<!-- Filtro de Período Rápido e Personalizado -->
+<div class="flex items-center space-x-2 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 shadow-sm">
+<select id="dateRangePreset" onchange="applyDatePreset()" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer">
+<option value="all">Todo o Período</option>
+<option value="7">Últimos 7 dias</option>
+<option value="15">Últimos 15 dias</option>
+<option value="30">Últimos 30 dias</option>
+<option value="custom" selected>Personalizado</option>
+</select>
+<div class="flex items-center space-x-1 border-l border-slate-800 pl-2">
+<span class="text-xs text-slate-400 font-medium">De:</span>
+<input type="date" id="startDate" onchange="onCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+<span class="text-xs text-slate-400 font-medium ml-1">Até:</span>
+<input type="date" id="endDate" onchange="onCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+</div>
+</div>
+<!-- Filtro de Cliente -->
+<select id="clientFilter" onchange="updateAllViews()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 font-medium text-slate-200">
+<option value="all">Todos os Clientes</option>
+</select>
+<!-- Filtro de Categoria -->
+<select id="catFilter" onchange="updateAllViews()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 font-medium text-slate-200">
+<option value="all">Todas as Categorias</option>
+</select>
+<!-- Filtro de Produto -->
+<div class="relative">
+<input type="text" id="prodFilter" list="prodList" placeholder="Filtrar produto..." oninput="updateAllViews()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 font-medium text-slate-200 w-44">
+<datalist id="prodList">
+<!-- Preenchido dinamicamente -->
+</datalist>
+</div>
+<!-- Pesquisa por texto -->
+<input type="text" id="searchInput" placeholder="Pesquisar..." onkeyup="updateAllViews()" class="px-4 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 text-slate-200 w-full sm:w-44">
+</div>
+</div>
+
+<!-- 2º BLOCO: Cards de Indicadores (5 Cards) -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
 <div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-amber-400">
 <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Faturamento Total</p>
@@ -136,7 +180,7 @@ display: none !important;
 </div>
 </div>
 
-<!-- 2º BLOCO: Tabela de Desempenho por Loja / Cliente -->
+<!-- 3º BLOCO: Tabela de Desempenho por Loja / Cliente -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
 <div class="p-5 border-b border-slate-800 flex justify-between items-center">
 <div>
@@ -163,7 +207,7 @@ display: none !important;
 </div>
 </div>
 
-<!-- 3º BLOCO: Seção de Gráficos -->
+<!-- 4º BLOCO: Seção de Gráficos -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 <!-- Top 10 Produtos por Valor -->
 <div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col">
@@ -210,7 +254,7 @@ display: none !important;
 </div>
 </div>
 
-<!-- 4º BLOCO: CARD - Detalhamento Consolidado de Vendas por Produto -->
+<!-- 5º BLOCO: CARD - Detalhamento Consolidado de Vendas por Produto -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
 <div class="p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 <div>
@@ -244,45 +288,11 @@ display: none !important;
 </div>
 </div>
 
-<!-- 5º BLOCO: Tabela Detalhada com Filtros Avançados -->
+<!-- 6º BLOCO: Tabela Detalhada Lançamento por Lançamento -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
-<div class="p-5 border-b border-slate-800 flex flex-col lg:flex-row justify-between items-center gap-4">
+<div class="p-5 border-b border-slate-800">
 <h2 class="font-bold text-white text-base">Detalhamento Analítico (Por Lançamento)</h2>
-<div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-<!-- Filtro de Período Rápido e Personalizado -->
-<div class="flex items-center space-x-2 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 shadow-sm">
-<select id="dateRangePreset" onchange="applyDatePreset()" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer">
-<option value="all">Todo o Período</option>
-<option value="7">Últimos 7 dias</option>
-<option value="15">Últimos 15 dias</option>
-<option value="30">Últimos 30 dias</option>
-<option value="custom" selected>Personalizado</option>
-</select>
-<div class="flex items-center space-x-1 border-l border-slate-800 pl-2">
-<span class="text-xs text-slate-400 font-medium">De:</span>
-<input type="date" id="startDate" onchange="onCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
-<span class="text-xs text-slate-400 font-medium ml-1">Até:</span>
-<input type="date" id="endDate" onchange="onCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
-</div>
-</div>
-<!-- Filtro de Cliente -->
-<select id="clientFilter" onchange="updateAllViews()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 font-medium text-slate-200">
-<option value="all">Todos os Clientes</option>
-</select>
-<!-- Filtro de Categoria -->
-<select id="catFilter" onchange="updateAllViews()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 font-medium text-slate-200">
-<option value="all">Todas as Categorias</option>
-</select>
-<!-- Filtro de Produto -->
-<div class="relative">
-<input type="text" id="prodFilter" list="prodList" placeholder="Filtrar produto..." oninput="updateAllViews()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 font-medium text-slate-200 w-44">
-<datalist id="prodList">
-<!-- Preenchido dinamicamente -->
-</datalist>
-</div>
-<!-- Pesquisa por texto -->
-<input type="text" id="searchInput" placeholder="Pesquisar..." onkeyup="updateAllViews()" class="px-4 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 text-slate-200 w-full sm:w-44">
-</div>
+<p class="text-xs text-slate-400 mt-0.5">Listagem detalhada dos lançamentos individuais filtrados.</p>
 </div>
 <div class="overflow-x-auto">
 <table class="w-full text-left border-collapse text-sm">
