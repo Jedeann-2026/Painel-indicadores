@@ -521,7 +521,7 @@ const worksheet = workbook.Sheets[firstSheetName];
 const json = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
 
 if(json.length > 0) {
-globalData = json.map(item => ({
+const importedRows = json.map(item => ({
 cliente: item['Cliente'] || item['cliente'] || 'Geral',
 categoria: item['Categoria'] || item['categoria'] || 'Geral',
 produto: item['Nome do Produto'] || item['produto'] || item['Produto'] || 'Não informado',
@@ -534,11 +534,21 @@ minStock: parseDecimal(item['Estoque Mínimo'] || item['estoque_minimo'] || item
 maxStock: parseDecimal(item['Estoque Máximo'] || item['estoque_maximo'] || item['Max Stock'] || 100)
 })).filter(row => row.data !== null);
 
+if(importedRows.length > 0) {
+// Identifica os clientes na nova planilha
+const importedClients = new Set(importedRows.map(r => r.cliente));
+
+// Remove apenas os dados antigos dos clientes importados e insere os novos
+globalData = globalData.filter(row => !importedClients.has(row.cliente)).concat(importedRows);
+
 localStorage.setItem('nexxa_data', JSON.stringify(globalData));
 populateFilterDropdowns();
 populateProjFilterDropdowns();
 updateAllViews();
-alert("Planilha importada e salva com sucesso!");
+alert("Planilha importada com sucesso! Os dados dos clientes importados foram atualizados.");
+} else {
+alert("Nenhum dado válido encontrado (verifique se as datas não estão zeradas).");
+}
 } else {
 alert("A planilha parece estar vazia.");
 }
@@ -953,7 +963,7 @@ const worksheet = workbook.Sheets[firstSheetName];
 const json = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
 
 if(json.length > 0) {
-globalEntries = json.map(item => ({
+const importedEntries = json.map(item => ({
 fornecedor: item['Fornecedor'] || item['fornecedor'] || 'Fornecedor Padrão',
 produto: item['Produto'] || item['produto'] || item['Nome do Produto'] || 'Não informado',
 descricao: item['Descrição'] || item['descricao'] || item['Descricao'] || '',
@@ -962,9 +972,16 @@ qtd: parseDecimal(item['Quantidade'] || item['quantidade'] || item['Qtd']),
 precoUnit: parseDecimal(item['Preço Unitário'] || item['preco_unitario'] || item['Preco Unitario'] || item['Preço Unitario'])
 })).filter(row => row.data !== null);
 
+if(importedEntries.length > 0) {
+const importedSuppliers = new Set(importedEntries.map(r => r.fornecedor));
+globalEntries = globalEntries.filter(row => !importedSuppliers.has(row.fornecedor)).concat(importedEntries);
+
 localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
 renderEntries();
-alert("Notas de entrada importadas e salvas com sucesso!");
+alert("Notas de entrada importadas com sucesso! Os dados dos fornecedores importados foram atualizados.");
+} else {
+alert("Nenhum dado válido encontrado na planilha de entradas.");
+}
 } else {
 alert("A planilha de entradas parece estar vazia.");
 }
