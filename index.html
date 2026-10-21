@@ -107,7 +107,7 @@ display: none !important;
 
 <!-- ABA 1: DASHBOARD -->
 <div id="tab-dashboard" class="space-y-6">
-<!-- Cards de Indicadores (Agora com 5 Cards em Grid Responsivo) -->
+<!-- Cards de Indicadores (5 Cards) -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
 <div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-amber-400">
 <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Faturamento Total</p>
@@ -129,8 +129,6 @@ display: none !important;
 <h3 id="card-vendas" class="text-xl font-bold text-white mt-1">0</h3>
 <span class="text-xs text-amber-400 font-medium mt-2 inline-flex items-center"><i class="fa-solid fa-receipt mr-1"></i> Registros</span>
 </div>
-
-<!-- NOVO CARD: Preço Médio / Ticket Médio por Item -->
 <div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-purple-500">
 <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Preço Médio / Unidade</p>
 <h3 id="card-preco-medio" class="text-xl font-bold text-white mt-1">R$ 0,00</h3>
@@ -185,6 +183,31 @@ display: none !important;
 </div>
 </div>
 
+<!-- NOVO CARD: Detalhamento Consolidado por Produto (Respeita filtros, sem categoria e sem data, ordenado do maior para o menor) -->
+<div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
+<div class="p-5 border-b border-slate-800 flex justify-between items-center">
+<div>
+<h2 class="font-bold text-white text-base"><i class="fa-solid fa-list-check text-amber-400 mr-2"></i>Detalhamento Consolidado de Vendas por Produto</h2>
+<p class="text-xs text-slate-400 mt-0.5">Soma total de quantidades e faturamento por produto nos filtros selecionados, ordenado do maior para o menor faturamento.</p>
+</div>
+<span class="text-xs font-semibold bg-amber-400/10 text-amber-400 px-3 py-1 rounded-lg border border-amber-400/20">Visão Sintética</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse text-sm">
+<thead>
+<tr class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800">
+<th class="p-4 font-semibold">Produto</th>
+<th class="p-4 font-semibold text-center">Qtd. Total Vendida</th>
+<th class="p-4 font-semibold text-right">Faturamento Total</th>
+</tr>
+</thead>
+<tbody id="consolidatedProdTableBody" class="divide-y divide-slate-800 text-slate-200">
+<!-- Preenchido dinamicamente -->
+</tbody>
+</table>
+</div>
+</div>
+
 <!-- Tabela de Desempenho por Loja / Cliente -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
 <div class="p-5 border-b border-slate-800 flex justify-between items-center">
@@ -215,7 +238,7 @@ display: none !important;
 <!-- Tabela Detalhada com Filtros Avançados -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
 <div class="p-5 border-b border-slate-800 flex flex-col lg:flex-row justify-between items-center gap-4">
-<h2 class="font-bold text-white text-base">Detalhamento das Vendas</h2>
+<h2 class="font-bold text-white text-base">Detalhamento Analítico (Por Lançamento)</h2>
 <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
 <!-- Filtro de Período Rápido e Personalizado -->
 <div class="flex items-center space-x-2 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 shadow-sm">
@@ -672,6 +695,7 @@ const prodValueMap = {};
 const prodQtyMap = {};
 const catValueMap = {};
 const clientValueMap = {};
+const consolidatedProdMap = {}; // Para o novo card consolidado respeitando os filtros
 
 filteredData.sort((a, b) => b.qtd - a.qtd);
 
@@ -686,6 +710,16 @@ prodValueMap[row.produto] = (prodValueMap[row.produto] || 0) + faturamento;
 prodQtyMap[row.produto] = (prodQtyMap[row.produto] || 0) + row.qtd;
 catValueMap[row.categoria] = (catValueMap[row.categoria] || 0) + faturamento;
 clientValueMap[row.cliente] = (clientValueMap[row.cliente] || 0) + faturamento;
+
+// Agrupamento para a tabela consolidada filtrada (sem categoria)
+if (!consolidatedProdMap[row.produto]) {
+consolidatedProdMap[row.produto] = {
+qtdTotal: 0,
+faturamentoTotal: 0
+};
+}
+consolidatedProdMap[row.produto].qtdTotal += row.qtd;
+consolidatedProdMap[row.produto].faturamentoTotal += faturamento;
 
 if(row.produto.toLowerCase().includes(searchTerm) || row.cliente.toLowerCase().includes(searchTerm) || row.categoria.toLowerCase().includes(searchTerm)) {
 const tr = document.createElement('tr');
@@ -724,8 +758,34 @@ document.getElementById('card-estoque-val').innerText = formatCurrency(totalEsto
 document.getElementById('card-vendas').innerText = totalVendasCount;
 document.getElementById('card-preco-medio').innerText = formatCurrency(precoMedioUnitario);
 
+renderConsolidatedProducts(consolidatedProdMap);
 renderCharts(prodValueMap, prodQtyMap, catValueMap, clientValueMap);
 renderStorePerformance(clientValueMap, filteredData, totalFaturamento);
+}
+
+// Renderiza o card consolidado respeitando os filtros, sem coluna categoria e ordenado por faturamento
+function renderConsolidatedProducts(consolidatedMap) {
+const tbody = document.getElementById('consolidatedProdTableBody');
+if(!tbody) return;
+tbody.innerHTML = '';
+
+const sortedProducts = Object.entries(consolidatedMap).sort((a, b) => b[1].faturamentoTotal - a[1].faturamentoTotal);
+
+if(sortedProducts.length === 0) {
+tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-500">Nenhum dado encontrado para o filtro selecionado.</td></tr>`;
+return;
+}
+
+sortedProducts.forEach(([prodName, info]) => {
+const tr = document.createElement('tr');
+tr.className = "hover:bg-slate-800/50 transition-colors";
+tr.innerHTML = `
+<td class="p-4 font-bold text-amber-400">${prodName}</td>
+<td class="p-4 text-center font-semibold text-slate-100">${info.qtdTotal}</td>
+<td class="p-4 text-right font-bold text-slate-100">${formatCurrency(info.faturamentoTotal)}</td>
+`;
+tbody.appendChild(tr);
+});
 }
 
 function renderStorePerformance(clientVal, filteredData, grandTotal) {
