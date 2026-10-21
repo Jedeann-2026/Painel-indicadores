@@ -543,6 +543,7 @@ document.getElementById('dateRangePreset').value = 'custom';
 updateAllViews();
 }
 
+// Função de leitura de data corrigida para evitar inversão de Dia e Mês (DD/MM/AAAA)
 function parseExcelDate(val) {
 if (val === 0 || val === '0' || !val) return null;
 if (typeof val === 'number') {
@@ -551,10 +552,21 @@ return excelDate.toISOString().split('T')[0];
 }
 let str = String(val).trim();
 if (str === '0' || str === '') return null;
-if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+
+// Formato DD/MM/AAAA ou D/M/AAAA
+if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) {
 const parts = str.split('/');
-return `${parts[2]}-${parts[1]}-${parts[0]}`;
+const day = parts[0].padStart(2, '0');
+const month = parts[1].padStart(2, '0');
+const year = parts[2];
+return `${year}-${month}-${day}`;
 }
+
+// Formato YYYY-MM-DD
+if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+return str;
+}
+
 return str;
 }
 
@@ -574,10 +586,11 @@ const reader = new FileReader();
 reader.onload = function(evt) {
 try {
 const data = new Uint8Array(evt.target.result);
-const workbook = XLSX.read(data, {type: 'array'});
+// raw: false para forçar o SheetJS a manter as datas formatadas em texto
+const workbook = XLSX.read(data, {type: 'array', cellDates: false});
 const firstSheetName = workbook.SheetNames[0];
 const worksheet = workbook.Sheets[firstSheetName];
-const json = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
+const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
 
 if(json.length > 0) {
 const importedRows = json.map(item => ({
@@ -649,10 +662,10 @@ prodList.innerHTML += `<option value="${p}">`;
 function downloadTemplateCSV() {
 const csvContent = "data:text/csv;charset=utf-8,\uFEFF" +
 "Cliente;Categoria;Nome do Produto;Data;Quantidade;Valor Unitário;Preço de Custo;Qtd. em Estoque;Estoque Mínimo;Estoque Máximo\n" +
-"Cliente Alfa;Bebidas;Cerveja Lata 350ml;2026-06-01;120;5,00;3,00;80;30;150\n" +
-"Comércio Beta;Bebidas;Água Mineral 500ml;2026-06-02;80;3,00;1,20;50;25;120\n" +
-"Cliente Alfa;Snacks;Batata Frita 90g;2026-06-03;45;9,00;4,50;15;20;80\n" +
-"Loja Gama;Bomboniere;Chocolate Barra;2026-06-04;60;7,50;4,00;10;15;70";
+"Cliente Alfa;Bebidas;Cerveja Lata 350ml;12/10/2026;120;5,00;3,00;80;30;150\n" +
+"Comércio Beta;Bebidas;Água Mineral 500ml;15/10/2026;80;3,00;1,20;50;25;120\n" +
+"Cliente Alfa;Snacks;Batata Frita 90g;18/10/2026;45;9,00;4,50;15;20;80\n" +
+"Loja Gama;Bomboniere;Chocolate Barra;20/10/2026;60;7,50;4,00;10;15;70";
 
 const encodedUri = encodeURI(csvContent);
 const link = document.createElement("a");
@@ -1025,7 +1038,6 @@ weeksSpan = Math.max(1, Math.ceil(diffDays / 7));
 }
 
 const avgWeeklySales = stats.totalQtdVendida / weeksSpan;
-// Nova regra: Sugestão = Quantidade Vendida - Estoque Atual (Mínimo de 0)
 let suggestion = Math.max(0, stats.totalQtdVendida - stats.estoqueAtual);
 
 if (onlySuggestionFilter && suggestion <= 0) {
@@ -1067,10 +1079,10 @@ const reader = new FileReader();
 reader.onload = function(evt) {
 try {
 const data = new Uint8Array(evt.target.result);
-const workbook = XLSX.read(data, {type: 'array'});
+const workbook = XLSX.read(data, {type: 'array', cellDates: false});
 const firstSheetName = workbook.SheetNames[0];
 const worksheet = workbook.Sheets[firstSheetName];
-const json = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
+const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
 
 if(json.length > 0) {
 const importedEntries = json.map(item => ({
@@ -1106,8 +1118,8 @@ reader.readAsArrayBuffer(file);
 function downloadEntryTemplateCSV() {
 const csvContent = "data:text/csv;charset=utf-8,\uFEFF" +
 "Fornecedor;Produto;Descrição;Data;Quantidade;Preço Unitário\n" +
-"Distribuidora Bebidas SP;Cerveja Lata 350ml;Lote promocional de verão;2026-05-28;300;3,00\n" +
-"Águas Cristalinas Ltda;Água Mineral 500ml;Reposição quinzenal;2026-05-30;200;1,20";
+"Distribuidora Bebidas SP;Cerveja Lata 350ml;Lote promocional de verão;28/05/2026;300;3,00\n" +
+"Águas Cristalinas Ltda;Água Mineral 500ml;Reposição quinzenal;30/05/2026;200;1,20";
 
 const encodedUri = encodeURI(csvContent);
 const link = document.createElement("a");
