@@ -382,11 +382,9 @@ display: none !important;
 <th class="p-4 font-semibold">Produto</th>
 <th class="p-4 font-semibold">Categoria</th>
 <th class="p-4 font-semibold text-center">Estoque Atual</th>
-<th class="p-4 font-semibold text-center">Mín / Máx</th>
 <th class="p-4 font-semibold text-center">Qtd. Total Vendida (Período)</th>
 <th class="p-4 font-semibold text-center">Média Venda / Semana</th>
 <th class="p-4 font-semibold text-center">Sugestão de Compra</th>
-<th class="p-4 font-semibold text-center">Status</th>
 </tr>
 </thead>
 <tbody id="projectionTableBody" class="divide-y divide-slate-800 text-slate-200">
@@ -523,7 +521,6 @@ renderEntries();
 }
 }
 
-// Aplicação do preset de datas baseado estritamente na DATA ATUAL (Hoje)
 function applyDatePreset() {
 const preset = document.getElementById('dateRangePreset').value;
 if (preset === 'all') {
@@ -680,26 +677,21 @@ const searchTerm = document.getElementById('searchInput') ? document.getElementB
 
 let filteredData = globalData;
 
-// Filtro por Data Inicial / Final
 if (startDateVal) {
 filteredData = filteredData.filter(row => row.data >= startDateVal);
 }
 if (endDateVal) {
 filteredData = filteredData.filter(row => row.data <= endDateVal);
 }
-// Filtro por Cliente
 if (selectedClient !== 'all') {
 filteredData = filteredData.filter(row => row.cliente === selectedClient);
 }
-// Filtro por Categoria
 if (selectedCat !== 'all') {
 filteredData = filteredData.filter(row => row.categoria === selectedCat);
 }
-// Filtro de Produto em Modo "CONTÉM" (Parcial e case-insensitive)
 if (selectedProd !== '') {
 filteredData = filteredData.filter(row => row.produto.toLowerCase().includes(selectedProd));
 }
-// Pesquisa Geral por Texto
 if (searchTerm !== '') {
 filteredData = filteredData.filter(row =>
 row.produto.toLowerCase().includes(searchTerm) ||
@@ -737,7 +729,6 @@ prodQtyMap[row.produto] = (prodQtyMap[row.produto] || 0) + row.qtd;
 catValueMap[row.categoria] = (catValueMap[row.categoria] || 0) + faturamento;
 clientValueMap[row.cliente] = (clientValueMap[row.cliente] || 0) + faturamento;
 
-// Agrupamento para a tabela consolidada
 if (!consolidatedProdMap[row.produto]) {
 consolidatedProdMap[row.produto] = {
 qtdTotal: 0,
@@ -749,7 +740,6 @@ minStock: row.minStock
 consolidatedProdMap[row.produto].qtdTotal += row.qtd;
 consolidatedProdMap[row.produto].faturamentoTotal += faturamento;
 
-// Tabela de Lançamentos
 const tr = document.createElement('tr');
 tr.className = "hover:bg-slate-800/50 transition-colors";
 tr.innerHTML = `
@@ -1006,15 +996,11 @@ productStats[row.produto] = {
 categoria: row.categoria,
 totalQtdVendida: 0,
 estoqueAtual: row.estoque,
-minStock: row.minStock,
-maxStock: row.maxStock,
 datas: []
 };
 }
 productStats[row.produto].totalQtdVendida += row.qtd;
 productStats[row.produto].estoqueAtual = row.estoque;
-productStats[row.produto].minStock = row.minStock;
-productStats[row.produto].maxStock = row.maxStock;
 productStats[row.produto].categoria = row.categoria;
 productStats[row.produto].datas.push(new Date(row.data));
 });
@@ -1022,7 +1008,7 @@ productStats[row.produto].datas.push(new Date(row.data));
 const sortedProds = Object.keys(productStats).sort((a, b) => productStats[b].totalQtdVendida - productStats[a].totalQtdVendida);
 
 if (sortedProds.length === 0) {
-tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Nenhum produto encontrado para o filtro selecionado.</td></tr>`;
+tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">Nenhum produto encontrado para o filtro selecionado.</td></tr>`;
 return;
 }
 
@@ -1039,17 +1025,11 @@ weeksSpan = Math.max(1, Math.ceil(diffDays / 7));
 }
 
 const avgWeeklySales = stats.totalQtdVendida / weeksSpan;
-let suggestion = Math.max(0, stats.maxStock - stats.estoqueAtual);
+// Nova regra: Sugestão = Quantidade Vendida - Estoque Atual (Mínimo de 0)
+let suggestion = Math.max(0, stats.totalQtdVendida - stats.estoqueAtual);
 
 if (onlySuggestionFilter && suggestion <= 0) {
 return;
-}
-
-let statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Estoque OK</span>';
-if(stats.estoqueAtual <= stats.minStock) {
-statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">Abaixo do Mínimo</span>';
-} else if(stats.estoqueAtual >= stats.maxStock) {
-statusBadge = '<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">Estoque Cheio</span>';
 }
 
 const tr = document.createElement('tr');
@@ -1058,11 +1038,9 @@ tr.innerHTML = `
 <td class="p-4 font-semibold text-amber-400">${prodName}</td>
 <td class="p-4"><span class="px-2.5 py-1 bg-slate-800 text-slate-300 rounded-md text-xs font-medium border border-slate-700">${stats.categoria}</span></td>
 <td class="p-4 text-center font-bold text-slate-100">${stats.estoqueAtual}</td>
-<td class="p-4 text-center text-xs text-slate-400">Mín: <b>${stats.minStock}</b> / Máx: <b>${stats.maxStock}</b></td>
 <td class="p-4 text-center font-bold text-white">${stats.totalQtdVendida}</td>
 <td class="p-4 text-center text-slate-400">${avgWeeklySales.toFixed(1)} /sem</td>
 <td class="p-4 text-center"><span class="px-3 py-1 bg-amber-500/10 text-amber-400 font-bold rounded-lg border border-amber-500/20">${suggestion} un</span></td>
-<td class="p-4 text-center">${statusBadge}</td>
 `;
 tbody.appendChild(tr);
 });
@@ -1189,15 +1167,11 @@ productStats[row.produto] = {
 categoria: row.categoria,
 totalQtdVendida: 0,
 estoqueAtual: row.estoque,
-minStock: row.minStock,
-maxStock: row.maxStock,
 datas: []
 };
 }
 productStats[row.produto].totalQtdVendida += row.qtd;
 productStats[row.produto].estoqueAtual = row.estoque;
-productStats[row.produto].minStock = row.minStock;
-productStats[row.produto].maxStock = row.maxStock;
 productStats[row.produto].categoria = row.categoria;
 productStats[row.produto].datas.push(new Date(row.data));
 });
@@ -1216,24 +1190,17 @@ const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 weeksSpan = Math.max(1, Math.ceil(diffDays / 7));
 }
 const avgWeeklySales = stats.totalQtdVendida / weeksSpan;
-let suggestion = Math.max(0, stats.maxStock - stats.estoqueAtual);
+let suggestion = Math.max(0, stats.totalQtdVendida - stats.estoqueAtual);
 
 if (onlySuggestionFilter && suggestion <= 0) return;
-
-let status = 'Estoque OK';
-if(stats.estoqueAtual <= stats.minStock) status = 'Abaixo do Mínimo';
-else if(stats.estoqueAtual >= stats.maxStock) status = 'Estoque Cheio';
 
 exportData.push({
 "Produto": prodName,
 "Categoria": stats.categoria,
 "Estoque Atual": stats.estoqueAtual,
-"Estoque Mínimo": stats.minStock,
-"Estoque Máximo": stats.maxStock,
 "Qtd Total Vendida": stats.totalQtdVendida,
 "Média Venda / Semana": parseFloat(avgWeeklySales.toFixed(1)),
-"Sugestão de Compra": suggestion,
-"Status": status
+"Sugestão de Compra": suggestion
 });
 });
 
@@ -1316,7 +1283,6 @@ catSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
 catSelect.value = categories.includes(currentCat) ? currentCat : 'all';
 }
 
-// Preset de datas na aba de projeção baseado estritamente na DATA ATUAL (Hoje)
 function applyProjDatePreset() {
 const preset = document.getElementById('projDatePreset').value;
 if (preset === 'all') {
