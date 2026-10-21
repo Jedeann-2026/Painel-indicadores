@@ -163,13 +163,13 @@
                 <div class="p-5 border-b border-slate-200 flex flex-col lg:flex-row justify-between items-center gap-4">
                     <h2 class="font-bold text-slate-800 text-base">Detalhamento das Vendas</h2>
                     <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                        <!-- Filtro de Período -->
-                        <select id="dateRangeFilter" onchange="renderDashboard()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
-                            <option value="all">Todo o Período</option>
-                            <option value="7">Últimos 7 dias</option>
-                            <option value="15">Últimos 15 dias</option>
-                            <option value="30">Últimos 30 dias</option>
-                        </select>
+                        <!-- Filtro de Intervalo de Datas -->
+                        <div class="flex items-center space-x-1 bg-white border border-slate-300 rounded-xl px-2 py-1">
+                            <span class="text-xs text-slate-500 font-medium">De:</span>
+                            <input type="date" id="startDate" onchange="renderDashboard()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-700">
+                            <span class="text-xs text-slate-500 font-medium">Até:</span>
+                            <input type="date" id="endDate" onchange="renderDashboard()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-700">
+                        </div>
                         <!-- Filtro de Cliente -->
                         <select id="clientFilter" onchange="renderDashboard()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
                             <option value="all">Todos os Clientes</option>
@@ -178,10 +178,13 @@
                         <select id="catFilter" onchange="renderDashboard()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
                             <option value="all">Todas as Categorias</option>
                         </select>
-                        <!-- Filtro de Produto -->
-                        <select id="prodFilter" onchange="renderDashboard()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
-                            <option value="all">Todos os Produtos</option>
-                        </select>
+                        <!-- Filtro de Produto (Permite parte do nome) -->
+                        <div class="relative">
+                            <input type="text" id="prodFilter" list="prodList" placeholder="Filtrar produto..." oninput="renderDashboard()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700 w-44">
+                            <datalist id="prodList">
+                                <!-- Preenchido dinamicamente -->
+                            </datalist>
+                        </div>
                         <!-- Pesquisa por texto -->
                         <input type="text" id="searchInput" placeholder="Pesquisar..." onkeyup="renderDashboard()" class="px-4 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-44">
                     </div>
@@ -218,7 +221,7 @@
                         <p class="text-xs text-slate-500 mt-1">Cálculo preditivo alinhado aos limites de estoque mínimo e máximo configurados.</p>
                     </div>
                     
-                    <!-- Configurações de Projeção, Filtro, Exportação & Impressão -->
+                    <!-- Configurações de Projeção, Filtro & Impressão -->
                     <div class="flex flex-wrap items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
                         <label class="flex items-center space-x-2 text-xs font-semibold text-slate-700 cursor-pointer select-none">
                             <input type="checkbox" id="filterOnlySuggestion" onchange="renderProjection()" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
@@ -321,6 +324,20 @@
             }
         }
 
+        function parseExcelDate(val) {
+            if (!val) return new Date().toISOString().split('T')[0];
+            if (typeof val === 'number') {
+                const excelDate = new Date((val - (25567 + 2)) * 86400 * 1000);
+                return excelDate.toISOString().split('T')[0];
+            }
+            let str = String(val).trim();
+            if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+                const parts = str.split('/');
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+            return str;
+        }
+
         function parseDecimal(val) {
             if (val === undefined || val === null || val === '') return 0;
             if (typeof val === 'number') return val;
@@ -347,7 +364,7 @@
                             cliente: item['Cliente'] || item['cliente'] || 'Geral',
                             categoria: item['Categoria'] || item['categoria'] || 'Geral',
                             produto: item['Nome do Produto'] || item['produto'] || item['Produto'] || 'Não informado',
-                            data: item['Data'] || item['data'] || new Date().toISOString().split('T')[0],
+                            data: parseExcelDate(item['Data'] || item['data']),
                             qtd: parseDecimal(item['Quantidade'] || item['quantidade'] || item['Qtd']),
                             vlrUnit: parseDecimal(item['Valor Unitário'] || item['valor_unitario'] || item['Valor Unitario']),
                             custoUnit: parseDecimal(item['Preço de Custo'] || item['preco_custo'] || item['Preco Custo']),
@@ -378,11 +395,9 @@
 
             const clientSelect = document.getElementById('clientFilter');
             const catSelect = document.getElementById('catFilter');
-            const prodSelect = document.getElementById('prodFilter');
 
             const currentClient = clientSelect.value;
             const currentCat = catSelect.value;
-            const currentProd = prodSelect.value;
 
             clientSelect.innerHTML = '<option value="all">Todos os Clientes</option>';
             clients.forEach(c => {
@@ -396,11 +411,11 @@
             });
             catSelect.value = categories.includes(currentCat) ? currentCat : 'all';
 
-            prodSelect.innerHTML = '<option value="all">Todos os Produtos</option>';
+            const prodList = document.getElementById('prodList');
+            prodList.innerHTML = '';
             products.forEach(p => {
-                prodSelect.innerHTML += `<option value="${p}">${p}</option>`;
+                prodList.innerHTML += `<option value="${p}">`;
             });
-            prodSelect.value = products.includes(currentProd) ? currentProd : 'all';
         }
 
         function downloadTemplateCSV() {
@@ -425,43 +440,36 @@
         }
 
         function renderDashboard() {
-            const dateRangeVal = document.getElementById('dateRangeFilter') ? document.getElementById('dateRangeFilter').value : 'all';
+            const startDateVal = document.getElementById('startDate') ? document.getElementById('startDate').value : '';
+            const endDateVal = document.getElementById('endDate') ? document.getElementById('endDate').value : '';
             const selectedClient = document.getElementById('clientFilter') ? document.getElementById('clientFilter').value : 'all';
             const selectedCat = document.getElementById('catFilter') ? document.getElementById('catFilter').value : 'all';
             const selectedProd = document.getElementById('prodFilter') ? document.getElementById('prodFilter').value : 'all';
             const searchTerm = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase() : '';
 
-            let maxDate = new Date();
-            if (globalData.length > 0) {
-                const dates = globalData.map(i => new Date(i.data)).filter(d => !isNaN(d));
-                if (dates.length > 0) {
-                    maxDate = new Date(Math.max.apply(null, dates));
-                }
-            }
-
             let filteredData = globalData;
 
-            if (dateRangeVal !== 'all') {
-                const daysLimit = parseInt(dateRangeVal);
-                const limitDate = new Date(maxDate);
-                limitDate.setDate(limitDate.getDate() - daysLimit);
-
-                filteredData = filteredData.filter(row => {
-                    const rowDate = new Date(row.data);
-                    return rowDate >= limitDate && rowDate <= maxDate;
-                });
+            // Filtro por Intervalo de Data (De / Até)
+            if (startDateVal) {
+                filteredData = filteredData.filter(row => row.data >= startDateVal);
+            }
+            if (endDateVal) {
+                filteredData = filteredData.filter(row => row.data <= endDateVal);
             }
 
+            // Filtro por Cliente
             if (selectedClient !== 'all') {
                 filteredData = filteredData.filter(row => row.cliente === selectedClient);
             }
 
+            // Filtro por Categoria
             if (selectedCat !== 'all') {
                 filteredData = filteredData.filter(row => row.categoria === selectedCat);
             }
 
-            if (selectedProd !== 'all') {
-                filteredData = filteredData.filter(row => row.produto === selectedProd);
+            // Filtro por Produto (Permite parte do nome)
+            if (selectedProd && selectedProd !== 'all' && selectedProd.trim() !== '') {
+                filteredData = filteredData.filter(row => row.produto.toLowerCase().includes(selectedProd.toLowerCase()));
             }
 
             let totalFaturamento = 0;
@@ -477,6 +485,9 @@
             const catValueMap = {};
             const clientValueMap = {};
             const stockByProduct = {};
+
+            // Ordenar do maior para o menor pela quantidade vendida
+            filteredData.sort((a, b) => b.qtd - a.qtd);
 
             filteredData.forEach(row => {
                 const faturamento = row.qtd * row.vlrUnit;
@@ -636,7 +647,9 @@
                 productStats[row.produto].datas.push(new Date(row.data));
             });
 
-            Object.keys(productStats).forEach(prodName => {
+            const sortedProds = Object.keys(productStats).sort((a, b) => productStats[b].totalQtdVivida - productStats[a].totalQtdVivida);
+
+            sortedProds.forEach(prodName => {
                 const stats = productStats[prodName];
                 
                 let weeksSpan = 4;
@@ -701,8 +714,10 @@
                 productStats[row.produto].datas.push(new Date(row.data));
             });
 
+            const sortedProds = Object.keys(productStats).sort((a, b) => productStats[b].totalQtdVivida - productStats[a].totalQtdVivida);
+
             const exportData = [];
-            Object.keys(productStats).forEach(prodName => {
+            sortedProds.forEach(prodName => {
                 const stats = productStats[prodName];
                 let weeksSpan = 4;
                 if(stats.datas.length > 1) {
