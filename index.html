@@ -73,18 +73,18 @@
             <div class="flex items-center space-x-3 w-full md:w-auto">
                 <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-all flex items-center justify-center space-x-2 w-full md:w-auto">
                     <i class="fa-solid fa-file-excel"></i>
-                    <span>Importar Vendas (Excel/CSV)</span>
+                    <span>Importar Planilha (Excel/CSV)</span>
                     <input type="file" id="excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFile(event)">
                 </label>
                 <button onclick="downloadTemplateCSV()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center space-x-2 border border-slate-300">
                     <i class="fa-solid fa-download"></i>
-                    <span>Baixar Modelo Vendas</span>
+                    <span>Baixar Modelo Exemplo</span>
                 </button>
             </div>
             
             <div class="text-xs text-slate-500 flex items-center space-x-2">
                 <i class="fa-solid fa-circle-info text-indigo-500"></i>
-                <span>Colunas de Vendas: Cliente, Categoria, Nome do Produto, Data, Quantidade, Valor Unitário, Preço de Custo, Estoque, Mín, Máx</span>
+                <span>Colunas esperadas: Cliente, Categoria, Nome do Produto, Data, Quantidade, Valor Unitário, Preço de Custo, Qtd. em Estoque, Estoque Mínimo, Estoque Máximo</span>
             </div>
         </div>
 
@@ -164,32 +164,41 @@
             <!-- Tabela Detalhada com Filtros Avançados -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-5 border-b border-slate-200 flex flex-col lg:flex-row justify-between items-center gap-4">
-                    <h2 class="font-bold text-slate-800 text-base">Detalhamento das Vendas (Do maior para o menor)</h2>
+                    <h2 class="font-bold text-slate-800 text-base">Detalhamento das Vendas</h2>
                     <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                        <!-- Filtro de Intervalo de Datas -->
-                        <div class="flex items-center space-x-1 bg-white border border-slate-300 rounded-xl px-2 py-1">
-                            <span class="text-xs text-slate-500 font-medium">De:</span>
-                            <input type="date" id="startDate" onchange="renderDashboard()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-700">
-                            <span class="text-xs text-slate-500 font-medium">Até:</span>
-                            <input type="date" id="endDate" onchange="renderDashboard()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-700">
+                        <!-- Filtro de Período Rápido e Personalizado -->
+                        <div class="flex items-center space-x-2 bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 shadow-sm">
+                            <select id="dateRangePreset" onchange="applyDatePreset()" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-indigo-700 cursor-pointer">
+                                <option value="all">Todo o Período</option>
+                                <option value="7">Últimos 7 dias</option>
+                                <option value="15">Últimos 15 dias</option>
+                                <option value="30">Últimos 30 dias</option>
+                                <option value="custom" selected>Personalizado</option>
+                            </select>
+                            <div class="flex items-center space-x-1 border-l border-slate-200 pl-2">
+                                <span class="text-xs text-slate-500 font-medium">De:</span>
+                                <input type="date" id="startDate" onchange="onCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-700">
+                                <span class="text-xs text-slate-500 font-medium ml-1">Até:</span>
+                                <input type="date" id="endDate" onchange="onCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-700">
+                            </div>
                         </div>
                         <!-- Filtro de Cliente -->
-                        <select id="clientFilter" onchange="renderDashboard()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
+                        <select id="clientFilter" onchange="updateAllViews()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
                             <option value="all">Todos os Clientes</option>
                         </select>
                         <!-- Filtro de Categoria -->
-                        <select id="catFilter" onchange="renderDashboard()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
+                        <select id="catFilter" onchange="updateAllViews()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
                             <option value="all">Todas as Categorias</option>
                         </select>
                         <!-- Filtro de Produto (Permite parte do nome) -->
                         <div class="relative">
-                            <input type="text" id="prodFilter" list="prodList" placeholder="Filtrar produto..." oninput="renderDashboard()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700 w-44">
+                            <input type="text" id="prodFilter" list="prodList" placeholder="Filtrar produto..." oninput="updateAllViews()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700 w-44">
                             <datalist id="prodList">
                                 <!-- Preenchido dinamicamente -->
                             </datalist>
                         </div>
                         <!-- Pesquisa por texto -->
-                        <input type="text" id="searchInput" placeholder="Pesquisar..." onkeyup="renderDashboard()" class="px-4 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-44">
+                        <input type="text" id="searchInput" placeholder="Pesquisar..." onkeyup="updateAllViews()" class="px-4 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-44">
                     </div>
                 </div>
                 <div class="overflow-x-auto">
@@ -221,7 +230,7 @@
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <div>
                         <h2 class="text-lg font-bold text-slate-800">Sugestão e Projeção de Compras por Estoque Mínimo/Máximo</h2>
-                        <p class="text-xs text-slate-500 mt-1">Cálculo preditivo alinhado aos limites de estoque mínimo e máximo configurados (ordenado por qtd vendida).</p>
+                        <p class="text-xs text-slate-500 mt-1">Cálculo preditivo alinhado aos limites de estoque mínimo e máximo configurados.</p>
                     </div>
                     
                     <!-- Configurações de Projeção, Filtro & Impressão -->
@@ -335,6 +344,7 @@
             { cliente: "Cliente Delta", categoria: "Bebidas", produto: "Energético 250ml", data: "2026-06-05", qtd: 35, vlrUnit: 10.00, custoUnit: 5.50, estoque: 6, minStock: 10, maxStock: 50 }
         ];
 
+        // Carrega dados salvos anteriormente no navegador se existirem
         const savedData = localStorage.getItem('nexxa_data');
         if (savedData) {
             try {
@@ -344,24 +354,15 @@
             }
         }
 
-        let globalEntries = [
-            { fornecedor: "Distribuidora Bebidas SP", produto: "Cerveja Lata 350ml", descricao: "Lote promocional de verão", data: "2026-05-28", qtd: 300, precoUnit: 3.00 },
-            { fornecedor: "Águas Cristalinas Ltda", produto: "Água Mineral 500ml", descricao: "Reposição quinzenal", data: "2026-05-30", qtd: 200, precoUnit: 1.20 }
-        ];
-
-        const savedEntries = localStorage.getItem('nexxa_entries');
-        if (savedEntries) {
-            try {
-                globalEntries = JSON.parse(savedEntries);
-            } catch(e) {
-                console.error("Erro ao carregar notas de entrada salvas:", e);
-            }
-        }
-
         let chartTopValueInst = null;
         let chartTopQtyInst = null;
         let chartCategoryInst = null;
         let chartClientsInst = null;
+
+        function updateAllViews() {
+            renderDashboard();
+            renderProjection();
+        }
 
         function switchTab(tabName) {
             const dashTab = document.getElementById('tab-dashboard');
@@ -391,6 +392,34 @@
                 btnEntry.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all bg-white text-indigo-700 shadow-sm";
                 renderEntries();
             }
+        }
+
+        function applyDatePreset() {
+            const preset = document.getElementById('dateRangePreset').value;
+            if (preset === 'all') {
+                document.getElementById('startDate').value = '';
+                document.getElementById('endDate').value = '';
+            } else if (preset === '7' || preset === '15' || preset === '30') {
+                const days = parseInt(preset);
+                let maxDate = new Date();
+                if (globalData.length > 0) {
+                    const dates = globalData.map(i => new Date(i.data)).filter(d => !isNaN(d));
+                    if (dates.length > 0) {
+                        maxDate = new Date(Math.max.apply(null, dates));
+                    }
+                }
+                const startDate = new Date(maxDate);
+                startDate.setDate(startDate.getDate() - days);
+
+                document.getElementById('endDate').value = maxDate.toISOString().split('T')[0];
+                document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+            }
+            updateAllViews();
+        }
+
+        function onCustomDateChange() {
+            document.getElementById('dateRangePreset').value = 'custom';
+            updateAllViews();
         }
 
         function parseExcelDate(val) {
@@ -444,7 +473,7 @@
 
                         localStorage.setItem('nexxa_data', JSON.stringify(globalData));
                         populateFilterDropdowns();
-                        renderDashboard();
+                        updateAllViews();
                         alert("Planilha importada e salva com sucesso!");
                     } else {
                         alert("A planilha parece estar vazia.");
@@ -452,42 +481,6 @@
                 } catch(err) {
                     console.error(err);
                     alert("Erro ao ler o arquivo Excel. Verifique o formato das colunas.");
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function handleEntryFile(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                try {
-                    const data = new Uint8Array(evt.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    const json = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
-                    
-                    if(json.length > 0) {
-                        globalEntries = json.map(item => ({
-                            fornecedor: item['Fornecedor'] || item['fornecedor'] || 'Fornecedor Padrão',
-                            produto: item['Produto'] || item['produto'] || item['Nome do Produto'] || 'Não informado',
-                            descricao: item['Descrição'] || item['descricao'] || item['Descricao'] || '',
-                            data: parseExcelDate(item['Data'] || item['data']),
-                            qtd: parseDecimal(item['Quantidade'] || item['quantidade'] || item['Qtd']),
-                            precoUnit: parseDecimal(item['Preço Unitário'] || item['preco_unitario'] || item['Preco Unitario'] || item['Preço Unitario'])
-                        }));
-
-                        localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
-                        renderEntries();
-                        alert("Notas de entrada importadas e salvas com sucesso!");
-                    } else {
-                        alert("A planilha de entradas parece estar vazia.");
-                    }
-                } catch(err) {
-                    console.error(err);
-                    alert("Erro ao ler o arquivo Excel de entradas. Verifique o formato das colunas.");
                 }
             };
             reader.readAsArrayBuffer(file);
@@ -540,21 +533,6 @@
             document.body.removeChild(link);
         }
 
-        function downloadEntryTemplateCSV() {
-            const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + 
-                "Fornecedor;Produto;Descrição;Data;Quantidade;Preço Unitário\n" +
-                "Distribuidora Bebidas SP;Cerveja Lata 350ml;Lote promocional de verão;2026-05-28;300;3,00\n" +
-                "Águas Cristalinas Ltda;Água Mineral 500ml;Reposição quinzenal;2026-05-30;200;1,20";
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "modelo_notas_entrada_nexxa.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
         function formatCurrency(val) {
             return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
@@ -597,7 +575,6 @@
             const prodQtyMap = {};
             const catValueMap = {};
             const clientValueMap = {};
-            const stockByProduct = {};
 
             filteredData.sort((a, b) => b.qtd - a.qtd);
 
@@ -611,7 +588,6 @@
                 prodQtyMap[row.produto] = (prodQtyMap[row.produto] || 0) + row.qtd;
                 catValueMap[row.categoria] = (catValueMap[row.categoria] || 0) + faturamento;
                 clientValueMap[row.cliente] = (clientValueMap[row.cliente] || 0) + faturamento;
-                stockByProduct[row.produto] = { estoque: row.estoque, minStock: row.minStock, maxStock: row.maxStock };
 
                 if(row.produto.toLowerCase().includes(searchTerm) || row.cliente.toLowerCase().includes(searchTerm) || row.categoria.toLowerCase().includes(searchTerm)) {
                     const tr = document.createElement('tr');
@@ -737,10 +713,42 @@
             const tbody = document.getElementById('projectionTableBody');
             tbody.innerHTML = '';
 
-            const onlySuggestionFilter = document.getElementById('filterOnlySuggestion').checked;
+            const startDateVal = document.getElementById('startDate') ? document.getElementById('startDate').value : '';
+            const endDateVal = document.getElementById('endDate') ? document.getElementById('endDate').value : '';
+            const selectedClient = document.getElementById('clientFilter') ? document.getElementById('clientFilter').value : 'all';
+            const selectedCat = document.getElementById('catFilter') ? document.getElementById('catFilter').value : 'all';
+            const selectedProd = document.getElementById('prodFilter') ? document.getElementById('prodFilter').value : 'all';
+            const searchTerm = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase() : '';
+            const onlySuggestionFilter = document.getElementById('filterOnlySuggestion') ? document.getElementById('filterOnlySuggestion').checked : false;
+
+            let filteredData = globalData;
+
+            if (startDateVal) {
+                filteredData = filteredData.filter(row => row.data >= startDateVal);
+            }
+            if (endDateVal) {
+                filteredData = filteredData.filter(row => row.data <= endDateVal);
+            }
+            if (selectedClient !== 'all') {
+                filteredData = filteredData.filter(row => row.cliente === selectedClient);
+            }
+            if (selectedCat !== 'all') {
+                filteredData = filteredData.filter(row => row.categoria === selectedCat);
+            }
+            if (selectedProd && selectedProd !== 'all' && selectedProd.trim() !== '') {
+                filteredData = filteredData.filter(row => row.produto.toLowerCase().includes(selectedProd.toLowerCase()));
+            }
+            if (searchTerm) {
+                filteredData = filteredData.filter(row => 
+                    row.produto.toLowerCase().includes(searchTerm) || 
+                    row.cliente.toLowerCase().includes(searchTerm) || 
+                    row.categoria.toLowerCase().includes(searchTerm)
+                );
+            }
+
             const productStats = {};
 
-            globalData.forEach(row => {
+            filteredData.forEach(row => {
                 if(!productStats[row.produto]) {
                     productStats[row.produto] = {
                         categoria: row.categoria,
@@ -803,6 +811,71 @@
             });
         }
 
+        let globalEntries = [
+            { fornecedor: "Distribuidora Bebidas SP", produto: "Cerveja Lata 350ml", descricao: "Lote promocional de verão", data: "2026-05-28", qtd: 300, precoUnit: 3.00 },
+            { fornecedor: "Águas Cristalinas Ltda", produto: "Água Mineral 500ml", descricao: "Reposição quinzenal", data: "2026-05-30", qtd: 200, precoUnit: 1.20 }
+        ];
+
+        const savedEntries = localStorage.getItem('nexxa_entries');
+        if (savedEntries) {
+            try {
+                globalEntries = JSON.parse(savedEntries);
+            } catch(e) {
+                console.error("Erro ao carregar notas de entrada salvas:", e);
+            }
+        }
+
+        function handleEntryFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const data = new Uint8Array(evt.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
+                    
+                    if(json.length > 0) {
+                        globalEntries = json.map(item => ({
+                            fornecedor: item['Fornecedor'] || item['fornecedor'] || 'Fornecedor Padrão',
+                            produto: item['Produto'] || item['produto'] || item['Nome do Produto'] || 'Não informado',
+                            descricao: item['Descrição'] || item['descricao'] || item['Descricao'] || '',
+                            data: parseExcelDate(item['Data'] || item['data']),
+                            qtd: parseDecimal(item['Quantidade'] || item['quantidade'] || item['Qtd']),
+                            precoUnit: parseDecimal(item['Preço Unitário'] || item['preco_unitario'] || item['Preco Unitario'] || item['Preço Unitario'])
+                        }));
+
+                        localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
+                        renderEntries();
+                        alert("Notas de entrada importadas e salvas com sucesso!");
+                    } else {
+                        alert("A planilha de entradas parece estar vazia.");
+                    }
+                } catch(err) {
+                    console.error(err);
+                    alert("Erro ao ler o arquivo Excel de entradas. Verifique o formato das colunas.");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function downloadEntryTemplateCSV() {
+            const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + 
+                "Fornecedor;Produto;Descrição;Data;Quantidade;Preço Unitário\n" +
+                "Distribuidora Bebidas SP;Cerveja Lata 350ml;Lote promocional de verão;2026-05-28;300;3,00\n" +
+                "Águas Cristalinas Ltda;Água Mineral 500ml;Reposição quinzenal;2026-05-30;200;1,20";
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "modelo_notas_entrada_nexxa.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         function renderEntries() {
             const tbody = document.getElementById('entryTableBody');
             tbody.innerHTML = '';
@@ -846,9 +919,9 @@
                 productStats[row.produto].datas.push(new Date(row.data));
             });
 
+            const exportData = [];
             const sortedProds = Object.keys(productStats).sort((a, b) => productStats[b].totalQtdVivida - productStats[a].totalQtdVivida);
 
-            const exportData = [];
             sortedProds.forEach(prodName => {
                 const stats = productStats[prodName];
                 let weeksSpan = 4;
@@ -893,7 +966,7 @@
         }
 
         populateFilterDropdowns();
-        renderDashboard();
+        updateAllViews();
         renderEntries();
     </script>
 </body>
