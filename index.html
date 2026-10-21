@@ -183,14 +183,14 @@ display: none !important;
 </div>
 </div>
 
-<!-- NOVO CARD: Detalhamento Consolidado por Produto (Respeita filtros, sem categoria e sem data, ordenado do maior para o menor) -->
+<!-- CARD: Detalhamento Consolidado por Produto com Estoque Único e Ordenado do Maior para o Menor -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
 <div class="p-5 border-b border-slate-800 flex justify-between items-center">
 <div>
-<h2 class="font-bold text-white text-base"><i class="fa-solid fa-list-check text-amber-400 mr-2"></i>Detalhamento Consolidado de Vendas por Produto</h2>
-<p class="text-xs text-slate-400 mt-0.5">Soma total de quantidades e faturamento por produto nos filtros selecionados, ordenado do maior para o menor faturamento.</p>
+<h2 class="font-bold text-white text-base"><i class="fa-solid fa-arrow-down-wide-short text-amber-400 mr-2"></i>Detalhamento Consolidado de Vendas por Produto</h2>
+<p class="text-xs text-slate-400 mt-0.5">Ordenado do maior para o menor faturamento com o estoque atual e único por produto.</p>
 </div>
-<span class="text-xs font-semibold bg-amber-400/10 text-amber-400 px-3 py-1 rounded-lg border border-amber-400/20">Visão Sintética</span>
+<span class="text-xs font-semibold bg-amber-400/10 text-amber-400 px-3 py-1 rounded-lg border border-amber-400/20"><i class="fa-solid fa-sort-down mr-1"></i>Maior &#8594; Menor</span>
 </div>
 <div class="overflow-x-auto">
 <table class="w-full text-left border-collapse text-sm">
@@ -198,6 +198,7 @@ display: none !important;
 <tr class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800">
 <th class="p-4 font-semibold">Produto</th>
 <th class="p-4 font-semibold text-center">Qtd. Total Vendida</th>
+<th class="p-4 font-semibold text-center">Estoque Atual</th>
 <th class="p-4 font-semibold text-right">Faturamento Total</th>
 </tr>
 </thead>
@@ -695,7 +696,7 @@ const prodValueMap = {};
 const prodQtyMap = {};
 const catValueMap = {};
 const clientValueMap = {};
-const consolidatedProdMap = {}; // Para o novo card consolidado respeitando os filtros
+const consolidatedProdMap = {};
 
 filteredData.sort((a, b) => b.qtd - a.qtd);
 
@@ -711,15 +712,20 @@ prodQtyMap[row.produto] = (prodQtyMap[row.produto] || 0) + row.qtd;
 catValueMap[row.categoria] = (catValueMap[row.categoria] || 0) + faturamento;
 clientValueMap[row.cliente] = (clientValueMap[row.cliente] || 0) + faturamento;
 
-// Agrupamento para a tabela consolidada filtrada (sem categoria)
+// Agrupamento para a tabela consolidada (o estoque é único por produto, pegamos o valor cadastrado)
 if (!consolidatedProdMap[row.produto]) {
 consolidatedProdMap[row.produto] = {
 qtdTotal: 0,
-faturamentoTotal: 0
+faturamentoTotal: 0,
+estoque: row.estoque,
+minStock: row.minStock
 };
 }
 consolidatedProdMap[row.produto].qtdTotal += row.qtd;
 consolidatedProdMap[row.produto].faturamentoTotal += faturamento;
+// Garante que mantém o registro do estoque atual (único)
+consolidatedProdMap[row.produto].estoque = row.estoque;
+consolidatedProdMap[row.produto].minStock = row.minStock;
 
 if(row.produto.toLowerCase().includes(searchTerm) || row.cliente.toLowerCase().includes(searchTerm) || row.categoria.toLowerCase().includes(searchTerm)) {
 const tr = document.createElement('tr');
@@ -763,16 +769,18 @@ renderCharts(prodValueMap, prodQtyMap, catValueMap, clientValueMap);
 renderStorePerformance(clientValueMap, filteredData, totalFaturamento);
 }
 
-// Renderiza o card consolidado respeitando os filtros, sem coluna categoria e ordenado por faturamento
+// Renderiza o card consolidado com estoque único e ordenado do maior para o menor faturamento
 function renderConsolidatedProducts(consolidatedMap) {
 const tbody = document.getElementById('consolidatedProdTableBody');
 if(!tbody) return;
 tbody.innerHTML = '';
 
-const sortedProducts = Object.entries(consolidatedMap).sort((a, b) => b[1].faturamentoTotal - a[1].faturamentoTotal);
+const sortedProducts = Object.entries(consolidatedMap).sort((a, b) => {
+return b[1].faturamentoTotal - a[1].faturamentoTotal;
+});
 
 if(sortedProducts.length === 0) {
-tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-500">Nenhum dado encontrado para o filtro selecionado.</td></tr>`;
+tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">Nenhum dado encontrado para o filtro selecionado.</td></tr>`;
 return;
 }
 
@@ -782,6 +790,11 @@ tr.className = "hover:bg-slate-800/50 transition-colors";
 tr.innerHTML = `
 <td class="p-4 font-bold text-amber-400">${prodName}</td>
 <td class="p-4 text-center font-semibold text-slate-100">${info.qtdTotal}</td>
+<td class="p-4 text-center">
+<span class="px-2.5 py-1 rounded-full text-xs font-semibold ${info.estoque <= info.minStock ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">
+${info.estoque} un
+</span>
+</td>
 <td class="p-4 text-right font-bold text-slate-100">${formatCurrency(info.faturamentoTotal)}</td>
 `;
 tbody.appendChild(tr);
