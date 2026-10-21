@@ -70,23 +70,32 @@
     <!-- Conteúdo Principal -->
     <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
 
-        <!-- Barra de Ações / Importação -->
+        <!-- Barra de Ações / Importação / Backup -->
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4 no-print">
-            <div class="flex items-center space-x-3 w-full md:w-auto">
-                <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-all flex items-center justify-center space-x-2 w-full md:w-auto">
+            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-all flex items-center justify-center space-x-2">
                     <i class="fa-solid fa-file-excel"></i>
                     <span>Importar Planilha (Excel/CSV)</span>
                     <input type="file" id="excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFile(event)">
                 </label>
                 <button onclick="downloadTemplateCSV()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center space-x-2 border border-slate-300">
                     <i class="fa-solid fa-download"></i>
-                    <span>Baixar Modelo Exemplo</span>
+                    <span>Modelo Exemplo</span>
                 </button>
+                <button onclick="exportFullDatabaseJSON()" class="bg-slate-900 hover:bg-black text-amber-400 px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-all flex items-center justify-center space-x-2 border border-amber-500/30">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>Exportar Base Completa (Backup)</span>
+                </button>
+                <label class="cursor-pointer bg-amber-500 hover:bg-amber-600 text-slate-950 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-upload"></i>
+                    <span>Carregar Backup (.json)</span>
+                    <input type="file" id="backup-file" accept=".json" class="hidden" onchange="importFullDatabaseJSON(event)">
+                </label>
             </div>
             
             <div class="text-xs text-slate-500 flex items-center space-x-2">
                 <i class="fa-solid fa-circle-info text-indigo-500"></i>
-                <span>Colunas esperadas: Cliente, Categoria, Nome do Produto, Data, Quantidade, Valor Unitário, Preço de Custo, Qtd. em Estoque, Estoque Mínimo, Estoque Máximo</span>
+                <span>Exporte e compartilhe o arquivo .json para sincronizar com sua equipe!</span>
             </div>
         </div>
 
@@ -1045,6 +1054,49 @@
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Projeção de Compras");
             XLSX.writeFile(workbook, "projecao_compras_nexxa.xlsx");
+        }
+
+        function exportFullDatabaseJSON() {
+            const backupData = {
+                version: "1.0",
+                exportDate: new Date().toISOString(),
+                globalData: globalData,
+                globalEntries: globalEntries
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `nexxa_base_completa_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importFullDatabaseJSON(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const imported = JSON.parse(evt.target.result);
+                    if (imported.globalData && Array.isArray(imported.globalData)) {
+                        globalData = imported.globalData;
+                        localStorage.setItem('nexxa_data', JSON.stringify(globalData));
+                    }
+                    if (imported.globalEntries && Array.isArray(imported.globalEntries)) {
+                        globalEntries = imported.globalEntries;
+                        localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
+                    }
+                    populateFilterDropdowns();
+                    updateAllViews();
+                    renderEntries();
+                    alert("Base de dados completa restaurada e atualizada com sucesso!");
+                } catch(err) {
+                    console.error(err);
+                    alert("Erro ao importar o arquivo de backup. Verifique se é um arquivo .json válido gerado pelo NEXXA.");
+                }
+            };
+            reader.readAsText(file);
         }
 
         populateFilterDropdowns();
