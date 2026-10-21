@@ -228,7 +228,7 @@ display: none !important;
 <select id="catFilter" onchange="updateAllViews()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
 <option value="all">Todas as Categorias</option>
 </select>
-<!-- Filtro de Produto (Permite parte do nome) -->
+<!-- Filtro de Produto -->
 <div class="relative">
 <input type="text" id="prodFilter" list="prodList" placeholder="Filtrar produto..." oninput="updateAllViews()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700 w-44">
 <datalist id="prodList">
@@ -298,6 +298,9 @@ display: none !important;
 <select id="projCatFilter" onchange="renderProjection()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
 <option value="all">Todas as Categorias</option>
 </select>
+
+<!-- Campo de Pesquisa por Texto na Projeção -->
+<input type="text" id="projSearchInput" placeholder="Pesquisar produto..." onkeyup="renderProjection()" class="px-4 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-44">
 </div>
 
 <div class="flex flex-wrap items-center gap-4">
@@ -834,6 +837,7 @@ const startDateVal = document.getElementById('projStartDate') ? document.getElem
 const endDateVal = document.getElementById('projEndDate') ? document.getElementById('projEndDate').value : '';
 const selectedClient = document.getElementById('projClientFilter') ? document.getElementById('projClientFilter').value : 'all';
 const selectedCat = document.getElementById('projCatFilter') ? document.getElementById('projCatFilter').value : 'all';
+const projSearchTerm = document.getElementById('projSearchInput') ? document.getElementById('projSearchInput').value.toLowerCase() : '';
 const onlySuggestionFilter = document.getElementById('filterOnlySuggestion') ? document.getElementById('filterOnlySuggestion').checked : false;
 
 let filteredData = globalData;
@@ -849,6 +853,13 @@ filteredData = filteredData.filter(row => row.cliente === selectedClient);
 }
 if (selectedCat !== 'all') {
 filteredData = filteredData.filter(row => row.categoria === selectedCat);
+}
+if (projSearchTerm) {
+filteredData = filteredData.filter(row =>
+row.produto.toLowerCase().includes(projSearchTerm) ||
+row.cliente.toLowerCase().includes(projSearchTerm) ||
+row.categoria.toLowerCase().includes(projSearchTerm)
+);
 }
 
 const productStats = {};
@@ -1009,12 +1020,20 @@ const startDateVal = document.getElementById('projStartDate') ? document.getElem
 const endDateVal = document.getElementById('projEndDate') ? document.getElementById('projEndDate').value : '';
 const selectedClient = document.getElementById('projClientFilter') ? document.getElementById('projClientFilter').value : 'all';
 const selectedCat = document.getElementById('projCatFilter') ? document.getElementById('projCatFilter').value : 'all';
+const projSearchTerm = document.getElementById('projSearchInput') ? document.getElementById('projSearchInput').value.toLowerCase() : '';
 
 let filteredData = globalData;
 if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
 if (endDateVal) filteredData = filteredData.filter(row => row.data <= endDateVal);
 if (selectedClient !== 'all') filteredData = filteredData.filter(row => row.cliente === selectedClient);
 if (selectedCat !== 'all') filteredData = filteredData.filter(row => row.categoria === selectedCat);
+if (projSearchTerm) {
+filteredData = filteredData.filter(row =>
+row.produto.toLowerCase().includes(projSearchTerm) ||
+row.cliente.toLowerCase().includes(projSearchTerm) ||
+row.categoria.toLowerCase().includes(projSearchTerm)
+);
+}
 
 filteredData.forEach(row => {
 if(!productStats[row.produto]) {
