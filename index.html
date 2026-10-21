@@ -158,12 +158,32 @@
                 </div>
             </div>
 
-            <!-- Tabela Detalhada -->
+            <!-- Tabela Detalhada com Filtros Avançados -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div class="p-5 border-b border-slate-200 flex flex-col lg:flex-row justify-between items-center gap-4">
                     <h2 class="font-bold text-slate-800 text-base">Detalhamento das Vendas</h2>
-                    <div class="flex items-center space-x-3 w-full sm:w-auto">
-                        <input type="text" id="searchInput" placeholder="Pesquisar produto, cliente ou categoria..." onkeyup="filterTable()" class="px-4 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-72">
+                    <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                        <!-- Filtro de Período -->
+                        <select id="dateRangeFilter" onchange="renderDashboard()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
+                            <option value="all">Todo o Período</option>
+                            <option value="7">Últimos 7 dias</option>
+                            <option value="15">Últimos 15 dias</option>
+                            <option value="30">Últimos 30 dias</option>
+                        </select>
+                        <!-- Filtro de Cliente -->
+                        <select id="clientFilter" onchange="renderDashboard()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
+                            <option value="all">Todos os Clientes</option>
+                        </select>
+                        <!-- Filtro de Categoria -->
+                        <select id="catFilter" onchange="renderDashboard()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
+                            <option value="all">Todas as Categorias</option>
+                        </select>
+                        <!-- Filtro de Produto -->
+                        <select id="prodFilter" onchange="renderDashboard()" class="px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-slate-700">
+                            <option value="all">Todos os Produtos</option>
+                        </select>
+                        <!-- Pesquisa por texto -->
+                        <input type="text" id="searchInput" placeholder="Pesquisar..." onkeyup="renderDashboard()" class="px-4 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-44">
                     </div>
                 </div>
                 <div class="overflow-x-auto">
@@ -260,6 +280,16 @@
             { cliente: "Cliente Delta", categoria: "Bebidas", produto: "Energético 250ml", data: "2026-06-05", qtd: 35, vlrUnit: 10.00, custoUnit: 5.50, estoque: 6, minStock: 10, maxStock: 50 }
         ];
 
+        // Carrega dados salvos anteriormente no navegador se existirem
+        const savedData = localStorage.getItem('nexxa_data');
+        if (savedData) {
+            try {
+                globalData = JSON.parse(savedData);
+            } catch(e) {
+                console.error("Erro ao carregar dados salvos:", e);
+            }
+        }
+
         let chartTopValueInst = null;
         let chartTopQtyInst = null;
         let chartCategoryInst = null;
@@ -320,8 +350,11 @@
                             minStock: parseDecimal(item['Estoque Mínimo'] || item['estoque_minimo'] || item['Min Stock']),
                             maxStock: parseDecimal(item['Estoque Máximo'] || item['estoque_maximo'] || item['Max Stock'] || 100)
                         }));
+
+                        localStorage.setItem('nexxa_data', JSON.stringify(globalData));
+                        populateFilterDropdowns();
                         renderDashboard();
-                        alert("Planilha importada com sucesso!");
+                        alert("Planilha importada e salva com sucesso!");
                     } else {
                         alert("A planilha parece estar vazia.");
                     }
@@ -331,6 +364,38 @@
                 }
             };
             reader.readAsArrayBuffer(file);
+        }
+
+        function populateFilterDropdowns() {
+            const clients = [...new Set(globalData.map(i => i.cliente))].sort();
+            const categories = [...new Set(globalData.map(i => i.categoria))].sort();
+            const products = [...new Set(globalData.map(i => i.produto))].sort();
+
+            const clientSelect = document.getElementById('clientFilter');
+            const catSelect = document.getElementById('catFilter');
+            const prodSelect = document.getElementById('prodFilter');
+
+            const currentClient = clientSelect.value;
+            const currentCat = catSelect.value;
+            const currentProd = prodSelect.value;
+
+            clientSelect.innerHTML = '<option value="all">Todos os Clientes</option>';
+            clients.forEach(c => {
+                clientSelect.innerHTML += `<option value="${c}">${c}</option>`;
+            });
+            clientSelect.value = clients.includes(currentClient) ? currentClient : 'all';
+
+            catSelect.innerHTML = '<option value="all">Todas as Categorias</option>';
+            categories.forEach(cat => {
+                catSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+            });
+            catSelect.value = categories.includes(currentCat) ? currentCat : 'all';
+
+            prodSelect.innerHTML = '<option value="all">Todos os Produtos</option>';
+            products.forEach(p => {
+                prodSelect.innerHTML += `<option value="${p}">${p}</option>`;
+            });
+            prodSelect.value = products.includes(currentProd) ? currentProd : 'all';
         }
 
         function downloadTemplateCSV() {
@@ -355,15 +420,57 @@
         }
 
         function renderDashboard() {
+            const dateRangeVal = document.getElementById('dateRangeFilter') ? document.getElementById('dateRangeFilter').value : 'all';
+            const selectedClient = document.getElementById('clientFilter') ? document.getElementById('clientFilter').value : 'all';
+            const selectedCat = document.getElementById('catFilter') ? document.getElementById('catFilter').value : 'all';
+            const selectedProd = document.getElementById('prodFilter') ? document.getElementById('prodFilter').value : 'all';
+            const searchTerm = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase() : '';
+
+            // Determina a data de referência (máxima data encontrada na planilha ou hoje)
+            let maxDate = new Date();
+            if (globalData.length > 0) {
+                const dates = globalData.map(i => new Date(i.data)).filter(d => !isNaN(d));
+                if (dates.length > 0) {
+                    maxDate = new Date(Math.max.apply(null, dates));
+                }
+            }
+
+            let filteredData = globalData;
+
+            // Filtro por Data
+            if (dateRangeVal !== 'all') {
+                const daysLimit = parseInt(dateRangeVal);
+                const limitDate = new Date(maxDate);
+                limitDate.setDate(limitDate.getDate() - daysLimit);
+
+                filteredData = filteredData.filter(row => {
+                    const rowDate = new Date(row.data);
+                    return rowDate >= limitDate && rowDate <= maxDate;
+                });
+            }
+
+            // Filtro por Cliente
+            if (selectedClient !== 'all') {
+                filteredData = filteredData.filter(row => row.cliente === selectedClient);
+            }
+
+            // Filtro por Categoria
+            if (selectedCat !== 'all') {
+                filteredData = filteredData.filter(row => row.categoria === selectedCat);
+            }
+
+            // Filtro por Produto
+            if (selectedProd !== 'all') {
+                filteredData = filteredData.filter(row => row.produto === selectedProd);
+            }
+
             let totalFaturamento = 0;
             let totalCustoVendas = 0;
             let totalEstoqueVal = 0;
-            let totalVendasCount = globalData.length;
+            let totalVendasCount = filteredData.length;
 
             const tbody = document.getElementById('dataTableBody');
             tbody.innerHTML = '';
-
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
 
             const prodValueMap = {};
             const prodQtyMap = {};
@@ -371,7 +478,7 @@
             const clientValueMap = {};
             const stockByProduct = {};
 
-            globalData.forEach(row => {
+            filteredData.forEach(row => {
                 const faturamento = row.qtd * row.vlrUnit;
                 const custo = row.qtd * row.custoUnit;
                 totalFaturamento += faturamento;
@@ -404,10 +511,12 @@
             const lucroBruto = totalFaturamento - totalCustoVendas;
             const margem = totalFaturamento > 0 ? (lucroBruto / totalFaturamento) * 100 : 0;
 
-            Object.keys(stockByProduct).forEach(prod => {
-                const item = globalData.find(i => i.produto === prod);
-                const custoRef = item ? item.custoUnit : 0;
-                totalEstoqueVal += stockByProduct[prod].estoque * custoRef;
+            const globalStockMap = {};
+            globalData.forEach(row => {
+                globalStockMap[row.produto] = { estoque: row.estoque, minStock: row.minStock, maxStock: row.maxStock, custoUnit: row.custoUnit };
+            });
+            Object.keys(globalStockMap).forEach(prod => {
+                totalEstoqueVal += globalStockMap[prod].estoque * globalStockMap[prod].custoUnit;
             });
 
             document.getElementById('card-faturamento').innerText = formatCurrency(totalFaturamento);
@@ -573,6 +682,7 @@
             renderDashboard();
         }
 
+        populateFilterDropdowns();
         renderDashboard();
     </script>
 </body>
