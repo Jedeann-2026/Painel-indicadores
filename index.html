@@ -163,6 +163,33 @@
                 </div>
             </div>
 
+            <!-- Tabela de Desempenho por Loja / Cliente -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-200 flex justify-between items-center">
+                    <div>
+                        <h2 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-store text-indigo-600 mr-2"></i>Desempenho por Loja / Cliente</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Indicadores de faturamento, quantidade de vendas e ticket médio calculados com base nos filtros ativos.</p>
+                    </div>
+                    <span class="text-xs font-semibold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg border border-indigo-200">Resumo de Indicadores</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 uppercase text-xs tracking-wider">
+                                <th class="p-4 font-semibold">Loja / Cliente</th>
+                                <th class="p-4 font-semibold text-center">Qtd. Vendas</th>
+                                <th class="p-4 font-semibold text-right">Faturamento Total</th>
+                                <th class="p-4 font-semibold text-right">Ticket Médio</th>
+                                <th class="p-4 font-semibold text-center">Participação (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="storePerfTableBody" class="divide-y divide-slate-200 text-slate-700">
+                            <!-- Preenchido dinamicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Tabela Detalhada com Filtros Avançados -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="p-5 border-b border-slate-200 flex flex-col lg:flex-row justify-between items-center gap-4">
@@ -626,6 +653,60 @@
             document.getElementById('card-vendas').innerText = totalVendasCount;
 
             renderCharts(prodValueMap, prodQtyMap, catValueMap, clientValueMap);
+            renderStorePerformance(clientValueMap, filteredData, totalFaturamento);
+        }
+
+        function renderStorePerformance(clientVal, filteredData, grandTotal) {
+            const tbody = document.getElementById('storePerfTableBody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+
+            const clientStats = {};
+
+            filteredData.forEach(row => {
+                const faturamento = row.qtd * row.vlrUnit;
+                if(!clientStats[row.cliente]) {
+                    clientStats[row.cliente] = {
+                        faturamento: 0,
+                        vendasCount: 0
+                    };
+                }
+                clientStats[row.cliente].faturamento += faturamento;
+                clientStats[row.cliente].vendasCount += 1;
+            });
+
+            const sortedStores = Object.entries(clientStats).sort((a,b) => b[1].faturamento - a[1].faturamento);
+
+            if(sortedStores.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Nenhum dado encontrado para o filtro selecionado.</td></tr>`;
+                return;
+            }
+
+            sortedStores.forEach(([storeName, stats]) => {
+                const ticketMedio = stats.vendasCount > 0 ? (stats.faturamento / stats.vendasCount) : 0;
+                const participacao = grandTotal > 0 ? ((stats.faturamento / grandTotal) * 100) : 0;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="p-4 font-bold text-slate-800 flex items-center space-x-2">
+                        <i class="fa-solid fa-shop text-indigo-500 text-xs"></i>
+                        <span>${storeName}</span>
+                    </td>
+                    <td class="p-4 text-center font-semibold text-slate-700">${stats.vendasCount}</td>
+                    <td class="p-4 text-right font-bold text-slate-800">${formatCurrency(stats.faturamento)}</td>
+                    <td class="p-4 text-right font-semibold text-emerald-600">${formatCurrency(ticketMedio)}</td>
+                    <td class="p-4 text-center">
+                        <div class="flex items-center justify-center space-x-2">
+                            <div class="w-16 bg-slate-200 h-2 rounded-full overflow-hidden">
+                                <div class="bg-indigo-600 h-2" style="width: ${participacao.toFixed(1)}%"></div>
+                            </div>
+                            <span class="text-xs font-bold text-slate-600">${participacao.toFixed(1)}%</span>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
         function renderCharts(prodVal, prodQty, catVal, clientVal) {
