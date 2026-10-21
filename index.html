@@ -218,7 +218,7 @@
                         <p class="text-xs text-slate-500 mt-1">Cálculo preditivo alinhado aos limites de estoque mínimo e máximo configurados.</p>
                     </div>
                     
-                    <!-- Configurações de Projeção, Filtro & Impressão -->
+                    <!-- Configurações de Projeção, Filtro, Exportação & Impressão -->
                     <div class="flex flex-wrap items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
                         <label class="flex items-center space-x-2 text-xs font-semibold text-slate-700 cursor-pointer select-none">
                             <input type="checkbox" id="filterOnlySuggestion" onchange="renderProjection()" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
@@ -230,7 +230,11 @@
                                 <input type="number" id="targetWeeks" value="4" min="1" max="52" onchange="renderProjection()" class="w-16 px-2 py-1 text-sm bg-white border border-slate-300 rounded-lg text-center font-bold text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                             </div>
                         </div>
-                        <div class="border-l border-slate-300 pl-4">
+                        <div class="border-l border-slate-300 pl-4 flex items-center gap-2">
+                            <button onclick="exportProjectionToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-2">
+                                <i class="fa-solid fa-file-excel"></i>
+                                <span>Exportar Excel</span>
+                            </button>
                             <button onclick="window.print()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-2">
                                 <i class="fa-solid fa-print"></i>
                                 <span>Imprimir</span>
@@ -248,6 +252,7 @@
                                 <th class="p-4 font-semibold">Categoria</th>
                                 <th class="p-4 font-semibold text-center">Estoque Atual</th>
                                 <th class="p-4 font-semibold text-center">Mín / Máx</th>
+                                <th class="p-4 font-semibold text-center">Qtd Vendida</th>
                                 <th class="p-4 font-semibold text-center">Média Venda / Semana</th>
                                 <th class="p-4 font-semibold text-center">Sugestão de Compra</th>
                                 <th class="p-4 font-semibold text-center">Status</th>
@@ -426,7 +431,6 @@
             const selectedProd = document.getElementById('prodFilter') ? document.getElementById('prodFilter').value : 'all';
             const searchTerm = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase() : '';
 
-            // Determina a data de referência (máxima data encontrada na planilha ou hoje)
             let maxDate = new Date();
             if (globalData.length > 0) {
                 const dates = globalData.map(i => new Date(i.data)).filter(d => !isNaN(d));
@@ -437,7 +441,6 @@
 
             let filteredData = globalData;
 
-            // Filtro por Data
             if (dateRangeVal !== 'all') {
                 const daysLimit = parseInt(dateRangeVal);
                 const limitDate = new Date(maxDate);
@@ -449,17 +452,14 @@
                 });
             }
 
-            // Filtro por Cliente
             if (selectedClient !== 'all') {
                 filteredData = filteredData.filter(row => row.cliente === selectedClient);
             }
 
-            // Filtro por Categoria
             if (selectedCat !== 'all') {
                 filteredData = filteredData.filter(row => row.categoria === selectedCat);
             }
 
-            // Filtro por Produto
             if (selectedProd !== 'all') {
                 filteredData = filteredData.filter(row => row.produto === selectedProd);
             }
@@ -670,12 +670,79 @@
                     <td class="p-4"><span class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-medium">${stats.categoria}</span></td>
                     <td class="p-4 text-center font-bold text-slate-800">${stats.estoqueAtual}</td>
                     <td class="p-4 text-center text-xs text-slate-600">Mín: <b>${stats.minStock}</b> / Máx: <b>${stats.maxStock}</b></td>
+                    <td class="p-4 text-center font-semibold text-slate-800">${stats.totalQtdVivida}</td>
                     <td class="p-4 text-center text-slate-600">${avgWeeklySales.toFixed(1)} /sem</td>
                     <td class="p-4 text-center"><span class="px-3 py-1 bg-indigo-50 text-indigo-700 font-bold rounded-lg border border-indigo-200">${suggestion} un</span></td>
                     <td class="p-4 text-center">${statusBadge}</td>
                 `;
                 tbody.appendChild(tr);
             });
+        }
+
+        function exportProjectionToExcel() {
+            const onlySuggestionFilter = document.getElementById('filterOnlySuggestion').checked;
+            const productStats = {};
+            globalData.forEach(row => {
+                if(!productStats[row.produto]) {
+                    productStats[row.produto] = {
+                        categoria: row.categoria,
+                        totalQtdVivida: 0,
+                        estoqueAtual: row.estoque,
+                        minStock: row.minStock,
+                        maxStock: row.maxStock,
+                        datas: []
+                    };
+                }
+                productStats[row.produto].totalQtdVivida += row.qtd;
+                productStats[row.produto].estoqueAtual = row.estoque;
+                productStats[row.produto].minStock = row.minStock;
+                productStats[row.produto].maxStock = row.maxStock;
+                productStats[row.produto].categoria = row.categoria;
+                productStats[row.produto].datas.push(new Date(row.data));
+            });
+
+            const exportData = [];
+            Object.keys(productStats).forEach(prodName => {
+                const stats = productStats[prodName];
+                let weeksSpan = 4;
+                if(stats.datas.length > 1) {
+                    const minDate = new Date(Math.min.apply(null, stats.datas));
+                    const maxDate = new Date(Math.max.apply(null, stats.datas));
+                    const diffTime = Math.abs(maxDate - minDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    weeksSpan = Math.max(1, Math.ceil(diffDays / 7));
+                }
+                const avgWeeklySales = stats.totalQtdVivida / weeksSpan;
+                let suggestion = Math.max(0, stats.maxStock - stats.estoqueAtual);
+
+                if (onlySuggestionFilter && suggestion <= 0) return;
+
+                let status = 'Estoque OK';
+                if(stats.estoqueAtual <= stats.minStock) status = 'Abaixo do Mínimo';
+                else if(stats.estoqueAtual >= stats.maxStock) status = 'Estoque Cheio';
+
+                exportData.push({
+                    "Produto": prodName,
+                    "Categoria": stats.categoria,
+                    "Estoque Atual": stats.estoqueAtual,
+                    "Estoque Mínimo": stats.minStock,
+                    "Estoque Máximo": stats.maxStock,
+                    "Qtd Vendida": stats.totalQtdVivida,
+                    "Média Venda / Semana": parseFloat(avgWeeklySales.toFixed(1)),
+                    "Sugestão de Compra": suggestion,
+                    "Status": status
+                });
+            });
+
+            if(exportData.length === 0) {
+                alert("Nenhum dado para exportar.");
+                return;
+            }
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Projeção de Compras");
+            XLSX.writeFile(workbook, "projecao_compras_nexxa.xlsx");
         }
 
         function filterTable() {
