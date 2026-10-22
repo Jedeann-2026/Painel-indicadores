@@ -102,7 +102,7 @@ display: none !important;
 
 <div class="text-xs text-slate-400 flex items-center space-x-2">
 <i class="fa-solid fa-circle-info text-amber-400"></i>
-<span>Atualização por Cliente: Ao importar, substitui apenas os dados do cliente correspondente.</span>
+<span>Atualização Inteligente: Substitui apenas os registros do(s) cliente(s) e data(s) presentes no arquivo importado.</span>
 </div>
 </div>
 
@@ -217,7 +217,7 @@ Projeção Mês: R$ 0,00
 </div>
 </div>
 
-<!-- NOVO BLOCO: COMPARATIVO SEMANAL COM FILTRO PRÓPRIO -->
+<!-- COMPARATIVO SEMANAL COM FILTRO PRÓPRIO -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
 <div class="p-5 border-b border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
 <div>
@@ -249,6 +249,15 @@ Projeção Mês: R$ 0,00
 
 <!-- 4º BLOCO: Seção de Gráficos -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<!-- Faturamento Diário - Últimos 30 Dias -->
+<div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col lg:col-span-2">
+<div class="flex justify-between items-center mb-4">
+<h2 class="font-bold text-white text-base"><i class="fa-solid fa-chart-column text-amber-400 mr-2"></i>Faturamento Diário (Últimos 30 Dias)</h2>
+<span class="text-xs text-amber-400 font-medium bg-amber-400/10 px-2.5 py-1 rounded-lg border border-amber-400/20">Evolução Recente</span>
+</div>
+<div class="relative flex-grow h-72"><canvas id="chartLast30Days"></canvas></div>
+</div>
+
 <div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col">
 <div class="flex justify-between items-center mb-4">
 <h2 class="font-bold text-white text-base"><i class="fa-solid fa-ranking-star text-amber-400 mr-2"></i>Top 10 Produtos (Valor R$)</h2>
@@ -709,6 +718,7 @@ let currentPageAnalytic = 1;
 let currentPageProj = 1;
 let currentPageStock = 1;
 
+let chartLast30DaysInst = null;
 let chartTopValueInst = null;
 let chartTopQtyInst = null;
 let chartCategoryInst = null;
@@ -866,8 +876,13 @@ estoque: parseDecimal(item['Qtd. disponível'] || item['Qtd. em Estoque'] || ite
 })).filter(row => row.produto !== 'Não informado' && row.produto !== '');
 
 if(importedRows.length > 0) {
-const importedClients = [...new Set(importedRows.map(r => r.cliente))];
-const preservedData = globalData.filter(r => !importedClients.includes(r.cliente));
+// Identifica exatamente quais pares de (Cliente + Data) estão presentes na importação
+const importedKeys = new Set(importedRows.map(r => `${r.cliente}___${r.data}`));
+
+// Preserva apenas os registros globais cujas chaves (Cliente + Data) NÃO estão na importação atual
+const preservedData = globalData.filter(r => !importedKeys.has(`${r.cliente}___${r.data}`));
+
+// Junta os dados preservados com as novas linhas importadas
 globalData = [...preservedData, ...importedRows];
 
 localStorage.setItem('nexxa_data', JSON.stringify(globalData));
@@ -876,7 +891,7 @@ populateProjFilterDropdowns();
 populateStockFilterDropdowns();
 updateAllViews();
 
-alert(`Planilha importada com sucesso! Os dados do(s) cliente(s) [${importedClients.join(', ')}] foram atualizados, mantendo os demais preservados.`);
+alert(`Planilha importada com sucesso! Os registros correspondentes aos clientes e datas importados foram atualizados, mantendo o restante da base preservado.`);
 } else {
 alert("Nenhum dado válido encontrado na planilha.");
 }
@@ -1041,7 +1056,7 @@ consolidatedProdMap[row.produto].custoUnit = row.custoUnit;
 if(row.ean) consolidatedProdMap[row.produto].ean = row.ean;
 });
 
-// CÁLCULO CORRETO DO VALOR EM ESTOQUE NO DASHBOARD (respeitando filtros de cliente e categoria atuais)
+// CÁLCULO DO VALOR EM ESTOQUE NO DASHBOARD
 let uniqueStockMap = {};
 globalData.forEach(row => {
 if (selectedClient !== 'all' && row.cliente !== selectedClient) return;
@@ -1095,7 +1110,7 @@ document.getElementById('card-preco-medio').innerText = formatCurrency(precoMedi
 renderStorePerformance(clientValueMap, filteredData, totalFaturamento);
 renderWeeklyPerformanceFourWeeks(filteredData, totalFaturamento);
 renderCustomWeeklyComparison();
-renderCharts(prodValueMap, prodQtyMap, catValueMap, clientValueMap);
+renderCharts(prodValueMap, prodQtyMap, catValueMap, clientValueMap, filteredData);
 renderTurnoverTable(consolidatedProdMap);
 renderConsolidatedProducts(consolidatedProdMap);
 }
@@ -1180,11 +1195,8 @@ const searchTerm = document.getElementById('searchInput') ? document.getElementB
 
 let compData = globalData;
 
-// Filtra pela data exclusiva deste bloco
 if (compStart) compData = compData.filter(row => row.data >= compStart);
 if (compEnd) compData = compData.filter(row => row.data <= compEnd);
-
-// Respeita os demais filtros gerais
 if (selectedClient !== 'all') compData = compData.filter(row => row.cliente === selectedClient);
 if (selectedCat !== 'all') compData = compData.filter(row => row.categoria === selectedCat);
 if (selectedProd !== '') compData = compData.filter(row => row.produto.toLowerCase().includes(selectedProd));
@@ -1317,7 +1329,6 @@ const selectedProd = document.getElementById('stockProdFilter') ? document.getEl
 const searchTerm = document.getElementById('stockSearchInput') ? document.getElementById('stockSearchInput').value.trim().toLowerCase() : '';
 const pageSizeVal = document.getElementById('stockPageSize') ? document.getElementById('stockPageSize').value : '30';
 
-// Controla a visibilidade da coluna Cliente na tabela de estoque
 if (thClient) {
 thClient.style.display = (selectedClient === 'all') ? 'none' : '';
 }
@@ -1349,7 +1360,6 @@ if (diff > 0) daysCount = diff;
 const stockMap = {};
 
 if (selectedClient === 'all') {
-// Quando "Todos os Clientes" estiver selecionado: agrupa e soma por produto (sem separar cliente)
 globalData.forEach(row => {
 if (selectedCat !== 'all' && row.categoria !== selectedCat) return;
 
@@ -1365,14 +1375,11 @@ estoqueAtual: 0
 }
 });
 
-// Mapeia e soma as quantidades vendidas e o estoque atual consolidado por produto
 let filteredGlobalForStock = globalData;
 if (startDateVal) filteredGlobalForStock = filteredGlobalForStock.filter(row => row.data >= startDateVal);
 if (endDateVal) filteredGlobalForStock = filteredGlobalForStock.filter(row => row.data <= endDateVal);
 if (selectedCat !== 'all') filteredGlobalForStock = filteredGlobalForStock.filter(row => row.categoria === selectedCat);
 
-// Para o estoque atual consolidado, pegamos o último valor de estoque cadastrado de cada cliente por produto ou somamos.
-// Geralmente somamos o estoque de todas as lojas para a visão geral:
 let latestStockPerClientProd = {};
 globalData.forEach(row => {
 if (selectedCat !== 'all' && row.categoria !== selectedCat) return;
@@ -1395,13 +1402,11 @@ if (row.ean) stockMap[key].ean = row.ean;
 }
 });
 
-// Atribui o estoque total somado
 Object.keys(stockMap).forEach(key => {
 stockMap[key].estoqueAtual = aggregatedStock[stockMap[key].produto] || 0;
 });
 
 } else {
-// Quando um cliente específico for selecionado
 globalData.forEach(row => {
 if (row.cliente !== selectedClient) return;
 if (selectedCat !== 'all' && row.categoria !== selectedCat) return;
@@ -1520,7 +1525,6 @@ return info.estoque > 0 && info.qtdTotal <= 1;
 });
 }
 
-// ORDENAÇÃO FIXA: Estoque atual do maior para o menor
 sortedProducts.sort((a, b) => b[1].estoque - a[1].estoque);
 
 if(sortedProducts.length === 0) {
@@ -1640,9 +1644,60 @@ tbody.appendChild(tr);
 });
 }
 
-function renderCharts(prodVal, prodQty, catVal, clientVal) {
+function renderCharts(prodVal, prodQty, catVal, clientVal, filteredData) {
 Chart.defaults.color = '#94a3b8';
 Chart.defaults.borderColor = '#1e293b';
+
+const dailyMap = {};
+let maxDateStr = '';
+filteredData.forEach(r => {
+if (!maxDateStr || r.data > maxDateStr) maxDateStr = r.data;
+});
+const baseDate = maxDateStr ? new Date(maxDateStr + 'T00:00:00') : new Date();
+
+const last30DaysLabels = [];
+const last30DaysValues = [];
+for (let i = 29; i >= 0; i--) {
+const d = new Date(baseDate);
+d.setDate(baseDate.getDate() - i);
+const dateStr = d.toISOString().split('T')[0];
+last30DaysLabels.push(dateStr.split('-').reverse().join('/'));
+dailyMap[dateStr] = 0;
+}
+
+filteredData.forEach(row => {
+if (dailyMap[row.data] !== undefined) {
+dailyMap[row.data] += (row.qtd * row.vlrUnit);
+}
+});
+
+Object.keys(dailyMap).sort().forEach(dateStr => {
+last30DaysValues.push(dailyMap[dateStr]);
+});
+
+const ctx30Days = document.getElementById('chartLast30Days').getContext('2d');
+if(chartLast30DaysInst) chartLast30DaysInst.destroy();
+chartLast30DaysInst = new Chart(ctx30Days, {
+type: 'bar',
+data: {
+labels: last30DaysLabels,
+datasets: [{
+label: 'Faturamento Diário (R$)',
+data: last30DaysValues,
+backgroundColor: '#fbbf24',
+borderRadius: 4
+}]
+},
+options: {
+responsive: true,
+maintainAspectRatio: false,
+plugins: { legend: { display: false } },
+scales: {
+x: { grid: { display: false } },
+y: { grid: { color: '#1e293b' } }
+}
+}
+});
 
 const topVal = Object.entries(prodVal).sort((a,b) => b[1] - a[1]).slice(0, 10);
 const ctxVal = document.getElementById('chartTopValue').getContext('2d');
