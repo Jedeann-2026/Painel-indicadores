@@ -82,7 +82,7 @@ display: none !important;
 </label>
 <button onclick="downloadTemplateCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-center space-x-2 border border-slate-700">
 <i class="fa-solid fa-download"></i>
-<span>Modelo</span>
+<span>Modelo Vendas</span>
 </button>
 <button onclick="exportFullDatabaseJSON()" class="bg-slate-950 hover:bg-black text-amber-400 px-3.5 py-2 rounded-xl text-xs font-medium shadow-sm transition-all flex items-center justify-center space-x-2 border border-amber-500/30">
 <i class="fa-solid fa-floppy-disk"></i>
@@ -102,7 +102,7 @@ display: none !important;
 
 <div class="text-xs text-slate-400 flex items-center space-x-2">
 <i class="fa-solid fa-circle-info text-amber-400"></i>
-<span>Suporta colunas: Cliente/Filial, Categoria, Produto, EAN, Qtd. pedida, Qtd. disponível, Preço filial</span>
+<span>Colunas de Vendas: Cliente, Categoria, Produto, EAN, Qtd. pedida, Qtd. disponível, Preço filial, Data</span>
 </div>
 </div>
 
@@ -160,7 +160,7 @@ display: none !important;
 <div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-blue-500">
 <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Valor em Estoque</p>
 <h3 id="card-estoque-val" class="text-xl font-bold text-white mt-1">R$ 0,00</h3>
-<span class="text-xs text-blue-400 font-medium mt-2 inline-flex items-center"><i class="fa-solid fa-boxes-stacked mr-1"></i> Baseado no custo da nota</span>
+<span class="text-xs text-blue-400 font-medium mt-2 inline-flex items-center"><i class="fa-solid fa-boxes-stacked mr-1"></i> Baseado no filtro ativo</span>
 </div>
 <div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-amber-500">
 <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total de Vendas</p>
@@ -389,7 +389,7 @@ Projeção Mês: R$ 0,00
 </div>
 </div>
 
-<!-- ABA DE ESTOQUE (COM CLIENTE REINCORPORADO) -->
+<!-- ABA DE ESTOQUE -->
 <div id="tab-stock" class="space-y-6 hidden">
 <div class="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800 space-y-6">
 <div>
@@ -397,7 +397,6 @@ Projeção Mês: R$ 0,00
 <p class="text-xs text-slate-400 mt-1">Visão completa do estoque atual, cálculo automático de Mínimo/Máximo baseado em vendas e status de segurança por Cliente/Loja.</p>
 </div>
 
-<!-- Filtros da Aba Estoque -->
 <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-4 no-print">
 <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
 <div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 shadow-sm">
@@ -559,43 +558,71 @@ Projeção Mês: R$ 0,00
 </div>
 </div>
 
-<!-- ABA 3: NOTAS DE ENTRADA -->
+<!-- ABA 3: NOTAS DE ENTRADA (ATUALIZADA) -->
 <div id="tab-entries" class="space-y-6 hidden">
 <div class="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800 space-y-6">
 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
 <div>
-<h2 class="text-lg font-bold text-white">Importação e Gestão de Notas de Entrada</h2>
-<p class="text-xs text-slate-400 mt-1">Cadastre ou importe notas fiscais contendo EAN para amarrar automaticamente o custo e fornecedor aos produtos.</p>
+<h2 class="text-lg font-bold text-white"><i class="fa-solid fa-file-invoice-dollar text-amber-400 mr-2"></i>Gestão de Notas de Entrada / Pedidos</h2>
+<p class="text-xs text-slate-400 mt-1">Colunas suportadas na importação: <b>Pedido, Fornecedor, Produto, Ean, Data, Quantidade, Preço unitário</b>.</p>
 </div>
 
 <div class="flex items-center space-x-3 w-full md:w-auto">
 <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-sm transition-all flex items-center justify-center space-x-2">
 <i class="fa-solid fa-file-excel"></i>
-<span>Importar Notas de Entrada</span>
+<span>Importar Planilha de Notas</span>
 <input type="file" id="entry-excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleEntryFile(event)">
 </label>
 <button onclick="downloadEntryTemplateCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center space-x-2 border border-slate-700">
 <i class="fa-solid fa-download"></i>
-<span>Baixar Modelo Excel/CSV</span>
+<span>Baixar Modelo Notas</span>
 </button>
 </div>
 </div>
 
+<!-- Tabela Superior: Resumo das Notas/Pedidos -->
+<div class="space-y-3">
+<h3 class="text-sm font-bold text-amber-400 flex items-center"><i class="fa-solid fa-list mr-2"></i>Notas / Pedidos Registrados (Clique em um pedido para ver os itens abaixo)</h3>
+<div class="overflow-x-auto rounded-xl border border-slate-800 max-h-80 overflow-y-auto">
+<table class="w-full text-left border-collapse text-sm">
+<thead>
+<tr class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800 sticky top-0">
+<th class="p-4 font-semibold">Nº do Pedido / Nota</th>
+<th class="p-4 font-semibold">Fornecedor</th>
+<th class="p-4 font-semibold">Data</th>
+<th class="p-4 font-semibold text-center">Total de Itens</th>
+<th class="p-4 font-semibold text-right">Valor Total da Nota</th>
+<th class="p-4 font-semibold text-center">Ação</th>
+</tr>
+</thead>
+<tbody id="entryMasterTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
+</table>
+</div>
+</div>
+
+<!-- Bloco Inferior: Itens referentes à Nota/Pedido selecionada -->
+<div class="space-y-3 pt-4 border-t border-slate-800">
+<div class="flex justify-between items-center">
+<h3 id="selectedOrderTitle" class="text-sm font-bold text-amber-400 flex items-center">
+<i class="fa-solid fa-boxes-stacked mr-2"></i>Itens do Pedido / Nota Selecionada: <span class="text-slate-400 ml-1 font-normal">(Nenhum selecionado)</span>
+</h3>
+</div>
 <div class="overflow-x-auto rounded-xl border border-slate-800">
 <table class="w-full text-left border-collapse text-sm">
 <thead>
 <tr class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800">
-<th class="p-4 font-semibold">Fornecedor</th>
 <th class="p-4 font-semibold">Produto</th>
 <th class="p-4 font-semibold">EAN</th>
-<th class="p-4 font-semibold">Data</th>
 <th class="p-4 font-semibold text-center">Quantidade</th>
 <th class="p-4 font-semibold text-right">Preço Unitário</th>
 <th class="p-4 font-semibold text-right">Valor Total</th>
 </tr>
 </thead>
-<tbody id="entryTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
+<tbody id="entryDetailTableBody" class="divide-y divide-slate-800 text-slate-200">
+<tr><td colspan="5" class="p-4 text-center text-slate-500">Selecione uma nota/pedido na tabela acima para visualizar os itens.</td></tr>
+</tbody>
 </table>
+</div>
 </div>
 </div>
 </div>
@@ -617,9 +644,11 @@ let globalData = [
 ];
 
 let globalEntries = [
-{ fornecedor: "Fornecedor Central SP", produto: "ALGODAO", ean: "78944880", data: "2026-10-15", qtd: 100, precoUnit: 0.80 },
-{ fornecedor: "Fornecedor Central SP", produto: "ACUCAR", ean: "78964338", data: "2026-10-15", qtd: 200, precoUnit: 1.90 }
+{ pedido: "PED-001", fornecedor: "Fornecedor Central SP", produto: "ALGODAO", ean: "78944880", data: "2026-10-15", qtd: 100, precoUnit: 0.80 },
+{ pedido: "PED-001", fornecedor: "Fornecedor Central SP", produto: "ACUCAR", ean: "78964338", data: "2026-10-15", qtd: 200, precoUnit: 1.90 }
 ];
+
+let selectedOrderKey = null;
 
 const savedData = localStorage.getItem('nexxa_data');
 if (savedData) {
@@ -955,19 +984,6 @@ const catValueMap = {};
 const clientValueMap = {};
 const consolidatedProdMap = {};
 
-globalData.forEach(row => {
-if (!consolidatedProdMap[row.produto]) {
-consolidatedProdMap[row.produto] = {
-ean: row.ean || '',
-categoria: row.categoria,
-qtdTotal: 0,
-faturamentoTotal: 0,
-estoque: row.estoque,
-custoUnit: row.custoUnit
-};
-}
-});
-
 filteredData.sort((a, b) => b.qtd - a.qtd);
 
 filteredData.forEach(row => {
@@ -1045,7 +1061,6 @@ renderTurnoverTable(consolidatedProdMap);
 renderConsolidatedProducts(consolidatedProdMap);
 }
 
-// Função dos Cards Semanais ajustada estritamente para 4 Semanas
 function renderWeeklyPerformanceFourWeeks(filteredData, totalFaturamentoFiltrado) {
 const container = document.getElementById('weeklyCardsContainer');
 const badgeProjecao = document.getElementById('projecaoBadge');
@@ -1059,7 +1074,6 @@ if (!row.data) return;
 const dayOfMonth = parseInt(row.data.split('-')[2]);
 const faturamento = row.qtd * row.vlrUnit;
 
-// Distribuição estrita para 4 semanas (7 dias por semana, acumulando o final no 4º card)
 if (dayOfMonth <= 7) {
 weeklyTotals[1] += faturamento;
 } else if (dayOfMonth <= 14) {
@@ -1589,12 +1603,13 @@ const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
 
 if(json.length > 0) {
 const importedEntries = json.map(item => ({
+pedido: String(item['Pedido'] || item['pedido'] || item['Nº Pedido'] || 'PED-GEN').trim(),
 fornecedor: item['Fornecedor'] || item['fornecedor'] || 'Fornecedor Padrão',
 produto: item['Produto'] || item['produto'] || item['Nome do Produto'] || 'Não informado',
-ean: String(item['EAN'] || item['ean'] || '').trim(),
+ean: String(item['Ean'] || item['EAN'] || item['ean'] || '').trim(),
 data: parseExcelDate(item['Data'] || item['data']),
 qtd: parseDecimal(item['Quantidade'] || item['quantidade'] || item['Qtd']),
-precoUnit: parseDecimal(item['Preço Unitário'] || item['preco_unitario'] || item['Preco Unitario'] || item['Custo'] || 0)
+precoUnit: parseDecimal(item['Preço unitário'] || item['Preço Unitário'] || item['preco_unitario'] || item['Preco Unitario'] || item['Custo'] || 0)
 })).filter(row => row.produto !== 'Não informado' && row.produto !== '');
 
 if(importedEntries.length > 0) {
@@ -1619,9 +1634,10 @@ reader.readAsArrayBuffer(file);
 
 function downloadEntryTemplateCSV() {
 const csvContent = "data:text/csv;charset=utf-8,\uFEFF" +
-"Fornecedor;Produto;EAN;Data;Quantidade;Preço Unitário\n" +
-"Fornecedor Central SP;ALGODAO;78944880;15/10/2026;100;0,80\n" +
-"Fornecedor Central SP;ACUCAR;78964338;15/10/2026;200;1,90";
+"Pedido;Fornecedor;Produto;Ean;Data;Quantidade;Preço unitário\n" +
+"PED-001;Fornecedor Central SP;ALGODAO;78944880;15/10/2026;100;0,80\n" +
+"PED-001;Fornecedor Central SP;ACUCAR;78964338;15/10/2026;200;1,90\n" +
+"PED-002;Distribuidora Norte;ENXAG;78910241;18/10/2026;50;8,50";
 
 const encodedUri = encodeURI(csvContent);
 const link = document.createElement("a");
@@ -1633,25 +1649,89 @@ document.body.removeChild(link);
 }
 
 function renderEntries() {
-const tbody = document.getElementById('entryTableBody');
-if(!tbody) return;
-tbody.innerHTML = '';
+const masterTbody = document.getElementById('entryMasterTableBody');
+const detailTbody = document.getElementById('entryDetailTableBody');
+const titleEl = document.getElementById('selectedOrderTitle');
+if(!masterTbody || !detailTbody) return;
 
+masterTbody.innerHTML = '';
+
+// Agrupar itens por Pedido / Nota
+const ordersMap = {};
 globalEntries.forEach(row => {
-const total = row.qtd * row.precoUnit;
+const key = row.pedido || 'PED-GEN';
+if (!ordersMap[key]) {
+ordersMap[key] = {
+pedido: key,
+fornecedor: row.fornecedor,
+data: row.data,
+itensCount: 0,
+valorTotalNota: 0,
+itens: []
+};
+}
+const totalItem = row.qtd * row.precoUnit;
+ordersMap[key].itensCount += 1;
+ordersMap[key].valorTotalNota += totalItem;
+ordersMap[key].itens.push(row);
+});
+
+const ordersArray = Object.values(ordersMap);
+
+if (ordersArray.length === 0) {
+masterTbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">Nenhuma nota ou pedido cadastrado.</td></tr>`;
+detailTbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Nenhum pedido selecionado.</td></tr>`;
+return;
+}
+
+// Seleciona o primeiro pedido por padrão se nenhum estiver selecionado
+if (!selectedOrderKey || !ordersMap[selectedOrderKey]) {
+selectedOrderKey = ordersArray[0].pedido;
+}
+
+ordersArray.forEach(ord => {
+const isSelected = ord.pedido === selectedOrderKey;
+const tr = document.createElement('tr');
+tr.className = `cursor-pointer transition-colors ${isSelected ? 'bg-amber-500/10 border-l-4 border-l-amber-400' : 'hover:bg-slate-800/50'}`;
+tr.onclick = () => {
+selectedOrderKey = ord.pedido;
+renderEntries();
+};
+tr.innerHTML = `
+<td class="p-4 font-bold text-amber-400"><i class="fa-solid fa-file-lines mr-1.5 text-xs"></i>${ord.pedido}</td>
+<td class="p-4 font-semibold text-slate-100">${ord.fornecedor}</td>
+<td class="p-4 text-slate-400">${ord.data}</td>
+<td class="p-4 text-center text-slate-300 font-semibold">${ord.itensCount} item(ns)</td>
+<td class="p-4 text-right font-bold text-emerald-400">${formatCurrency(ord.valorTotalNota)}</td>
+<td class="p-4 text-center">
+<button class="px-2.5 py-1 bg-slate-800 hover:bg-amber-400 hover:text-slate-950 text-amber-400 rounded-lg text-xs font-semibold transition border border-slate-700">
+Ver Itens
+</button>
+</td>
+`;
+masterTbody.appendChild(tr);
+});
+
+// Renderiza os itens do pedido selecionado
+const activeOrder = ordersMap[selectedOrderKey];
+if (activeOrder) {
+titleEl.innerHTML = `<i class="fa-solid fa-boxes-stacked mr-2"></i>Itens do Pedido / Nota Selecionada: <span class="text-amber-300 ml-1 font-bold">${activeOrder.pedido} (${activeOrder.fornecedor} - ${activeOrder.data})</span>`;
+detailTbody.innerHTML = '';
+
+activeOrder.itens.forEach(item => {
+const totalItem = item.qtd * item.precoUnit;
 const tr = document.createElement('tr');
 tr.className = "hover:bg-slate-800/50 transition-colors";
 tr.innerHTML = `
-<td class="p-4 font-semibold text-slate-100">${row.fornecedor}</td>
-<td class="p-4 font-medium text-amber-400">${row.produto}</td>
-<td class="p-4 text-xs font-mono text-slate-400">${row.ean || '-'}</td>
-<td class="p-4 text-slate-400">${row.data}</td>
-<td class="p-4 text-center font-bold text-slate-100">${row.qtd}</td>
-<td class="p-4 text-right text-slate-300">${formatCurrency(row.precoUnit)}</td>
-<td class="p-4 text-right font-bold text-slate-100">${formatCurrency(total)}</td>
+<td class="p-4 font-medium text-amber-400">${item.produto}</td>
+<td class="p-4 text-xs font-mono text-slate-400">${item.ean || '-'}</td>
+<td class="p-4 text-center font-bold text-slate-100">${item.qtd}</td>
+<td class="p-4 text-right text-slate-300">${formatCurrency(item.precoUnit)}</td>
+<td class="p-4 text-right font-bold text-slate-100">${formatCurrency(totalItem)}</td>
 `;
-tbody.appendChild(tr);
+detailTbody.appendChild(tr);
 });
+}
 }
 
 function exportProjectionToExcel() {
