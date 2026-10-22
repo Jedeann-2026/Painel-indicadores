@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-PT">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -99,7 +99,7 @@ display: none !important;
 
 <div class="text-xs text-slate-400 flex items-center space-x-2">
 <i class="fa-solid fa-circle-info text-amber-400"></i>
-<span>Colunas esperadas: Cliente, Categoria, Nome do Produto, Data, Quantidade, Valor Unitário, Preço de Custo, Qtd. em Estoque, Estoque Mínimo, Estoque Máximo</span>
+<span>Suporta colunas: Categoria, Produto, EAN, Qtd. pedida, Qtd. disponível, Preço filial</span>
 </div>
 </div>
 
@@ -157,7 +157,7 @@ display: none !important;
 <div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-blue-500">
 <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Valor em Estoque</p>
 <h3 id="card-estoque-val" class="text-xl font-bold text-white mt-1">R$ 0,00</h3>
-<span class="text-xs text-blue-400 font-medium mt-2 inline-flex items-center"><i class="fa-solid fa-boxes-stacked mr-1"></i> Baseado no custo</span>
+<span class="text-xs text-blue-400 font-medium mt-2 inline-flex items-center"><i class="fa-solid fa-boxes-stacked mr-1"></i> Baseado no custo da nota</span>
 </div>
 <div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-amber-500">
 <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total de Vendas</p>
@@ -196,6 +196,24 @@ display: none !important;
 </div>
 </div>
 
+<!-- NOVO BLOCO: Faturamento Mensal por Semana e Projeção -->
+<div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
+<div class="p-5 border-b border-slate-800 flex justify-between items-center">
+<div>
+<h2 class="font-bold text-white text-base">
+<i class="fa-solid fa-calendar-weeks text-amber-400 mr-2"></i>Faturamento Mensal por Semana
+</h2>
+<p class="text-xs text-slate-400 mt-0.5">Distribuição do faturamento por semana do mês ativo.</p>
+</div>
+<span id="projecaoBadge" class="text-xs font-bold bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-lg border border-indigo-500/20">
+Projeção Mês: R$ 0,00
+</span>
+</div>
+<div class="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4" id="weeklyCardsContainer">
+<!-- Cards semanais injetados via JS -->
+</div>
+</div>
+
 <!-- 4º BLOCO: Seção de Gráficos -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 <div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col">
@@ -231,7 +249,7 @@ display: none !important;
 </div>
 </div>
 
-<!-- 5º BLOCO: CARD - Giro de Produto com Seletor de Paginação -->
+<!-- 5º BLOCO: CARD - Giro de Produto com Filtro de Baixo/Sem Giro -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
 <div class="p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 <div>
@@ -239,6 +257,11 @@ display: none !important;
 <p class="text-xs text-slate-400 mt-0.5">Analise a velocidade de saída e o volume de vendas por produto no período.</p>
 </div>
 <div class="flex flex-wrap items-center gap-3">
+<label class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-xs font-semibold text-slate-300 cursor-pointer select-none">
+<input type="checkbox" id="filterStockLowTurnover" onchange="currentPageTurnover=1; renderDashboard()" class="rounded text-amber-400 focus:ring-amber-400 w-4 h-4 bg-slate-900 border-slate-700">
+<span class="text-amber-400">Estoque e Baixo/Sem Giro</span>
+</label>
+
 <div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
 <span class="text-xs font-medium text-slate-400">Exibir:</span>
 <select id="turnoverPageSize" onchange="currentPageTurnover=1; renderDashboard()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
@@ -264,6 +287,7 @@ display: none !important;
 <thead>
 <tr class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800">
 <th class="p-4 font-semibold">Produto</th>
+<th class="p-4 font-semibold">EAN</th>
 <th class="p-4 font-semibold">Categoria</th>
 <th class="p-4 font-semibold text-center">Estoque Atual</th>
 <th class="p-4 font-semibold text-center">Qtd. Vendida (Período)</th>
@@ -310,6 +334,7 @@ display: none !important;
 <thead>
 <tr class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800">
 <th class="p-4 font-semibold">Produto</th>
+<th class="p-4 font-semibold">EAN</th>
 <th class="p-4 font-semibold text-center">Qtd. Total Vendida</th>
 <th class="p-4 font-semibold text-center">Estoque Atual</th>
 <th class="p-4 font-semibold text-right">Faturamento Total</th>
@@ -346,12 +371,12 @@ display: none !important;
 <th class="p-4 font-semibold">Cliente</th>
 <th class="p-4 font-semibold">Categoria</th>
 <th class="p-4 font-semibold">Produto</th>
+<th class="p-4 font-semibold">EAN</th>
 <th class="p-4 font-semibold">Data</th>
 <th class="p-4 font-semibold text-center">Qtd</th>
 <th class="p-4 font-semibold text-right">Vlr. Unit</th>
 <th class="p-4 font-semibold text-right">Vlr. Total</th>
 <th class="p-4 font-semibold text-center">Estoque Atual</th>
-<th class="p-4 font-semibold text-center">Mín / Máx</th>
 </tr>
 </thead>
 <tbody id="dataTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
@@ -366,7 +391,7 @@ display: none !important;
 <div class="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800">
 <div class="mb-4">
 <h2 class="text-lg font-bold text-white">Sugestão e Projeção de Compras por Produto</h2>
-<p class="text-xs text-slate-400 mt-1">Consolidação de vendas e sugestão de reposição (Sintético sem cliente ou Analítico com cliente).</p>
+<p class="text-xs text-slate-400 mt-1">Consolidação de vendas e sugestão de reposição com base no custo das Notas de Entrada (amarrado por EAN/Nome).</p>
 </div>
 
 <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6 flex flex-wrap items-center justify-between gap-4 no-print">
@@ -439,10 +464,11 @@ display: none !important;
 <tr class="bg-slate-950 text-slate-300 uppercase text-xs tracking-wider border-b border-slate-800">
 <th class="p-4 font-semibold" id="thProjClient">Cliente</th>
 <th class="p-4 font-semibold">Produto</th>
+<th class="p-4 font-semibold">EAN</th>
 <th class="p-4 font-semibold">Categoria</th>
 <th class="p-4 font-semibold text-center">Estoque Atual</th>
-<th class="p-4 font-semibold text-center">Qtd. Total Vendida (Período)</th>
-<th class="p-4 font-semibold text-center">Média Venda / Semana</th>
+<th class="p-4 font-semibold text-center">Qtd. Total Vendida</th>
+<th class="p-4 font-semibold text-center">Custo Unit. (Nota)</th>
 <th class="p-4 font-semibold text-center">Sugestão de Compra</th>
 </tr>
 </thead>
@@ -459,7 +485,7 @@ display: none !important;
 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
 <div>
 <h2 class="text-lg font-bold text-white">Importação e Gestão de Notas de Entrada</h2>
-<p class="text-xs text-slate-400 mt-1">Cadastre ou importe notas fiscais de fornecedores contendo: Fornecedor, Data, Quantidade, Preço Unitário, Produto e Descrição.</p>
+<p class="text-xs text-slate-400 mt-1">Cadastre ou importe notas fiscais contendo EAN para amarrar automaticamente o custo e fornecedor aos produtos.</p>
 </div>
 
 <div class="flex items-center space-x-3 w-full md:w-auto">
@@ -481,7 +507,7 @@ display: none !important;
 <tr class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800">
 <th class="p-4 font-semibold">Fornecedor</th>
 <th class="p-4 font-semibold">Produto</th>
-<th class="p-4 font-semibold">Descrição</th>
+<th class="p-4 font-semibold">EAN</th>
 <th class="p-4 font-semibold">Data</th>
 <th class="p-4 font-semibold text-center">Quantidade</th>
 <th class="p-4 font-semibold text-right">Preço Unitário</th>
@@ -505,11 +531,14 @@ display: none !important;
 <!-- Lógica JavaScript -->
 <script>
 let globalData = [
-{ cliente: "Cliente Alfa", categoria: "Bebidas", produto: "Cerveja Lata 350ml", data: "2026-06-01", qtd: 120, vlrUnit: 5.00, custoUnit: 3.00, estoque: 80, minStock: 30, maxStock: 150 },
-{ cliente: "Comércio Beta", categoria: "Bebidas", produto: "Água Mineral 500ml", data: "2026-06-02", qtd: 80, vlrUnit: 3.00, custoUnit: 1.20, estoque: 50, minStock: 25, maxStock: 120 },
-{ cliente: "Cliente Alfa", categoria: "Snacks", produto: "Batata Frita 90g", data: "2026-06-03", qtd: 45, vlrUnit: 9.00, custoUnit: 4.50, estoque: 15, minStock: 20, maxStock: 80 },
-{ cliente: "Loja Gama", categoria: "Bomboniere", produto: "Chocolate Barra", data: "2026-06-04", qtd: 60, vlrUnit: 7.50, custoUnit: 4.00, estoque: 10, minStock: 15, maxStock: 70 },
-{ cliente: "Cliente Delta", categoria: "Bebidas", produto: "Energético 250ml", data: "2026-06-05", qtd: 35, vlrUnit: 10.00, custoUnit: 5.50, estoque: 6, minStock: 10, maxStock: 50 }
+{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "PERFUM", produto: "ALGODAO", ean: "78944880", data: "2026-10-21", qtd: 18, vlrUnit: 1.29, custoUnit: 0.80, estoque: 86 },
+{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "MERCADO", produto: "ACUCAR", ean: "78964338", data: "2026-10-21", qtd: 12, vlrUnit: 2.99, custoUnit: 1.90, estoque: 128 },
+{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "HIGIENE", produto: "ENXAG", ean: "78910241", data: "2026-10-21", qtd: 3, vlrUnit: 12.89, custoUnit: 8.50, estoque: 19 }
+];
+
+let globalEntries = [
+{ fornecedor: "Fornecedor Central SP", produto: "ALGODAO", ean: "78944880", data: "2026-10-15", qtd: 100, precoUnit: 0.80 },
+{ fornecedor: "Fornecedor Central SP", produto: "ACUCAR", ean: "78964338", data: "2026-10-15", qtd: 200, precoUnit: 1.90 }
 ];
 
 const savedData = localStorage.getItem('nexxa_data');
@@ -517,7 +546,32 @@ if (savedData) {
 try { globalData = JSON.parse(savedData); } catch(e) { console.error("Erro ao carregar dados:", e); }
 }
 
-// Páginas atuais
+const savedEntries = localStorage.getItem('nexxa_entries');
+if (savedEntries) {
+try { globalEntries = JSON.parse(savedEntries); } catch(e) { console.error("Erro ao carregar notas salvas:", e); }
+}
+
+function syncCostsWithEntries() {
+const costMapByEan = {};
+const costMapByName = {};
+
+globalEntries.forEach(entry => {
+if (entry.ean) costMapByEan[String(entry.ean).trim()] = entry.precoUnit;
+if (entry.produto) costMapByName[entry.produto.trim().toUpperCase()] = entry.precoUnit;
+});
+
+globalData.forEach(item => {
+const cleanEan = item.ean ? String(item.ean).trim() : '';
+const cleanName = item.produto ? item.produto.trim().toUpperCase() : '';
+
+if (cleanEan && costMapByEan[cleanEan] !== undefined) {
+item.custoUnit = costMapByEan[cleanEan];
+} else if (cleanName && costMapByName[cleanName] !== undefined) {
+item.custoUnit = costMapByName[cleanName];
+}
+});
+}
+
 let currentPageTurnover = 1;
 let currentPageConsolidated = 1;
 let currentPageAnalytic = 1;
@@ -529,6 +583,7 @@ let chartCategoryInst = null;
 let chartClientsInst = null;
 
 function updateAllViews() {
+syncCostsWithEntries();
 currentPageTurnover = 1;
 currentPageConsolidated = 1;
 currentPageAnalytic = 1;
@@ -604,13 +659,13 @@ updateAllViews();
 }
 
 function parseExcelDate(val) {
-if (val === 0 || val === '0' || !val) return null;
+if (val === 0 || val === '0' || !val) return new Date().toISOString().split('T')[0];
 if (typeof val === 'number') {
 const excelDate = new Date((val - (25567 + 2)) * 86400 * 1000);
 return excelDate.toISOString().split('T')[0];
 }
 let str = String(val).trim();
-if (str === '0' || str === '') return null;
+if (str === '0' || str === '') return new Date().toISOString().split('T')[0];
 
 if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) {
 const parts = str.split('/');
@@ -621,7 +676,7 @@ return `${year}-${month}-${day}`;
 }
 
 if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-return str;
+return new Date().toISOString().split('T')[0];
 }
 
 function parseDecimal(val) {
@@ -646,22 +701,21 @@ const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
 
 if(json.length > 0) {
 const importedRows = json.map(item => ({
-cliente: item['Cliente'] || item['cliente'] || 'Geral',
+cliente: item['Cliente'] || item['cliente'] || item['Filial'] || item['filial'] || 'Geral',
 categoria: item['Categoria'] || item['categoria'] || 'Geral',
 produto: item['Nome do Produto'] || item['produto'] || item['Produto'] || 'Não informado',
+ean: String(item['EAN'] || item['ean'] || '').trim(),
 data: parseExcelDate(item['Data'] || item['data']),
-qtd: parseDecimal(item['Quantidade'] || item['quantidade'] || item['Qtd']),
-vlrUnit: parseDecimal(item['Valor Unitário'] || item['valor_unitario'] || item['Valor Unitario']),
-custoUnit: parseDecimal(item['Preço de Custo'] || item['preco_custo'] || item['Preco Custo']),
-estoque: parseDecimal(item['Qtd. em Estoque'] || item['estoque'] || item['Qtd em Estoque']),
-minStock: parseDecimal(item['Estoque Mínimo'] || item['estoque_minimo'] || item['Min Stock']),
-maxStock: parseDecimal(item['Estoque Máximo'] || item['estoque_maximo'] || item['Max Stock'] || 100)
-})).filter(row => row.data !== null);
+qtd: parseDecimal(item['Qtd. pedida'] || item['Quantidade'] || item['quantidade'] || item['Qtd'] || 0),
+vlrUnit: parseDecimal(item['Preço filial'] || item['Valor Unitário'] || item['valor_unitario'] || item['Valor Unitario'] || 0),
+custoUnit: parseDecimal(item['Preço de Custo'] || item['preco_custo'] || 0),
+estoque: parseDecimal(item['Qtd. disponível'] || item['Qtd. em Estoque'] || item['estoque'] || 0),
+minStock: 10,
+maxStock: 100
+})).filter(row => row.produto !== 'Não informado' && row.produto !== '');
 
 if(importedRows.length > 0) {
-const importedClients = new Set(importedRows.map(r => r.cliente));
-globalData = globalData.filter(row => !importedClients.has(row.cliente)).concat(importedRows);
-
+globalData = importedRows;
 localStorage.setItem('nexxa_data', JSON.stringify(globalData));
 populateFilterDropdowns();
 populateProjFilterDropdowns();
@@ -707,11 +761,10 @@ products.forEach(p => { prodList.innerHTML += `<option value="${p}">`; });
 
 function downloadTemplateCSV() {
 const csvContent = "data:text/csv;charset=utf-8,\uFEFF" +
-"Cliente;Categoria;Nome do Produto;Data;Quantidade;Valor Unitário;Preço de Custo;Qtd. em Estoque;Estoque Mínimo;Estoque Máximo\n" +
-"Cliente Alfa;Bebidas;Cerveja Lata 350ml;12/10/2026;120;5,00;3,00;80;30;150\n" +
-"Comércio Beta;Bebidas;Água Mineral 500ml;15/10/2026;80;3,00;1,20;50;25;120\n" +
-"Cliente Alfa;Snacks;Batata Frita 90g;18/10/2026;45;9,00;4,50;15;20;80\n" +
-"Loja Gama;Bomboniere;Chocolate Barra;20/10/2026;60;7,50;4,00;10;15;70";
+"Categoria;Produto;EAN;Qtd. pedida;Qtd. disponível;Preço filial\n" +
+"PERFUM;ALGODAO;78944880;18;86;1,29\n" +
+"MERCADO;ACUCAR;78964338;12;128;2,99\n" +
+"HIGIENE;ENXAG;78910241;3;19;12,89";
 
 const encodedUri = encodeURI(csvContent);
 const link = document.createElement("a");
@@ -784,7 +837,8 @@ if (searchTerm !== '') {
 filteredData = filteredData.filter(row =>
 row.produto.toLowerCase().includes(searchTerm) ||
 row.cliente.toLowerCase().includes(searchTerm) ||
-row.categoria.toLowerCase().includes(searchTerm)
+row.categoria.toLowerCase().includes(searchTerm) ||
+(row.ean && row.ean.toLowerCase().includes(searchTerm))
 );
 }
 
@@ -798,6 +852,20 @@ const prodQtyMap = {};
 const catValueMap = {};
 const clientValueMap = {};
 const consolidatedProdMap = {};
+
+globalData.forEach(row => {
+if (!consolidatedProdMap[row.produto]) {
+consolidatedProdMap[row.produto] = {
+ean: row.ean || '',
+categoria: row.categoria,
+qtdTotal: 0,
+faturamentoTotal: 0,
+estoque: row.estoque,
+minStock: row.minStock,
+custoUnit: row.custoUnit
+};
+}
+});
 
 filteredData.sort((a, b) => b.qtd - a.qtd);
 
@@ -815,6 +883,7 @@ clientValueMap[row.cliente] = (clientValueMap[row.cliente] || 0) + faturamento;
 
 if (!consolidatedProdMap[row.produto]) {
 consolidatedProdMap[row.produto] = {
+ean: row.ean || '',
 categoria: row.categoria,
 qtdTotal: 0,
 faturamentoTotal: 0,
@@ -827,15 +896,14 @@ consolidatedProdMap[row.produto].qtdTotal += row.qtd;
 consolidatedProdMap[row.produto].faturamentoTotal += faturamento;
 consolidatedProdMap[row.produto].estoque = row.estoque;
 consolidatedProdMap[row.produto].custoUnit = row.custoUnit;
+if(row.ean) consolidatedProdMap[row.produto].ean = row.ean;
 });
 
-// Cálculo do Valor em Estoque obedecendo estritamente os produtos filtrados
 let totalEstoqueVal = 0;
 Object.values(consolidatedProdMap).forEach(info => {
-totalEstoqueVal += (info.estoque * info.custoUnit);
+totalEstoqueVal += (info.estoque * (info.custoUnit > 0 ? info.custoUnit : 1));
 });
 
-// Tabela Analítica com Paginação
 const analyticPageSizeVal = document.getElementById('analyticPageSize') ? document.getElementById('analyticPageSize').value : '30';
 const { pageItems: analyticPageItems } = renderPaginationControls('analyticPagination', filteredData, analyticPageSizeVal, currentPageAnalytic, 'changeAnalyticPage');
 
@@ -849,12 +917,12 @@ tr.innerHTML = `
 <td class="p-4 font-medium text-slate-100">${row.cliente}</td>
 <td class="p-4"><span class="px-2.5 py-1 bg-slate-800 text-slate-300 rounded-md text-xs font-medium border border-slate-700">${row.categoria}</span></td>
 <td class="p-4 font-medium text-amber-400">${row.produto}</td>
+<td class="p-4 text-xs font-mono text-slate-400">${row.ean || '-'}</td>
 <td class="p-4 text-slate-400">${row.data}</td>
 <td class="p-4 text-center font-semibold text-slate-100">${row.qtd}</td>
 <td class="p-4 text-right text-slate-300">${formatCurrency(row.vlrUnit)}</td>
 <td class="p-4 text-right font-bold text-slate-100">${formatCurrency(faturamento)}</td>
 <td class="p-4 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${row.estoque <= row.minStock ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${row.estoque}</span></td>
-<td class="p-4 text-center text-xs text-slate-400">Mín: <b>${row.minStock}</b> / Máx: <b>${row.maxStock}</b></td>
 `;
 tbodyAnalytic.appendChild(tr);
 });
@@ -871,9 +939,69 @@ document.getElementById('card-vendas').innerText = totalVendasCount;
 document.getElementById('card-preco-medio').innerText = formatCurrency(precoMedioUnitario);
 
 renderStorePerformance(clientValueMap, filteredData, totalFaturamento);
+renderWeeklyPerformance(filteredData);
 renderCharts(prodValueMap, prodQtyMap, catValueMap, clientValueMap);
 renderTurnoverTable(consolidatedProdMap);
 renderConsolidatedProducts(consolidatedProdMap);
+}
+
+function renderWeeklyPerformance(filteredData) {
+const container = document.getElementById('weeklyCardsContainer');
+const badgeProjecao = document.getElementById('projecaoBadge');
+if (!container) return;
+
+container.innerHTML = '';
+const weeklyTotals = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+let totalMesAcumulado = 0;
+
+filteredData.forEach(row => {
+if (!row.data) return;
+const dateObj = new Date(row.data);
+const dayOfMonth = dateObj.getUTCDate();
+const faturamento = row.qtd * row.vlrUnit;
+
+totalMesAcumulado += faturamento;
+
+if (dayOfMonth <= 7) weeklyTotals[1] += faturamento;
+else if (dayOfMonth <= 14) weeklyTotals[2] += faturamento;
+else if (dayOfMonth <= 21) weeklyTotals[3] += faturamento;
+else if (dayOfMonth <= 28) weeklyTotals[4] += faturamento;
+else weeklyTotals[5] += faturamento;
+});
+
+for (let sem = 1; sem <= 5; sem++) {
+const valorSemana = weeklyTotals[sem];
+const percentual = totalMesAcumulado > 0 ? ((valorSemana / totalMesAcumulado) * 100).toFixed(1) : 0;
+
+const card = document.createElement('div');
+card.className = "bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between space-y-2";
+card.innerHTML = `
+<div class="flex justify-between items-center text-xs text-slate-400 font-semibold uppercase">
+<span>Semana ${sem}</span>
+<i class="fa-solid fa-calendar-day text-amber-400/70"></i>
+</div>
+<div class="text-lg font-bold text-white">${formatCurrency(valorSemana)}</div>
+<div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+<div class="bg-amber-400 h-1.5" style="width: ${percentual}%"></div>
+</div>
+<div class="text-[10px] text-slate-500 text-right font-medium">${percentual}% do total</div>
+`;
+container.appendChild(card);
+}
+
+const hoje = new Date();
+const diaAtual = hoje.getDate();
+const ultimoDiaDoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
+
+if (diaAtual > 0 && totalMesAcumulado > 0) {
+const mediaDiaria = totalMesAcumulado / diaAtual;
+const projecaoTotal = mediaDiaria * ultimoDiaDoMes;
+if (badgeProjecao) {
+badgeProjecao.innerText = `Projeção Mês: ${formatCurrency(projecaoTotal)}`;
+}
+} else if (badgeProjecao) {
+badgeProjecao.innerText = `Projeção Mês: R$ 0,00`;
+}
 }
 
 function renderTurnoverTable(consolidatedMap) {
@@ -883,14 +1011,23 @@ tbody.innerHTML = '';
 
 const sortOrder = document.getElementById('turnoverSortOrder') ? document.getElementById('turnoverSortOrder').value : 'desc';
 const pageSizeVal = document.getElementById('turnoverPageSize') ? document.getElementById('turnoverPageSize').value : '30';
+const filterStockLowTurnover = document.getElementById('filterStockLowTurnover') ? document.getElementById('filterStockLowTurnover').checked : false;
 
-const sortedProducts = Object.entries(consolidatedMap).sort((a, b) => {
+let sortedProducts = Object.entries(consolidatedMap);
+
+if (filterStockLowTurnover) {
+sortedProducts = sortedProducts.filter(([prodName, info]) => {
+return info.estoque > 0 && info.qtdTotal <= 1;
+});
+}
+
+sortedProducts.sort((a, b) => {
 if (sortOrder === 'asc') return a[1].qtdTotal - b[1].qtdTotal;
 return b[1].qtdTotal - a[1].qtdTotal;
 });
 
 if(sortedProducts.length === 0) {
-tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">Nenhum dado encontrado para o filtro selecionado.</td></tr>`;
+tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Nenhum dado encontrado para o filtro selecionado.</td></tr>`;
 renderPaginationControls('turnoverPagination', [], pageSizeVal, currentPageTurnover, 'changeTurnoverPage');
 return;
 }
@@ -899,19 +1036,20 @@ const { pageItems } = renderPaginationControls('turnoverPagination', sortedProdu
 
 pageItems.forEach(([prodName, info]) => {
 let turnoverRatio = info.estoque > 0 ? (info.qtdTotal / info.estoque) : info.qtdTotal;
-let badgeColor = turnoverRatio >= 1 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+let badgeColor = info.qtdTotal === 0 ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : (turnoverRatio >= 1 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20');
 
 const tr = document.createElement('tr');
 tr.className = "hover:bg-slate-800/50 transition-colors";
 tr.innerHTML = `
 <td class="p-4 font-bold text-amber-400">${prodName}</td>
+<td class="p-4 text-xs font-mono text-slate-400">${info.ean || '-'}</td>
 <td class="p-4"><span class="px-2.5 py-1 bg-slate-800 text-slate-300 rounded-md text-xs font-medium border border-slate-700">${info.categoria}</span></td>
 <td class="p-4 text-center font-bold text-slate-100">${info.estoque} un</td>
 <td class="p-4 text-center font-bold text-white">${info.qtdTotal} un</td>
 <td class="p-4 text-right font-semibold text-slate-200">${formatCurrency(info.faturamentoTotal)}</td>
 <td class="p-4 text-center">
 <span class="px-3 py-1 rounded-lg text-xs font-bold border ${badgeColor}">
-${turnoverRatio.toFixed(2)}x (Giro)
+${info.qtdTotal === 0 ? 'Sem Giro (0x)' : `${turnoverRatio.toFixed(2)}x (Giro)`}
 </span>
 </td>
 `;
@@ -933,7 +1071,7 @@ return b[1].faturamentoTotal - a[1].faturamentoTotal;
 });
 
 if(sortedProducts.length === 0) {
-tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">Nenhum dado encontrado para o filtro selecionado.</td></tr>`;
+tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Nenhum dado encontrado para o filtro selecionado.</td></tr>`;
 renderPaginationControls('consolidatedPagination', [], pageSizeVal, currentPageConsolidated, 'changeConsolidatedPage');
 return;
 }
@@ -945,6 +1083,7 @@ const tr = document.createElement('tr');
 tr.className = "hover:bg-slate-800/50 transition-colors";
 tr.innerHTML = `
 <td class="p-4 font-bold text-amber-400">${prodName}</td>
+<td class="p-4 text-xs font-mono text-slate-400">${info.ean || '-'}</td>
 <td class="p-4 text-center font-semibold text-slate-100 ${sortBy === 'quantidade' ? 'text-amber-300 font-bold' : ''}">${info.qtdTotal}</td>
 <td class="p-4 text-center">
 <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${info.estoque <= info.minStock ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">
@@ -1084,7 +1223,8 @@ if (projSearchTerm) {
 filteredData = filteredData.filter(row =>
 row.produto.toLowerCase().includes(projSearchTerm) ||
 row.cliente.toLowerCase().includes(projSearchTerm) ||
-row.categoria.toLowerCase().includes(projSearchTerm)
+row.categoria.toLowerCase().includes(projSearchTerm) ||
+(row.ean && row.ean.toLowerCase().includes(projSearchTerm))
 );
 }
 
@@ -1097,14 +1237,18 @@ if(!productStats[key]) {
 productStats[key] = {
 cliente: row.cliente,
 produto: row.produto,
+ean: row.ean || '',
 categoria: row.categoria,
 totalQtdVendida: 0,
 estoqueAtual: row.estoque,
+custoUnit: row.custoUnit,
 datas: []
 };
 }
 productStats[key].totalQtdVendida += row.qtd;
 productStats[key].estoqueAtual = row.estoque;
+productStats[key].custoUnit = row.custoUnit;
+if(row.ean) productStats[key].ean = row.ean;
 productStats[key].datas.push(new Date(row.data));
 });
 
@@ -1119,7 +1263,7 @@ return suggestion > 0;
 }
 
 if (sortedKeys.length === 0) {
-tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Nenhum produto encontrado para o filtro selecionado.</td></tr>`;
+tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Nenhum produto encontrado para o filtro selecionado.</td></tr>`;
 renderPaginationControls('projPagination', [], pageSizeVal, currentPageProj, 'changeProjPage');
 return;
 }
@@ -1128,15 +1272,6 @@ const { pageItems } = renderPaginationControls('projPagination', sortedKeys, pag
 
 pageItems.forEach(key => {
 const stats = productStats[key];
-let weeksSpan = 4;
-if(stats.datas.length > 1) {
-const minDate = new Date(Math.min.apply(null, stats.datas));
-const maxDate = new Date(Math.max.apply(null, stats.datas));
-const diffDays = Math.ceil(Math.abs(maxDate - minDate) / (1000 * 60 * 60 * 24));
-weeksSpan = Math.max(1, Math.ceil(diffDays / 7));
-}
-
-const avgWeeklySales = stats.totalQtdVendida / weeksSpan;
 let suggestion = Math.max(0, stats.totalQtdVendida - stats.estoqueAtual);
 
 const tr = document.createElement('tr');
@@ -1146,24 +1281,15 @@ tr.innerHTML = `
 <i class="fa-solid fa-shop text-amber-400 text-xs mr-1.5"></i>${stats.cliente}
 </td>
 <td class="p-4 font-semibold text-amber-400">${stats.produto}</td>
+<td class="p-4 text-xs font-mono text-slate-400">${stats.ean || '-'}</td>
 <td class="p-4"><span class="px-2.5 py-1 bg-slate-800 text-slate-300 rounded-md text-xs font-medium border border-slate-700">${stats.categoria}</span></td>
 <td class="p-4 text-center font-bold text-slate-100">${stats.estoqueAtual}</td>
 <td class="p-4 text-center font-bold text-white">${stats.totalQtdVendida}</td>
-<td class="p-4 text-center text-slate-400">${avgWeeklySales.toFixed(1)} /sem</td>
+<td class="p-4 text-center text-slate-300">${formatCurrency(stats.custoUnit)}</td>
 <td class="p-4 text-center"><span class="px-3 py-1 bg-amber-500/10 text-amber-400 font-bold rounded-lg border border-amber-500/20">${suggestion} un</span></td>
 `;
 tbody.appendChild(tr);
 });
-}
-
-let globalEntries = [
-{ fornecedor: "Distribuidora Bebidas SP", produto: "Cerveja Lata 350ml", descricao: "Lote promocional de verão", data: "2026-05-28", qtd: 300, precoUnit: 3.00 },
-{ fornecedor: "Águas Cristalinas Ltda", produto: "Água Mineral 500ml", descricao: "Reposição quinzenal", data: "2026-05-30", qtd: 200, precoUnit: 1.20 }
-];
-
-const savedEntries = localStorage.getItem('nexxa_entries');
-if (savedEntries) {
-try { globalEntries = JSON.parse(savedEntries); } catch(e) { console.error("Erro ao carregar notas salvas:", e); }
 }
 
 function handleEntryFile(e) {
@@ -1182,19 +1308,18 @@ if(json.length > 0) {
 const importedEntries = json.map(item => ({
 fornecedor: item['Fornecedor'] || item['fornecedor'] || 'Fornecedor Padrão',
 produto: item['Produto'] || item['produto'] || item['Nome do Produto'] || 'Não informado',
-descricao: item['Descrição'] || item['descricao'] || item['Descricao'] || '',
+ean: String(item['EAN'] || item['ean'] || '').trim(),
 data: parseExcelDate(item['Data'] || item['data']),
 qtd: parseDecimal(item['Quantidade'] || item['quantidade'] || item['Qtd']),
-precoUnit: parseDecimal(item['Preço Unitário'] || item['preco_unitario'] || item['Preco Unitario'])
-})).filter(row => row.data !== null);
+precoUnit: parseDecimal(item['Preço Unitário'] || item['preco_unitario'] || item['Preco Unitario'] || item['Custo'] || 0)
+})).filter(row => row.produto !== 'Não informado' && row.produto !== '');
 
 if(importedEntries.length > 0) {
-const importedSuppliers = new Set(importedEntries.map(r => r.fornecedor));
-globalEntries = globalEntries.filter(row => !importedSuppliers.has(row.fornecedor)).concat(importedEntries);
-
+globalEntries = importedEntries;
 localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
+updateAllViews();
 renderEntries();
-alert("Notas de entrada importadas com sucesso!");
+alert("Notas de entrada importadas e custos amarrados com sucesso!");
 } else {
 alert("Nenhum dado válido encontrado.");
 }
@@ -1211,9 +1336,9 @@ reader.readAsArrayBuffer(file);
 
 function downloadEntryTemplateCSV() {
 const csvContent = "data:text/csv;charset=utf-8,\uFEFF" +
-"Fornecedor;Produto;Descrição;Data;Quantidade;Preço Unitário\n" +
-"Distribuidora Bebidas SP;Cerveja Lata 350ml;Lote promocional de verão;28/05/2026;300;3,00\n" +
-"Águas Cristalinas Ltda;Água Mineral 500ml;Reposição quinzenal;30/05/2026;200;1,20";
+"Fornecedor;Produto;EAN;Data;Quantidade;Preço Unitário\n" +
+"Fornecedor Central SP;ALGODAO;78944880;15/10/2026;100;0,80\n" +
+"Fornecedor Central SP;ACUCAR;78964338;15/10/2026;200;1,90";
 
 const encodedUri = encodeURI(csvContent);
 const link = document.createElement("a");
@@ -1226,6 +1351,7 @@ document.body.removeChild(link);
 
 function renderEntries() {
 const tbody = document.getElementById('entryTableBody');
+if(!tbody) return;
 tbody.innerHTML = '';
 
 globalEntries.forEach(row => {
@@ -1235,7 +1361,7 @@ tr.className = "hover:bg-slate-800/50 transition-colors";
 tr.innerHTML = `
 <td class="p-4 font-semibold text-slate-100">${row.fornecedor}</td>
 <td class="p-4 font-medium text-amber-400">${row.produto}</td>
-<td class="p-4 text-slate-400 text-xs">${row.descricao}</td>
+<td class="p-4 text-xs font-mono text-slate-400">${row.ean || '-'}</td>
 <td class="p-4 text-slate-400">${row.data}</td>
 <td class="p-4 text-center font-bold text-slate-100">${row.qtd}</td>
 <td class="p-4 text-right text-slate-300">${formatCurrency(row.precoUnit)}</td>
@@ -1264,7 +1390,8 @@ if (projSearchTerm) {
 filteredData = filteredData.filter(row =>
 row.produto.toLowerCase().includes(projSearchTerm) ||
 row.cliente.toLowerCase().includes(projSearchTerm) ||
-row.categoria.toLowerCase().includes(projSearchTerm)
+row.categoria.toLowerCase().includes(projSearchTerm) ||
+(row.ean && row.ean.toLowerCase().includes(projSearchTerm))
 );
 }
 
@@ -1275,15 +1402,16 @@ if(!productStats[key]) {
 productStats[key] = {
 cliente: row.cliente,
 produto: row.produto,
+ean: row.ean || '',
 categoria: row.categoria,
 totalQtdVendida: 0,
 estoqueAtual: row.estoque,
-datas: []
+custoUnit: row.custoUnit
 };
 }
 productStats[key].totalQtdVendida += row.qtd;
 productStats[key].estoqueAtual = row.estoque;
-productStats[key].datas.push(new Date(row.data));
+productStats[key].custoUnit = row.custoUnit;
 });
 
 const exportData = [];
@@ -1291,14 +1419,6 @@ const sortedKeys = Object.keys(productStats).sort((a, b) => productStats[b].tota
 
 sortedKeys.forEach(key => {
 const stats = productStats[key];
-let weeksSpan = 4;
-if(stats.datas.length > 1) {
-const minDate = new Date(Math.min.apply(null, stats.datas));
-const maxDate = new Date(Math.max.apply(null, stats.datas));
-const diffDays = Math.ceil(Math.abs(maxDate - minDate) / (1000 * 60 * 60 * 24));
-weeksSpan = Math.max(1, Math.ceil(diffDays / 7));
-}
-const avgWeeklySales = stats.totalQtdVendida / weeksSpan;
 let suggestion = Math.max(0, stats.totalQtdVendida - stats.estoqueAtual);
 
 if (onlySuggestionFilter && suggestion <= 0) return;
@@ -1306,10 +1426,11 @@ if (onlySuggestionFilter && suggestion <= 0) return;
 let rowObj = {};
 if (mode === 'analytic') rowObj["Cliente"] = stats.cliente;
 rowObj["Produto"] = stats.produto;
+rowObj["EAN"] = stats.ean;
 rowObj["Categoria"] = stats.categoria;
 rowObj["Estoque Atual"] = stats.estoqueAtual;
 rowObj["Qtd Total Vendida"] = stats.totalQtdVendida;
-rowObj["Média Venda / Semana"] = parseFloat(avgWeeklySales.toFixed(1));
+rowObj["Custo Unitário"] = stats.custoUnit;
 rowObj["Sugestão de Compra"] = suggestion;
 
 exportData.push(rowObj);
