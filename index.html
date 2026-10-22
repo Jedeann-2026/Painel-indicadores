@@ -17,10 +17,10 @@
 body * {
 visibility: hidden;
 }
-#tab-projection, #tab-projection * {
+#tab-projection, #tab-projection *, #tab-stock, #tab-stock * {
 visibility: visible;
 }
-#tab-projection {
+#tab-projection, #tab-stock {
 position: absolute;
 left: 0;
 top: 0;
@@ -52,15 +52,18 @@ display: none !important;
 </div>
 
 <!-- Navegação de Abas -->
-<div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 gap-1">
-<button onclick="switchTab('dashboard')" id="btn-tab-dashboard" class="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-amber-400 text-slate-950 font-bold shadow-sm">
-<i class="fa-solid fa-chart-pie mr-2"></i>Dashboard
+<div class="flex flex-wrap bg-slate-950 p-1 rounded-xl border border-slate-800 gap-1">
+<button onclick="switchTab('dashboard')" id="btn-tab-dashboard" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-all bg-amber-400 text-slate-950 font-bold shadow-sm">
+<i class="fa-solid fa-chart-pie mr-1.5"></i>Dashboard
 </button>
-<button onclick="switchTab('projection')" id="btn-tab-projection" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white">
-<i class="fa-solid fa-cart-shopping mr-2"></i>Projeção de Compras
+<button onclick="switchTab('stock')" id="btn-tab-stock" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white">
+<i class="fa-solid fa-boxes-stacked mr-1.5"></i>Estoque
 </button>
-<button onclick="switchTab('entries')" id="btn-tab-entries" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white">
-<i class="fa-solid fa-file-invoice-dollar mr-2"></i>Notas de Entrada
+<button onclick="switchTab('projection')" id="btn-tab-projection" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white">
+<i class="fa-solid fa-cart-shopping mr-1.5"></i>Projeção de Compras
+</button>
+<button onclick="switchTab('entries')" id="btn-tab-entries" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white">
+<i class="fa-solid fa-file-invoice-dollar mr-1.5"></i>Notas de Entrada
 </button>
 </div>
 </div>
@@ -196,7 +199,7 @@ display: none !important;
 </div>
 </div>
 
-<!-- NOVO BLOCO: Faturamento Mensal por Semana e Projeção -->
+<!-- Faturamento Mensal por Semana e Projeção -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
 <div class="p-5 border-b border-slate-800 flex justify-between items-center">
 <div>
@@ -210,7 +213,7 @@ Projeção Mês: R$ 0,00
 </span>
 </div>
 <div class="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4" id="weeklyCardsContainer">
-<!-- Cards semanais injetados via JS -->
+<!-- Cards semanais via JS -->
 </div>
 </div>
 
@@ -383,6 +386,82 @@ Projeção Mês: R$ 0,00
 </table>
 </div>
 <div id="analyticPagination" class="p-4 bg-slate-950 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400"></div>
+</div>
+</div>
+
+<!-- ABA NOVA: ESTOQUE (CONTROLE DE MÍNIMO E MÁXIMO) -->
+<div id="tab-stock" class="space-y-6 hidden">
+<div class="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800 space-y-6">
+<div>
+<h2 class="text-lg font-bold text-white"><i class="fa-solid fa-boxes-stacked text-amber-400 mr-2"></i>Gestão de Estoque - Mínimo e Máximo</h2>
+<p class="text-xs text-slate-400 mt-1">Visão completa do estoque atual, cálculo automático de Mínimo/Máximo baseado em vendas e status de segurança do produto.</p>
+</div>
+
+<!-- Filtros da Aba Estoque -->
+<div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-4 no-print">
+<div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+<div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 shadow-sm">
+<select id="stockDatePreset" onchange="applyStockDatePreset()" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer">
+<option value="all">Todo o Período</option>
+<option value="7">Últimos 7 dias</option>
+<option value="15">Últimos 15 dias</option>
+<option value="30">Últimos 30 dias</option>
+<option value="custom" selected>Personalizado</option>
+</select>
+<div class="flex items-center space-x-1 border-l border-slate-800 pl-2">
+<span class="text-xs text-slate-400 font-medium">De:</span>
+<input type="date" id="stockStartDate" onchange="onStockCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+<span class="text-xs text-slate-400 font-medium ml-1">Até:</span>
+<input type="date" id="stockEndDate" onchange="onStockCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+</div>
+</div>
+
+<select id="stockClientFilter" onchange="currentPageStock=1; renderStockView()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 font-medium text-slate-200">
+<option value="all">Todos os Clientes</option>
+</select>
+
+<select id="stockCatFilter" onchange="currentPageStock=1; renderStockView()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 font-medium text-slate-200">
+<option value="all">Todas as Categorias</option>
+</select>
+
+<div class="relative">
+<input type="text" id="stockProdFilter" list="stockProdList" placeholder="Filtrar produto..." oninput="currentPageStock=1; renderStockView()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 font-medium text-slate-200 w-44">
+<datalist id="stockProdList"></datalist>
+</div>
+
+<input type="text" id="stockSearchInput" placeholder="Contém na descrição / EAN..." onkeyup="currentPageStock=1; renderStockView()" class="px-4 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 text-slate-200 w-full sm:w-52">
+</div>
+
+<div class="flex items-center space-x-2 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
+<span class="text-xs font-medium text-slate-400">Exibir:</span>
+<select id="stockPageSize" onchange="currentPageStock=1; renderStockView()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
+<option value="10">10 / pág</option>
+<option value="30" selected>30 / pág</option>
+<option value="50">50 / pág</option>
+<option value="100">100 / pág</option>
+<option value="all">Todos</option>
+</select>
+</div>
+</div>
+
+<div class="overflow-x-auto rounded-xl border border-slate-800">
+<table class="w-full text-left border-collapse text-sm">
+<thead>
+<tr class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800">
+<th class="p-4 font-semibold">Produto</th>
+<th class="p-4 font-semibold">EAN</th>
+<th class="p-4 font-semibold">Categoria</th>
+<th class="p-4 font-semibold text-center">Qtd. Vendida (Período)</th>
+<th class="p-4 font-semibold text-center">Estoque Atual</th>
+<th class="p-4 font-semibold text-center">Estoque Mínimo</th>
+<th class="p-4 font-semibold text-center">Estoque Máximo</th>
+<th class="p-4 font-semibold text-center">Status do Estoque</th>
+</tr>
+</thead>
+<tbody id="stockTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
+</table>
+</div>
+<div id="stockPagination" class="p-4 bg-slate-950 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400"></div>
 </div>
 </div>
 
@@ -576,6 +655,7 @@ let currentPageTurnover = 1;
 let currentPageConsolidated = 1;
 let currentPageAnalytic = 1;
 let currentPageProj = 1;
+let currentPageStock = 1;
 
 let chartTopValueInst = null;
 let chartTopQtyInst = null;
@@ -588,7 +668,9 @@ currentPageTurnover = 1;
 currentPageConsolidated = 1;
 currentPageAnalytic = 1;
 currentPageProj = 1;
+currentPageStock = 1;
 renderDashboard();
+renderStockView();
 renderProjection();
 }
 
@@ -600,6 +682,7 @@ localStorage.removeItem('nexxa_data');
 localStorage.removeItem('nexxa_entries');
 populateFilterDropdowns();
 populateProjFilterDropdowns();
+populateStockFilterDropdowns();
 updateAllViews();
 renderEntries();
 alert("Base de dados limpa com sucesso!");
@@ -608,30 +691,40 @@ alert("Base de dados limpa com sucesso!");
 
 function switchTab(tabName) {
 const dashTab = document.getElementById('tab-dashboard');
+const stockTab = document.getElementById('tab-stock');
 const projTab = document.getElementById('tab-projection');
 const entryTab = document.getElementById('tab-entries');
+
 const btnDash = document.getElementById('btn-tab-dashboard');
+const btnStock = document.getElementById('btn-tab-stock');
 const btnProj = document.getElementById('btn-tab-projection');
 const btnEntry = document.getElementById('btn-tab-entries');
 
 dashTab.classList.add('hidden');
+stockTab.classList.add('hidden');
 projTab.classList.add('hidden');
 entryTab.classList.add('hidden');
-btnDash.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white";
-btnProj.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white";
-btnEntry.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white";
+
+btnDash.className = "px-3.5 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white";
+btnStock.className = "px-3.5 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white";
+btnProj.className = "px-3.5 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white";
+btnEntry.className = "px-3.5 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white";
 
 if(tabName === 'dashboard') {
 dashTab.classList.remove('hidden');
-btnDash.className = "px-4 py-2 rounded-lg text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm";
+btnDash.className = "px-3.5 py-2 rounded-lg text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm";
 renderDashboard();
+} else if(tabName === 'stock') {
+stockTab.classList.remove('hidden');
+btnStock.className = "px-3.5 py-2 rounded-lg text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm";
+renderStockView();
 } else if(tabName === 'projection') {
 projTab.classList.remove('hidden');
-btnProj.className = "px-4 py-2 rounded-lg text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm";
+btnProj.className = "px-3.5 py-2 rounded-lg text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm";
 renderProjection();
 } else if(tabName === 'entries') {
 entryTab.classList.remove('hidden');
-btnEntry.className = "px-4 py-2 rounded-lg text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm";
+btnEntry.className = "px-3.5 py-2 rounded-lg text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm";
 renderEntries();
 }
 }
@@ -709,9 +802,7 @@ data: parseExcelDate(item['Data'] || item['data']),
 qtd: parseDecimal(item['Qtd. pedida'] || item['Quantidade'] || item['quantidade'] || item['Qtd'] || 0),
 vlrUnit: parseDecimal(item['Preço filial'] || item['Valor Unitário'] || item['valor_unitario'] || item['Valor Unitario'] || 0),
 custoUnit: parseDecimal(item['Preço de Custo'] || item['preco_custo'] || 0),
-estoque: parseDecimal(item['Qtd. disponível'] || item['Qtd. em Estoque'] || item['estoque'] || 0),
-minStock: 10,
-maxStock: 100
+estoque: parseDecimal(item['Qtd. disponível'] || item['Qtd. em Estoque'] || item['estoque'] || 0)
 })).filter(row => row.produto !== 'Não informado' && row.produto !== '');
 
 if(importedRows.length > 0) {
@@ -719,6 +810,7 @@ globalData = importedRows;
 localStorage.setItem('nexxa_data', JSON.stringify(globalData));
 populateFilterDropdowns();
 populateProjFilterDropdowns();
+populateStockFilterDropdowns();
 updateAllViews();
 alert("Planilha importada com sucesso!");
 } else {
@@ -817,6 +909,7 @@ function changeTurnoverPage(newPage) { currentPageTurnover = newPage; renderDash
 function changeConsolidatedPage(newPage) { currentPageConsolidated = newPage; renderDashboard(); }
 function changeAnalyticPage(newPage) { currentPageAnalytic = newPage; renderDashboard(); }
 function changeProjPage(newPage) { currentPageProj = newPage; renderProjection(); }
+function changeStockPage(newPage) { currentPageStock = newPage; renderStockView(); }
 
 function renderDashboard() {
 const startDateVal = document.getElementById('startDate') ? document.getElementById('startDate').value : '';
@@ -861,7 +954,6 @@ categoria: row.categoria,
 qtdTotal: 0,
 faturamentoTotal: 0,
 estoque: row.estoque,
-minStock: row.minStock,
 custoUnit: row.custoUnit
 };
 }
@@ -888,7 +980,6 @@ categoria: row.categoria,
 qtdTotal: 0,
 faturamentoTotal: 0,
 estoque: row.estoque,
-minStock: row.minStock,
 custoUnit: row.custoUnit
 };
 }
@@ -922,7 +1013,7 @@ tr.innerHTML = `
 <td class="p-4 text-center font-semibold text-slate-100">${row.qtd}</td>
 <td class="p-4 text-right text-slate-300">${formatCurrency(row.vlrUnit)}</td>
 <td class="p-4 text-right font-bold text-slate-100">${formatCurrency(faturamento)}</td>
-<td class="p-4 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${row.estoque <= row.minStock ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${row.estoque}</span></td>
+<td class="p-4 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">${row.estoque}</span></td>
 `;
 tbodyAnalytic.appendChild(tr);
 });
@@ -1002,6 +1093,171 @@ badgeProjecao.innerText = `Projeção Mês: ${formatCurrency(projecaoTotal)}`;
 } else if (badgeProjecao) {
 badgeProjecao.innerText = `Projeção Mês: R$ 0,00`;
 }
+}
+
+// --- ABA DE ESTOQUE (MÍNIMO E MÁXIMO) ---
+function populateStockFilterDropdowns() {
+const clients = [...new Set(globalData.map(i => i.cliente))].sort();
+const categories = [...new Set(globalData.map(i => i.categoria))].sort();
+const products = [...new Set(globalData.map(i => i.produto))].sort();
+
+const clientSelect = document.getElementById('stockClientFilter');
+const catSelect = document.getElementById('stockCatFilter');
+if(!clientSelect || !catSelect) return;
+
+const currentClient = clientSelect.value;
+const currentCat = catSelect.value;
+
+clientSelect.innerHTML = '<option value="all">Todos os Clientes</option>';
+clients.forEach(c => { clientSelect.innerHTML += `<option value="${c}">${c}</option>`; });
+clientSelect.value = clients.includes(currentClient) ? currentClient : 'all';
+
+catSelect.innerHTML = '<option value="all">Todas as Categorias</option>';
+categories.forEach(cat => { catSelect.innerHTML += `<option value="${cat}">${cat}</option>`; });
+catSelect.value = categories.includes(currentCat) ? currentCat : 'all';
+
+const prodList = document.getElementById('stockProdList');
+if (prodList) {
+prodList.innerHTML = '';
+products.forEach(p => { prodList.innerHTML += `<option value="${p}">`; });
+}
+}
+
+function applyStockDatePreset() {
+const preset = document.getElementById('stockDatePreset').value;
+if (preset === 'all') {
+document.getElementById('stockStartDate').value = '';
+document.getElementById('stockEndDate').value = '';
+} else if (preset === '7' || preset === '15' || preset === '30') {
+const days = parseInt(preset);
+const today = new Date();
+const startDate = new Date();
+startDate.setDate(today.getDate() - days);
+
+document.getElementById('stockEndDate').value = today.toISOString().split('T')[0];
+document.getElementById('stockStartDate').value = startDate.toISOString().split('T')[0];
+}
+currentPageStock = 1;
+renderStockView();
+}
+
+function onStockCustomDateChange() {
+document.getElementById('stockDatePreset').value = 'custom';
+currentPageStock = 1;
+renderStockView();
+}
+
+function renderStockView() {
+const tbody = document.getElementById('stockTableBody');
+if (!tbody) return;
+tbody.innerHTML = '';
+
+const startDateVal = document.getElementById('stockStartDate') ? document.getElementById('stockStartDate').value : '';
+const endDateVal = document.getElementById('stockEndDate') ? document.getElementById('stockEndDate').value : '';
+const selectedClient = document.getElementById('stockClientFilter') ? document.getElementById('stockClientFilter').value : 'all';
+const selectedCat = document.getElementById('stockCatFilter') ? document.getElementById('stockCatFilter').value : 'all';
+const selectedProd = document.getElementById('stockProdFilter') ? document.getElementById('stockProdFilter').value.trim().toLowerCase() : '';
+const searchTerm = document.getElementById('stockSearchInput') ? document.getElementById('stockSearchInput').value.trim().toLowerCase() : '';
+const pageSizeVal = document.getElementById('stockPageSize') ? document.getElementById('stockPageSize').value : '30';
+
+let filteredData = globalData;
+
+if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
+if (endDateVal) filteredData = filteredData.filter(row => row.data <= endDateVal);
+if (selectedClient !== 'all') filteredData = filteredData.filter(row => row.cliente === selectedClient);
+if (selectedCat !== 'all') filteredData = filteredData.filter(row => row.categoria === selectedCat);
+if (selectedProd !== '') filteredData = filteredData.filter(row => row.produto.toLowerCase().includes(selectedProd));
+if (searchTerm !== '') {
+filteredData = filteredData.filter(row =>
+row.produto.toLowerCase().includes(searchTerm) ||
+row.categoria.toLowerCase().includes(searchTerm) ||
+(row.ean && row.ean.toLowerCase().includes(searchTerm))
+);
+}
+
+// Calcula período em dias para média
+let daysCount = 30;
+if (startDateVal && endDateVal) {
+const d1 = new Date(startDateVal);
+const d2 = new Date(endDateVal);
+const diff = Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+if (diff > 0) daysCount = diff;
+}
+
+const stockMap = {};
+
+globalData.forEach(row => {
+if (!stockMap[row.produto]) {
+stockMap[row.produto] = {
+produto: row.produto,
+ean: row.ean || '',
+categoria: row.categoria,
+qtdVendida: 0,
+estoqueAtual: row.estoque
+};
+}
+});
+
+filteredData.forEach(row => {
+if (!stockMap[row.produto]) {
+stockMap[row.produto] = {
+produto: row.produto,
+ean: row.ean || '',
+categoria: row.categoria,
+qtdVendida: 0,
+estoqueAtual: row.estoque
+};
+}
+stockMap[row.produto].qtdVendida += row.qtd;
+stockMap[row.produto].estoqueAtual = row.estoque;
+if (row.ean) stockMap[row.produto].ean = row.ean;
+});
+
+const sortedProducts = Object.values(stockMap).sort((a, b) => b.qtdVendida - a.qtdVendida);
+
+if (sortedProducts.length === 0) {
+tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Nenhum registro encontrado para o filtro.</td></tr>`;
+renderPaginationControls('stockPagination', [], pageSizeVal, currentPageStock, 'changeStockPage');
+return;
+}
+
+const { pageItems } = renderPaginationControls('stockPagination', sortedProducts, pageSizeVal, currentPageStock, 'changeStockPage');
+
+pageItems.forEach(item => {
+const mediaDiaria = item.qtdVendida / daysCount;
+
+// Mínimo = Venda estimada para 7 dias (mínimo de 5 unidades)
+let minCalc = Math.max(5, Math.ceil(mediaDiaria * 7));
+// Máximo = Venda estimada para 30 dias (máximo de 20 unidades de piso)
+let maxCalc = Math.max(20, Math.ceil(mediaDiaria * 30));
+
+if (minCalc >= maxCalc) maxCalc = minCalc + 10;
+
+let statusBadge = '';
+if (item.estoqueAtual <= 0) {
+statusBadge = `<span class="px-2.5 py-1 bg-rose-500/10 text-rose-400 font-bold rounded-lg border border-rose-500/20">Sem Estoque</span>`;
+} else if (item.estoqueAtual < minCalc) {
+statusBadge = `<span class="px-2.5 py-1 bg-amber-500/10 text-amber-400 font-bold rounded-lg border border-amber-500/20">Abaixo do Mínimo</span>`;
+} else if (item.estoqueAtual > maxCalc) {
+statusBadge = `<span class="px-2.5 py-1 bg-purple-500/10 text-purple-400 font-bold rounded-lg border border-purple-500/20">Excesso de Estoque</span>`;
+} else {
+statusBadge = `<span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 font-bold rounded-lg border border-emerald-500/20">Estoque Ideal</span>`;
+}
+
+const tr = document.createElement('tr');
+tr.className = "hover:bg-slate-800/50 transition-colors";
+tr.innerHTML = `
+<td class="p-4 font-bold text-amber-400">${item.produto}</td>
+<td class="p-4 text-xs font-mono text-slate-400">${item.ean || '-'}</td>
+<td class="p-4"><span class="px-2.5 py-1 bg-slate-800 text-slate-300 rounded-md text-xs font-medium border border-slate-700">${item.categoria}</span></td>
+<td class="p-4 text-center font-semibold text-slate-100">${item.qtdVendida} un</td>
+<td class="p-4 text-center font-bold text-white">${item.estoqueAtual} un</td>
+<td class="p-4 text-center font-bold text-amber-400">${minCalc} un</td>
+<td class="p-4 text-center font-bold text-indigo-400">${maxCalc} un</td>
+<td class="p-4 text-center">${statusBadge}</td>
+`;
+tbody.appendChild(tr);
+});
 }
 
 function renderTurnoverTable(consolidatedMap) {
@@ -1086,7 +1342,7 @@ tr.innerHTML = `
 <td class="p-4 text-xs font-mono text-slate-400">${info.ean || '-'}</td>
 <td class="p-4 text-center font-semibold text-slate-100 ${sortBy === 'quantidade' ? 'text-amber-300 font-bold' : ''}">${info.qtdTotal}</td>
 <td class="p-4 text-center">
-<span class="px-2.5 py-1 rounded-full text-xs font-semibold ${info.estoque <= info.minStock ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">
+<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
 ${info.estoque} un
 </span>
 </td>
@@ -1480,6 +1736,7 @@ localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
 }
 populateFilterDropdowns();
 populateProjFilterDropdowns();
+populateStockFilterDropdowns();
 updateAllViews();
 renderEntries();
 alert("Base de dados restaurada com sucesso!");
@@ -1537,6 +1794,7 @@ renderProjection();
 
 populateFilterDropdowns();
 populateProjFilterDropdowns();
+populateStockFilterDropdowns();
 updateAllViews();
 renderEntries();
 </script>
