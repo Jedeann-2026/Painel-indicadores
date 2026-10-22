@@ -102,7 +102,7 @@ display: none !important;
 
 <div class="text-xs text-slate-400 flex items-center space-x-2">
 <i class="fa-solid fa-circle-info text-amber-400"></i>
-<span>Colunas de Vendas: Cliente, Categoria, Produto, EAN, Qtd. pedida, Qtd. disponível, Preço filial, Data</span>
+<span>Atualização por Cliente: Ao importar, substitui apenas os dados do cliente correspondente.</span>
 </div>
 </div>
 
@@ -199,14 +199,14 @@ display: none !important;
 </div>
 </div>
 
-<!-- Faturamento Mensal - 4 Últimas Semanas -->
+<!-- Faturamento Mensal - 4 Últimas Semanas (Filtro Geral) -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
 <div class="p-5 border-b border-slate-800 flex justify-between items-center">
 <div>
 <h2 class="font-bold text-white text-base">
-<i class="fa-solid fa-calendar-weeks text-amber-400 mr-2"></i>Faturamento das 4 Últimas Semanas
+<i class="fa-solid fa-calendar-weeks text-amber-400 mr-2"></i>Faturamento das 4 Semanas (Filtro Atual)
 </h2>
-<p class="text-xs text-slate-400 mt-0.5">Distribuição do faturamento por blocos semanais (Semana 1 a 4 do mês ou período).</p>
+<p class="text-xs text-slate-400 mt-0.5">Distribuição do faturamento pelas 4 semanas dentro do período do filtro geral.</p>
 </div>
 <span id="projecaoBadge" class="text-xs font-bold bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-lg border border-indigo-500/20">
 Projeção Mês: R$ 0,00
@@ -214,6 +214,36 @@ Projeção Mês: R$ 0,00
 </div>
 <div class="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4" id="weeklyCardsContainer">
 <!-- Cards das 4 semanas via JS -->
+</div>
+</div>
+
+<!-- NOVO BLOCO: COMPARATIVO SEMANAL COM FILTRO PRÓPRIO -->
+<div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
+<div class="p-5 border-b border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div>
+<h2 class="font-bold text-white text-base">
+<i class="fa-solid fa-code-compare text-indigo-400 mr-2"></i>Comparativo Semanal de Faturamento (Período Personalizado)
+</h2>
+<p class="text-xs text-slate-400 mt-0.5">Escolha qualquer período específico para analisar o comportamento semanal respeitando os filtros de cliente, categoria e produto.</p>
+</div>
+
+<!-- Filtro Exclusivo deste Bloco -->
+<div class="flex items-center space-x-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 shadow-sm">
+<i class="fa-solid fa-calendar-days text-indigo-400 text-xs"></i>
+<span class="text-xs text-slate-400 font-medium">De:</span>
+<input type="date" id="compStartDate" onchange="renderCustomWeeklyComparison()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+<span class="text-xs text-slate-400 font-medium ml-1">Até:</span>
+<input type="date" id="compEndDate" onchange="renderCustomWeeklyComparison()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+</div>
+</div>
+
+<div class="p-5 space-y-4">
+<div class="flex justify-between items-center text-xs text-slate-400">
+<span id="compTotalText" class="font-semibold text-slate-200">Faturamento Total do Período Comparativo: R$ 0,00</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4" id="customWeeklyCardsContainer">
+<!-- Cards Semanais Comparativos via JS -->
+</div>
 </div>
 </div>
 
@@ -273,14 +303,6 @@ Projeção Mês: R$ 0,00
 <option value="50">50 / pág</option>
 <option value="100">100 / pág</option>
 <option value="all">Todos</option>
-</select>
-</div>
-<div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
-<i class="fa-solid fa-arrow-down-up-acn text-amber-400 text-xs"></i>
-<span class="text-xs font-medium text-slate-400">Giro:</span>
-<select id="turnoverSortOrder" onchange="currentPageTurnover=1; renderDashboard()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
-<option value="desc">Mais Gira (Maior Qtd)</option>
-<option value="asc">Menos Gira (Menor Qtd)</option>
 </select>
 </div>
 </div>
@@ -558,7 +580,7 @@ Projeção Mês: R$ 0,00
 </div>
 </div>
 
-<!-- ABA 3: NOTAS DE ENTRADA (ATUALIZADA) -->
+<!-- ABA 3: NOTAS DE ENTRADA -->
 <div id="tab-entries" class="space-y-6 hidden">
 <div class="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800 space-y-6">
 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -844,13 +866,17 @@ estoque: parseDecimal(item['Qtd. disponível'] || item['Qtd. em Estoque'] || ite
 })).filter(row => row.produto !== 'Não informado' && row.produto !== '');
 
 if(importedRows.length > 0) {
-globalData = importedRows;
+const importedClients = [...new Set(importedRows.map(r => r.cliente))];
+const preservedData = globalData.filter(r => !importedClients.includes(r.cliente));
+globalData = [...preservedData, ...importedRows];
+
 localStorage.setItem('nexxa_data', JSON.stringify(globalData));
 populateFilterDropdowns();
 populateProjFilterDropdowns();
 populateStockFilterDropdowns();
 updateAllViews();
-alert("Planilha importada com sucesso!");
+
+alert(`Planilha importada com sucesso! Os dados do(s) cliente(s) [${importedClients.join(', ')}] foram atualizados, mantendo os demais preservados.`);
 } else {
 alert("Nenhum dado válido encontrado na planilha.");
 }
@@ -1015,9 +1041,21 @@ consolidatedProdMap[row.produto].custoUnit = row.custoUnit;
 if(row.ean) consolidatedProdMap[row.produto].ean = row.ean;
 });
 
+// CÁLCULO CORRETO DO VALOR EM ESTOQUE NO DASHBOARD (respeitando filtros de cliente e categoria atuais)
+let uniqueStockMap = {};
+globalData.forEach(row => {
+if (selectedClient !== 'all' && row.cliente !== selectedClient) return;
+if (selectedCat !== 'all' && row.categoria !== selectedCat) return;
+const key = `${row.cliente}___${row.produto}`;
+uniqueStockMap[key] = {
+estoque: row.estoque,
+custoUnit: row.custoUnit > 0 ? row.custoUnit : 1
+};
+});
+
 let totalEstoqueVal = 0;
-Object.values(consolidatedProdMap).forEach(info => {
-totalEstoqueVal += (info.estoque * (info.custoUnit > 0 ? info.custoUnit : 1));
+Object.values(uniqueStockMap).forEach(item => {
+totalEstoqueVal += (item.estoque * item.custoUnit);
 });
 
 const analyticPageSizeVal = document.getElementById('analyticPageSize') ? document.getElementById('analyticPageSize').value : '30';
@@ -1056,6 +1094,7 @@ document.getElementById('card-preco-medio').innerText = formatCurrency(precoMedi
 
 renderStorePerformance(clientValueMap, filteredData, totalFaturamento);
 renderWeeklyPerformanceFourWeeks(filteredData, totalFaturamento);
+renderCustomWeeklyComparison();
 renderCharts(prodValueMap, prodQtyMap, catValueMap, clientValueMap);
 renderTurnoverTable(consolidatedProdMap);
 renderConsolidatedProducts(consolidatedProdMap);
@@ -1125,6 +1164,91 @@ badgeProjecao.innerText = `Projeção Mês: ${formatCurrency(projecaoTotal)}`;
 } else if (badgeProjecao) {
 badgeProjecao.innerText = `Projeção Mês: R$ 0,00`;
 }
+}
+
+function renderCustomWeeklyComparison() {
+const container = document.getElementById('customWeeklyCardsContainer');
+const compTotalText = document.getElementById('compTotalText');
+if (!container) return;
+
+const compStart = document.getElementById('compStartDate') ? document.getElementById('compStartDate').value : '';
+const compEnd = document.getElementById('compEndDate') ? document.getElementById('compEndDate').value : '';
+const selectedClient = document.getElementById('clientFilter') ? document.getElementById('clientFilter').value : 'all';
+const selectedCat = document.getElementById('catFilter') ? document.getElementById('catFilter').value : 'all';
+const selectedProd = document.getElementById('prodFilter') ? document.getElementById('prodFilter').value.trim().toLowerCase() : '';
+const searchTerm = document.getElementById('searchInput') ? document.getElementById('searchInput').value.trim().toLowerCase() : '';
+
+let compData = globalData;
+
+// Filtra pela data exclusiva deste bloco
+if (compStart) compData = compData.filter(row => row.data >= compStart);
+if (compEnd) compData = compData.filter(row => row.data <= compEnd);
+
+// Respeita os demais filtros gerais
+if (selectedClient !== 'all') compData = compData.filter(row => row.cliente === selectedClient);
+if (selectedCat !== 'all') compData = compData.filter(row => row.categoria === selectedCat);
+if (selectedProd !== '') compData = compData.filter(row => row.produto.toLowerCase().includes(selectedProd));
+if (searchTerm !== '') {
+compData = compData.filter(row =>
+row.produto.toLowerCase().includes(searchTerm) ||
+row.cliente.toLowerCase().includes(searchTerm) ||
+row.categoria.toLowerCase().includes(searchTerm) ||
+(row.ean && row.ean.toLowerCase().includes(searchTerm))
+);
+}
+
+const weeklyTotals = { 1: 0, 2: 0, 3: 0, 4: 0 };
+let totalCompFat = 0;
+
+compData.forEach(row => {
+if (!row.data) return;
+const dayOfMonth = parseInt(row.data.split('-')[2]);
+const faturamento = row.qtd * row.vlrUnit;
+totalCompFat += faturamento;
+
+if (dayOfMonth <= 7) {
+weeklyTotals[1] += faturamento;
+} else if (dayOfMonth <= 14) {
+weeklyTotals[2] += faturamento;
+} else if (dayOfMonth <= 21) {
+weeklyTotals[3] += faturamento;
+} else {
+weeklyTotals[4] += faturamento;
+}
+});
+
+if (compTotalText) {
+compTotalText.innerText = `Faturamento Total do Período Comparativo: ${formatCurrency(totalCompFat)}`;
+}
+
+container.innerHTML = '';
+
+const labelsSemanas = [
+{ id: 1, desc: "Dia 01 a 07" },
+{ id: 2, desc: "Dia 08 a 14" },
+{ id: 3, desc: "Dia 15 a 21" },
+{ id: 4, desc: "Dia 22 ao Fim" }
+];
+
+labelsSemanas.forEach(sem => {
+const valorSemana = weeklyTotals[sem.id];
+const percentual = totalCompFat > 0 ? ((valorSemana / totalCompFat) * 100).toFixed(1) : 0;
+
+const card = document.createElement('div');
+card.className = "bg-slate-950 p-4 rounded-xl border border-indigo-500/20 flex flex-col justify-between space-y-2";
+card.innerHTML = `
+<div class="flex justify-between items-center text-xs text-indigo-300 font-semibold uppercase">
+<span>Semana ${sem.id}</span>
+<span class="text-[10px] text-slate-500 font-normal">(${sem.desc})</span>
+</div>
+<div class="text-lg font-bold text-white">${formatCurrency(valorSemana)}</div>
+<div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+<div class="bg-indigo-500 h-1.5" style="width: ${percentual}%"></div>
+</div>
+<div class="text-[10px] text-indigo-400 text-right font-medium">${percentual}% do período</div>
+`;
+container.appendChild(card);
+});
 }
 
 // --- ABA DE ESTOQUE ---
@@ -1218,7 +1342,11 @@ if (diff > 0) daysCount = diff;
 
 const stockMap = {};
 
+// Mapeia todas as linhas da base respeitando os filtros independentes da aba de estoque
 globalData.forEach(row => {
+if (selectedClient !== 'all' && row.cliente !== selectedClient) return;
+if (selectedCat !== 'all' && row.categoria !== selectedCat) return;
+
 const key = `${row.cliente}___${row.produto}`;
 if (!stockMap[key]) {
 stockMap[key] = {
@@ -1234,24 +1362,19 @@ estoqueAtual: row.estoque
 
 filteredData.forEach(row => {
 const key = `${row.cliente}___${row.produto}`;
-if (!stockMap[key]) {
-stockMap[key] = {
-cliente: row.cliente,
-produto: row.produto,
-ean: row.ean || '',
-categoria: row.categoria,
-qtdVendida: 0,
-estoqueAtual: row.estoque
-};
-}
+if (stockMap[key]) {
 stockMap[key].qtdVendida += row.qtd;
 stockMap[key].estoqueAtual = row.estoque;
 if (row.ean) stockMap[key].ean = row.ean;
+}
 });
 
 let sortedProducts = Object.values(stockMap);
 if (selectedClient !== 'all') {
 sortedProducts = sortedProducts.filter(item => item.cliente === selectedClient);
+}
+if (selectedCat !== 'all') {
+sortedProducts = sortedProducts.filter(item => item.categoria === selectedCat);
 }
 
 sortedProducts.sort((a, b) => b.qtdVendida - a.qtdVendida);
@@ -1308,7 +1431,6 @@ const tbody = document.getElementById('turnoverTableBody');
 if(!tbody) return;
 tbody.innerHTML = '';
 
-const sortOrder = document.getElementById('turnoverSortOrder') ? document.getElementById('turnoverSortOrder').value : 'desc';
 const pageSizeVal = document.getElementById('turnoverPageSize') ? document.getElementById('turnoverPageSize').value : '30';
 const filterStockLowTurnover = document.getElementById('filterStockLowTurnover') ? document.getElementById('filterStockLowTurnover').checked : false;
 
@@ -1320,10 +1442,8 @@ return info.estoque > 0 && info.qtdTotal <= 1;
 });
 }
 
-sortedProducts.sort((a, b) => {
-if (sortOrder === 'asc') return a[1].qtdTotal - b[1].qtdTotal;
-return b[1].qtdTotal - a[1].qtdTotal;
-});
+// ORDENAÇÃO FIXA: Estoque atual do maior para o menor
+sortedProducts.sort((a, b) => b[1].estoque - a[1].estoque);
 
 if(sortedProducts.length === 0) {
 tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Nenhum dado encontrado para o filtro selecionado.</td></tr>`;
@@ -1343,8 +1463,8 @@ tr.innerHTML = `
 <td class="p-4 font-bold text-amber-400">${prodName}</td>
 <td class="p-4 text-xs font-mono text-slate-400">${info.ean || '-'}</td>
 <td class="p-4"><span class="px-2.5 py-1 bg-slate-800 text-slate-300 rounded-md text-xs font-medium border border-slate-700">${info.categoria}</span></td>
-<td class="p-4 text-center font-bold text-slate-100">${info.estoque} un</td>
-<td class="p-4 text-center font-bold text-white">${info.qtdTotal} un</td>
+<td class="p-4 text-center font-bold text-white">${info.estoque} un</td>
+<td class="p-4 text-center font-semibold text-slate-200">${info.qtdTotal} un</td>
 <td class="p-4 text-right font-semibold text-slate-200">${formatCurrency(info.faturamentoTotal)}</td>
 <td class="p-4 text-center">
 <span class="px-3 py-1 rounded-lg text-xs font-bold border ${badgeColor}">
@@ -1656,7 +1776,6 @@ if(!masterTbody || !detailTbody) return;
 
 masterTbody.innerHTML = '';
 
-// Agrupar itens por Pedido / Nota
 const ordersMap = {};
 globalEntries.forEach(row => {
 const key = row.pedido || 'PED-GEN';
@@ -1684,7 +1803,6 @@ detailTbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-5
 return;
 }
 
-// Seleciona o primeiro pedido por padrão se nenhum estiver selecionado
 if (!selectedOrderKey || !ordersMap[selectedOrderKey]) {
 selectedOrderKey = ordersArray[0].pedido;
 }
@@ -1712,7 +1830,6 @@ Ver Itens
 masterTbody.appendChild(tr);
 });
 
-// Renderiza os itens do pedido selecionado
 const activeOrder = ordersMap[selectedOrderKey];
 if (activeOrder) {
 titleEl.innerHTML = `<i class="fa-solid fa-boxes-stacked mr-2"></i>Itens do Pedido / Nota Selecionada: <span class="text-amber-300 ml-1 font-bold">${activeOrder.pedido} (${activeOrder.fornecedor} - ${activeOrder.data})</span>`;
