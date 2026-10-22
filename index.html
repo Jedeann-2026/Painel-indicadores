@@ -46,7 +46,6 @@ display: none !important;
 <i class="fa-solid fa-chart-line text-2xl text-amber-400"></i>
 </div>
 <div>
-<!-- Nome em Amarelo -->
 <h1 class="text-xl font-bold tracking-tight text-amber-400">NEXXA conveniências</h1>
 <p class="text-xs text-slate-400">Gestão inteligente de estoque, faturamento e reposição</p>
 </div>
@@ -92,7 +91,6 @@ display: none !important;
 <input type="file" id="backup-file" accept=".json" class="hidden" onchange="importFullDatabaseJSON(event)">
 </label>
 
-<!-- Botão Limpar Base -->
 <button onclick="clearFullDatabase()" class="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/40 px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-1.5 shadow-sm" title="Limpar todos os dados cadastrados">
 <i class="fa-solid fa-trash-can text-xs"></i>
 <span>Limpar Base</span>
@@ -108,14 +106,13 @@ display: none !important;
 <!-- ABA 1: DASHBOARD -->
 <div id="tab-dashboard" class="space-y-6">
 
-<!-- 1º BLOCO: Filtros Gerais do Dashboard (No topo) -->
+<!-- 1º BLOCO: Filtros Gerais do Dashboard -->
 <div class="bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-800 flex flex-col lg:flex-row justify-between items-center gap-4">
 <div class="flex items-center space-x-2">
 <i class="fa-solid fa-filter text-amber-400"></i>
 <h2 class="font-bold text-white text-sm">Filtros Gerais do Painel:</h2>
 </div>
 <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-<!-- Filtro de Período Rápido e Personalizado -->
 <div class="flex items-center space-x-2 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 shadow-sm">
 <select id="dateRangePreset" onchange="applyDatePreset()" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer">
 <option value="all">Todo o Período</option>
@@ -131,27 +128,21 @@ display: none !important;
 <input type="date" id="endDate" onchange="onCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
 </div>
 </div>
-<!-- Filtro de Cliente -->
 <select id="clientFilter" onchange="updateAllViews()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 font-medium text-slate-200">
 <option value="all">Todos os Clientes</option>
 </select>
-<!-- Filtro de Categoria -->
 <select id="catFilter" onchange="updateAllViews()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 font-medium text-slate-200">
 <option value="all">Todas as Categorias</option>
 </select>
-<!-- Filtro de Produto -->
 <div class="relative">
 <input type="text" id="prodFilter" list="prodList" placeholder="Filtrar produto..." oninput="updateAllViews()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 font-medium text-slate-200 w-44">
-<datalist id="prodList">
-<!-- Preenchido dinamicamente -->
-</datalist>
+<datalist id="prodList"></datalist>
 </div>
-<!-- Pesquisa Geral por Texto -->
 <input type="text" id="searchInput" placeholder="Pesquisar..." onkeyup="updateAllViews()" class="px-4 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 text-slate-200 w-full sm:w-44">
 </div>
 </div>
 
-<!-- 2º BLOCO: Cards de Indicadores (5 Cards) -->
+<!-- 2º BLOCO: Cards de Indicadores -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
 <div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-amber-400">
 <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Faturamento Total</p>
@@ -200,75 +191,118 @@ display: none !important;
 <th class="p-4 font-semibold text-center">Participação (%)</th>
 </tr>
 </thead>
-<tbody id="storePerfTableBody" class="divide-y divide-slate-800 text-slate-200">
-<!-- Preenchido dinamicamente -->
-</tbody>
+<tbody id="storePerfTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
 </table>
 </div>
 </div>
 
 <!-- 4º BLOCO: Seção de Gráficos -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-<!-- Top 10 Produtos por Valor -->
 <div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col">
 <div class="flex justify-between items-center mb-4">
 <h2 class="font-bold text-white text-base"><i class="fa-solid fa-ranking-star text-amber-400 mr-2"></i>Top 10 Produtos (Valor R$)</h2>
 <span class="text-xs text-slate-400">Faturamento</span>
 </div>
-<div class="relative flex-grow h-80">
-<canvas id="chartTopValue"></canvas>
-</div>
+<div class="relative flex-grow h-80"><canvas id="chartTopValue"></canvas></div>
 </div>
 
-<!-- Top 10 Produtos por Quantidade -->
 <div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col">
 <div class="flex justify-between items-center mb-4">
 <h2 class="font-bold text-white text-base"><i class="fa-solid fa-boxes-packing text-indigo-400 mr-2"></i>Top 10 Produtos (Quantidade)</h2>
 <span class="text-xs text-slate-400">Unidades Vendidas</span>
 </div>
-<div class="relative flex-grow h-80">
-<canvas id="chartTopQty"></canvas>
-</div>
+<div class="relative flex-grow h-80"><canvas id="chartTopQty"></canvas></div>
 </div>
 
-<!-- Top Categorias por Valor -->
 <div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col">
 <div class="flex justify-between items-center mb-4">
 <h2 class="font-bold text-white text-base"><i class="fa-solid fa-layer-group text-emerald-400 mr-2"></i>Faturamento por Categoria</h2>
 <span class="text-xs text-slate-400">Participação</span>
 </div>
-<div class="relative flex-grow h-80">
-<canvas id="chartCategory"></canvas>
-</div>
+<div class="relative flex-grow h-80"><canvas id="chartCategory"></canvas></div>
 </div>
 
-<!-- Top Clientes por Valor -->
 <div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col">
 <div class="flex justify-between items-center mb-4">
 <h2 class="font-bold text-white text-base"><i class="fa-solid fa-users text-blue-400 mr-2"></i>Top Clientes</h2>
 <span class="text-xs text-slate-400">Faturamento</span>
 </div>
-<div class="relative flex-grow h-80">
-<canvas id="chartClients"></canvas>
-</div>
+<div class="relative flex-grow h-80"><canvas id="chartClients"></canvas></div>
 </div>
 </div>
 
-<!-- 5º BLOCO: CARD - Detalhamento Consolidado de Vendas por Produto -->
+<!-- 5º BLOCO: CARD - Giro de Produto com Seletor de Paginação -->
+<div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
+<div class="p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+<div>
+<h2 class="font-bold text-white text-base"><i class="fa-solid fa-rotate text-amber-400 mr-2"></i>Indicador de Giro de Produto</h2>
+<p class="text-xs text-slate-400 mt-0.5">Analise a velocidade de saída e o volume de vendas por produto no período.</p>
+</div>
+<div class="flex flex-wrap items-center gap-3">
+<div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+<span class="text-xs font-medium text-slate-400">Exibir:</span>
+<select id="turnoverPageSize" onchange="currentPageTurnover=1; renderDashboard()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
+<option value="10">10 / pág</option>
+<option value="30" selected>30 / pág</option>
+<option value="50">50 / pág</option>
+<option value="100">100 / pág</option>
+<option value="all">Todos</option>
+</select>
+</div>
+<div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+<i class="fa-solid fa-arrow-down-up-acn text-amber-400 text-xs"></i>
+<span class="text-xs font-medium text-slate-400">Giro:</span>
+<select id="turnoverSortOrder" onchange="currentPageTurnover=1; renderDashboard()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
+<option value="desc">Mais Gira (Maior Qtd)</option>
+<option value="asc">Menos Gira (Menor Qtd)</option>
+</select>
+</div>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse text-sm">
+<thead>
+<tr class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800">
+<th class="p-4 font-semibold">Produto</th>
+<th class="p-4 font-semibold">Categoria</th>
+<th class="p-4 font-semibold text-center">Estoque Atual</th>
+<th class="p-4 font-semibold text-center">Qtd. Vendida (Período)</th>
+<th class="p-4 font-semibold text-right">Faturamento Total</th>
+<th class="p-4 font-semibold text-center">Velocidade / Giro</th>
+</tr>
+</thead>
+<tbody id="turnoverTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
+</table>
+</div>
+<div id="turnoverPagination" class="p-4 bg-slate-950 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400"></div>
+</div>
+
+<!-- 6º BLOCO: CARD - Detalhamento Consolidado com Seletor de Paginação -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
 <div class="p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 <div>
 <h2 class="font-bold text-white text-base"><i class="fa-solid fa-arrow-down-wide-short text-amber-400 mr-2"></i>Detalhamento Consolidado de Vendas por Produto</h2>
 <p class="text-xs text-slate-400 mt-0.5">Resumo consolidado por produto com controle dinâmico de ordenação e estoque único.</p>
 </div>
-<!-- Seletor de Ordenação -->
+<div class="flex flex-wrap items-center gap-3">
+<div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+<span class="text-xs font-medium text-slate-400">Exibir:</span>
+<select id="consolidatedPageSize" onchange="currentPageConsolidated=1; renderDashboard()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
+<option value="10">10 / pág</option>
+<option value="30" selected>30 / pág</option>
+<option value="50">50 / pág</option>
+<option value="100">100 / pág</option>
+<option value="all">Todos</option>
+</select>
+</div>
 <div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
 <i class="fa-solid fa-sort text-amber-400 text-xs"></i>
 <span class="text-xs font-medium text-slate-400">Ordenar por:</span>
-<select id="consolidatedSortBy" onchange="renderDashboard()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
+<select id="consolidatedSortBy" onchange="currentPageConsolidated=1; renderDashboard()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
 <option value="faturamento">Faturamento (Valor R$)</option>
 <option value="quantidade">Quantidade Vendida</option>
 </select>
+</div>
 </div>
 </div>
 <div class="overflow-x-auto">
@@ -281,18 +315,29 @@ display: none !important;
 <th class="p-4 font-semibold text-right">Faturamento Total</th>
 </tr>
 </thead>
-<tbody id="consolidatedProdTableBody" class="divide-y divide-slate-800 text-slate-200">
-<!-- Preenchido dinamicamente -->
-</tbody>
+<tbody id="consolidatedProdTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
 </table>
 </div>
+<div id="consolidatedPagination" class="p-4 bg-slate-950 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400"></div>
 </div>
 
-<!-- 6º BLOCO: Tabela Detalhada Lançamento por Lançamento -->
+<!-- 7º BLOCO: Tabela Detalhada Analítica com Seletor de Paginação -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
-<div class="p-5 border-b border-slate-800">
+<div class="p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+<div>
 <h2 class="font-bold text-white text-base">Detalhamento Analítico (Por Lançamento)</h2>
 <p class="text-xs text-slate-400 mt-0.5">Listagem detalhada dos lançamentos individuais filtrados.</p>
+</div>
+<div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+<span class="text-xs font-medium text-slate-400">Exibir:</span>
+<select id="analyticPageSize" onchange="currentPageAnalytic=1; renderDashboard()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
+<option value="10">10 / pág</option>
+<option value="30" selected>30 / pág</option>
+<option value="50">50 / pág</option>
+<option value="100">100 / pág</option>
+<option value="all">Todos</option>
+</select>
+</div>
 </div>
 <div class="overflow-x-auto">
 <table class="w-full text-left border-collapse text-sm">
@@ -309,11 +354,10 @@ display: none !important;
 <th class="p-4 font-semibold text-center">Mín / Máx</th>
 </tr>
 </thead>
-<tbody id="dataTableBody" class="divide-y divide-slate-800 text-slate-200">
-<!-- Inserido dinamicamente -->
-</tbody>
+<tbody id="dataTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
 </table>
 </div>
+<div id="analyticPagination" class="p-4 bg-slate-950 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400"></div>
 </div>
 </div>
 
@@ -325,15 +369,24 @@ display: none !important;
 <p class="text-xs text-slate-400 mt-1">Consolidação de vendas e sugestão de reposição (Sintético sem cliente ou Analítico com cliente).</p>
 </div>
 
-<!-- Filtros Específicos da Projeção de Compras -->
 <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6 flex flex-wrap items-center justify-between gap-4 no-print">
 <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-<!-- Seletor Sintético / Analítico -->
 <div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 shadow-sm">
 <span class="text-xs text-slate-400 font-medium">Modo:</span>
-<select id="projMode" onchange="renderProjection()" class="text-xs border-0 focus:outline-none bg-transparent font-bold text-amber-400 cursor-pointer">
+<select id="projMode" onchange="currentPageProj=1; renderProjection()" class="text-xs border-0 focus:outline-none bg-transparent font-bold text-amber-400 cursor-pointer">
 <option value="synthetic">Sintético (Sem Cliente)</option>
 <option value="analytic">Analítico (Com Cliente)</option>
+</select>
+</div>
+
+<div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 shadow-sm">
+<span class="text-xs text-slate-400 font-medium">Exibir:</span>
+<select id="projPageSize" onchange="currentPageProj=1; renderProjection()" class="text-xs border-0 focus:outline-none bg-transparent font-bold text-amber-400 cursor-pointer">
+<option value="10">10 / pág</option>
+<option value="30" selected>30 / pág</option>
+<option value="50">50 / pág</option>
+<option value="100">100 / pág</option>
+<option value="all">Todos</option>
 </select>
 </div>
 
@@ -353,23 +406,20 @@ display: none !important;
 </div>
 </div>
 
-<!-- Filtro de Cliente na Projeção -->
-<select id="projClientFilter" onchange="renderProjection()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 font-medium text-slate-200">
+<select id="projClientFilter" onchange="currentPageProj=1; renderProjection()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 font-medium text-slate-200">
 <option value="all">Todos os Clientes</option>
 </select>
 
-<!-- Filtro de Categoria na Projeção -->
-<select id="projCatFilter" onchange="renderProjection()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 font-medium text-slate-200">
+<select id="projCatFilter" onchange="currentPageProj=1; renderProjection()" class="px-3 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 font-medium text-slate-200">
 <option value="all">Todas as Categorias</option>
 </select>
 
-<!-- Campo de Pesquisa na Projeção -->
-<input type="text" id="projSearchInput" placeholder="Pesquisar produto..." onkeyup="renderProjection()" class="px-4 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 text-slate-200 w-full sm:w-44">
+<input type="text" id="projSearchInput" placeholder="Pesquisar produto..." onkeyup="currentPageProj=1; renderProjection()" class="px-4 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 text-slate-200 w-full sm:w-44">
 </div>
 
 <div class="flex flex-wrap items-center gap-4">
 <label class="flex items-center space-x-2 text-xs font-semibold text-slate-300 cursor-pointer select-none">
-<input type="checkbox" id="filterOnlySuggestion" onchange="renderProjection()" class="rounded text-amber-400 focus:ring-amber-400 w-4 h-4 bg-slate-900 border-slate-700">
+<input type="checkbox" id="filterOnlySuggestion" onchange="currentPageProj=1; renderProjection()" class="rounded text-amber-400 focus:ring-amber-400 w-4 h-4 bg-slate-900 border-slate-700">
 <span>Apenas Sugestão > 0</span>
 </label>
 <button onclick="exportProjectionToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-2">
@@ -383,7 +433,6 @@ display: none !important;
 </div>
 </div>
 
-<!-- Tabela de Projeção -->
 <div class="overflow-x-auto rounded-xl border border-slate-800">
 <table class="w-full text-left border-collapse text-sm">
 <thead>
@@ -397,11 +446,10 @@ display: none !important;
 <th class="p-4 font-semibold text-center">Sugestão de Compra</th>
 </tr>
 </thead>
-<tbody id="projectionTableBody" class="divide-y divide-slate-800 text-slate-200">
-<!-- Inserido dinamicamente -->
-</tbody>
+<tbody id="projectionTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
 </table>
 </div>
+<div id="projPagination" class="p-4 bg-slate-950 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400"></div>
 </div>
 </div>
 
@@ -427,7 +475,6 @@ display: none !important;
 </div>
 </div>
 
-<!-- Tabela de Notas de Entrada -->
 <div class="overflow-x-auto rounded-xl border border-slate-800">
 <table class="w-full text-left border-collapse text-sm">
 <thead>
@@ -441,9 +488,7 @@ display: none !important;
 <th class="p-4 font-semibold text-right">Valor Total</th>
 </tr>
 </thead>
-<tbody id="entryTableBody" class="divide-y divide-slate-800 text-slate-200">
-<!-- Inserido dinamicamente -->
-</tbody>
+<tbody id="entryTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
 </table>
 </div>
 </div>
@@ -451,14 +496,13 @@ display: none !important;
 
 </main>
 
-<!-- Rodapé -->
 <footer class="bg-slate-900 border-t border-slate-800 py-4 mt-auto no-print">
 <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
 <span class="text-amber-400 font-bold">NEXXA conveniências</span> &copy; 2026 — Painel de Indicadores Comercial.
 </div>
 </footer>
 
-<!-- Script de Funcionalidades -->
+<!-- Lógica JavaScript -->
 <script>
 let globalData = [
 { cliente: "Cliente Alfa", categoria: "Bebidas", produto: "Cerveja Lata 350ml", data: "2026-06-01", qtd: 120, vlrUnit: 5.00, custoUnit: 3.00, estoque: 80, minStock: 30, maxStock: 150 },
@@ -470,12 +514,14 @@ let globalData = [
 
 const savedData = localStorage.getItem('nexxa_data');
 if (savedData) {
-try {
-globalData = JSON.parse(savedData);
-} catch(e) {
-console.error("Erro ao carregar dados salvos:", e);
+try { globalData = JSON.parse(savedData); } catch(e) { console.error("Erro ao carregar dados:", e); }
 }
-}
+
+// Páginas atuais
+let currentPageTurnover = 1;
+let currentPageConsolidated = 1;
+let currentPageAnalytic = 1;
+let currentPageProj = 1;
 
 let chartTopValueInst = null;
 let chartTopQtyInst = null;
@@ -483,12 +529,16 @@ let chartCategoryInst = null;
 let chartClientsInst = null;
 
 function updateAllViews() {
+currentPageTurnover = 1;
+currentPageConsolidated = 1;
+currentPageAnalytic = 1;
+currentPageProj = 1;
 renderDashboard();
 renderProjection();
 }
 
 function clearFullDatabase() {
-if (confirm("Tem certeza que deseja apagar TODOS os dados da base de vendas e notas de entrada? Esta ação não pode ser desfeita.")) {
+if (confirm("Tem certeza que deseja apagar TODOS os dados? Esta ação não pode ser desfeita.")) {
 globalData = [];
 globalEntries = [];
 localStorage.removeItem('nexxa_data');
@@ -570,18 +620,14 @@ const year = parts[2];
 return `${year}-${month}-${day}`;
 }
 
-if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-return str;
-}
-
+if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
 return str;
 }
 
 function parseDecimal(val) {
 if (val === undefined || val === null || val === '') return 0;
 if (typeof val === 'number') return val;
-let str = String(val).trim();
-str = str.replace(',', '.');
+let str = String(val).trim().replace(',', '.');
 const num = parseFloat(str);
 return isNaN(num) ? 0 : num;
 }
@@ -620,16 +666,16 @@ localStorage.setItem('nexxa_data', JSON.stringify(globalData));
 populateFilterDropdowns();
 populateProjFilterDropdowns();
 updateAllViews();
-alert("Planilha importada com sucesso! Os dados dos clientes importados foram atualizados.");
+alert("Planilha importada com sucesso!");
 } else {
-alert("Nenhum dado válido encontrado (verifique se as datas não estão zeradas).");
+alert("Nenhum dado válido encontrado na planilha.");
 }
 } else {
 alert("A planilha parece estar vazia.");
 }
 } catch(err) {
 console.error(err);
-alert("Erro ao ler o arquivo Excel. Verifique o formato das colunas.");
+alert("Erro ao ler o arquivo Excel.");
 }
 };
 reader.readAsArrayBuffer(file);
@@ -647,22 +693,16 @@ const currentClient = clientSelect.value;
 const currentCat = catSelect.value;
 
 clientSelect.innerHTML = '<option value="all">Todos os Clientes</option>';
-clients.forEach(c => {
-clientSelect.innerHTML += `<option value="${c}">${c}</option>`;
-});
+clients.forEach(c => { clientSelect.innerHTML += `<option value="${c}">${c}</option>`; });
 clientSelect.value = clients.includes(currentClient) ? currentClient : 'all';
 
 catSelect.innerHTML = '<option value="all">Todas as Categorias</option>';
-categories.forEach(cat => {
-catSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
-});
+categories.forEach(cat => { catSelect.innerHTML += `<option value="${cat}">${cat}</option>`; });
 catSelect.value = categories.includes(currentCat) ? currentCat : 'all';
 
 const prodList = document.getElementById('prodList');
 prodList.innerHTML = '';
-products.forEach(p => {
-prodList.innerHTML += `<option value="${p}">`;
-});
+products.forEach(p => { prodList.innerHTML += `<option value="${p}">`; });
 }
 
 function downloadTemplateCSV() {
@@ -686,6 +726,45 @@ function formatCurrency(val) {
 return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+function renderPaginationControls(containerId, totalItems, pageSizeVal, currentPage, onPageChangeFnName) {
+const container = document.getElementById(containerId);
+if (!container) return { pageItems: totalItems, startIdx: 0, endIdx: totalItems.length };
+
+if (pageSizeVal === 'all') {
+container.innerHTML = `<span>Exibindo todos os <b>${totalItems.length}</b> registros.</span><span>Página 1 de 1</span>`;
+return { pageItems: totalItems, startIdx: 0, endIdx: totalItems.length };
+}
+
+const pageSize = parseInt(pageSizeVal) || 30;
+const totalPages = Math.ceil(totalItems.length / pageSize) || 1;
+const validPage = Math.min(Math.max(1, currentPage), totalPages);
+
+const startIdx = (validPage - 1) * pageSize;
+const endIdx = Math.min(startIdx + pageSize, totalItems.length);
+const pageItems = totalItems.slice(startIdx, endIdx);
+
+let controlsHtml = `
+<div>Exibindo <b>${totalItems.length > 0 ? startIdx + 1 : 0}</b> - <b>${endIdx}</b> de <b>${totalItems.length}</b> registros</div>
+<div class="flex items-center space-x-2">
+<button onclick="${onPageChangeFnName}(${validPage - 1})" ${validPage === 1 ? 'disabled class="px-2.5 py-1 bg-slate-900 text-slate-600 rounded cursor-not-allowed border border-slate-800"' : 'class="px-2.5 py-1 bg-slate-800 text-amber-400 hover:bg-slate-700 rounded transition border border-slate-700"'}>
+<i class="fa-solid fa-chevron-left"></i>
+</button>
+<span class="font-bold text-slate-200">${validPage} / ${totalPages}</span>
+<button onclick="${onPageChangeFnName}(${validPage + 1})" ${validPage === totalPages ? 'disabled class="px-2.5 py-1 bg-slate-900 text-slate-600 rounded cursor-not-allowed border border-slate-800"' : 'class="px-2.5 py-1 bg-slate-800 text-amber-400 hover:bg-slate-700 rounded transition border border-slate-700"'}>
+<i class="fa-solid fa-chevron-right"></i>
+</button>
+</div>
+`;
+
+container.innerHTML = controlsHtml;
+return { pageItems, startIdx, endIdx };
+}
+
+function changeTurnoverPage(newPage) { currentPageTurnover = newPage; renderDashboard(); }
+function changeConsolidatedPage(newPage) { currentPageConsolidated = newPage; renderDashboard(); }
+function changeAnalyticPage(newPage) { currentPageAnalytic = newPage; renderDashboard(); }
+function changeProjPage(newPage) { currentPageProj = newPage; renderProjection(); }
+
 function renderDashboard() {
 const startDateVal = document.getElementById('startDate') ? document.getElementById('startDate').value : '';
 const endDateVal = document.getElementById('endDate') ? document.getElementById('endDate').value : '';
@@ -696,21 +775,11 @@ const searchTerm = document.getElementById('searchInput') ? document.getElementB
 
 let filteredData = globalData;
 
-if (startDateVal) {
-filteredData = filteredData.filter(row => row.data >= startDateVal);
-}
-if (endDateVal) {
-filteredData = filteredData.filter(row => row.data <= endDateVal);
-}
-if (selectedClient !== 'all') {
-filteredData = filteredData.filter(row => row.cliente === selectedClient);
-}
-if (selectedCat !== 'all') {
-filteredData = filteredData.filter(row => row.categoria === selectedCat);
-}
-if (selectedProd !== '') {
-filteredData = filteredData.filter(row => row.produto.toLowerCase().includes(selectedProd));
-}
+if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
+if (endDateVal) filteredData = filteredData.filter(row => row.data <= endDateVal);
+if (selectedClient !== 'all') filteredData = filteredData.filter(row => row.cliente === selectedClient);
+if (selectedCat !== 'all') filteredData = filteredData.filter(row => row.categoria === selectedCat);
+if (selectedProd !== '') filteredData = filteredData.filter(row => row.produto.toLowerCase().includes(selectedProd));
 if (searchTerm !== '') {
 filteredData = filteredData.filter(row =>
 row.produto.toLowerCase().includes(searchTerm) ||
@@ -721,12 +790,8 @@ row.categoria.toLowerCase().includes(searchTerm)
 
 let totalFaturamento = 0;
 let totalCustoVendas = 0;
-let totalEstoqueVal = 0;
 let totalQtdUnidades = 0;
 let totalVendasCount = filteredData.length;
-
-const tbody = document.getElementById('dataTableBody');
-tbody.innerHTML = '';
 
 const prodValueMap = {};
 const prodQtyMap = {};
@@ -750,15 +815,34 @@ clientValueMap[row.cliente] = (clientValueMap[row.cliente] || 0) + faturamento;
 
 if (!consolidatedProdMap[row.produto]) {
 consolidatedProdMap[row.produto] = {
+categoria: row.categoria,
 qtdTotal: 0,
 faturamentoTotal: 0,
 estoque: row.estoque,
-minStock: row.minStock
+minStock: row.minStock,
+custoUnit: row.custoUnit
 };
 }
 consolidatedProdMap[row.produto].qtdTotal += row.qtd;
 consolidatedProdMap[row.produto].faturamentoTotal += faturamento;
+consolidatedProdMap[row.produto].estoque = row.estoque;
+consolidatedProdMap[row.produto].custoUnit = row.custoUnit;
+});
 
+// Cálculo do Valor em Estoque obedecendo estritamente os produtos filtrados
+let totalEstoqueVal = 0;
+Object.values(consolidatedProdMap).forEach(info => {
+totalEstoqueVal += (info.estoque * info.custoUnit);
+});
+
+// Tabela Analítica com Paginação
+const analyticPageSizeVal = document.getElementById('analyticPageSize') ? document.getElementById('analyticPageSize').value : '30';
+const { pageItems: analyticPageItems } = renderPaginationControls('analyticPagination', filteredData, analyticPageSizeVal, currentPageAnalytic, 'changeAnalyticPage');
+
+const tbodyAnalytic = document.getElementById('dataTableBody');
+tbodyAnalytic.innerHTML = '';
+analyticPageItems.forEach(row => {
+const faturamento = row.qtd * row.vlrUnit;
 const tr = document.createElement('tr');
 tr.className = "hover:bg-slate-800/50 transition-colors";
 tr.innerHTML = `
@@ -772,20 +856,12 @@ tr.innerHTML = `
 <td class="p-4 text-center"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${row.estoque <= row.minStock ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">${row.estoque}</span></td>
 <td class="p-4 text-center text-xs text-slate-400">Mín: <b>${row.minStock}</b> / Máx: <b>${row.maxStock}</b></td>
 `;
-tbody.appendChild(tr);
+tbodyAnalytic.appendChild(tr);
 });
 
 const lucroBruto = totalFaturamento - totalCustoVendas;
 const margem = totalFaturamento > 0 ? (lucroBruto / totalFaturamento) * 100 : 0;
 const precoMedioUnitario = totalQtdUnidades > 0 ? (totalFaturamento / totalQtdUnidades) : 0;
-
-const globalStockMap = {};
-globalData.forEach(row => {
-globalStockMap[row.produto] = { estoque: row.estoque, minStock: row.minStock, maxStock: row.maxStock, custoUnit: row.custoUnit };
-});
-Object.keys(globalStockMap).forEach(prod => {
-totalEstoqueVal += globalStockMap[prod].estoque * globalStockMap[prod].custoUnit;
-});
 
 document.getElementById('card-faturamento').innerText = formatCurrency(totalFaturamento);
 document.getElementById('card-lucro').innerText = formatCurrency(lucroBruto);
@@ -796,7 +872,51 @@ document.getElementById('card-preco-medio').innerText = formatCurrency(precoMedi
 
 renderStorePerformance(clientValueMap, filteredData, totalFaturamento);
 renderCharts(prodValueMap, prodQtyMap, catValueMap, clientValueMap);
+renderTurnoverTable(consolidatedProdMap);
 renderConsolidatedProducts(consolidatedProdMap);
+}
+
+function renderTurnoverTable(consolidatedMap) {
+const tbody = document.getElementById('turnoverTableBody');
+if(!tbody) return;
+tbody.innerHTML = '';
+
+const sortOrder = document.getElementById('turnoverSortOrder') ? document.getElementById('turnoverSortOrder').value : 'desc';
+const pageSizeVal = document.getElementById('turnoverPageSize') ? document.getElementById('turnoverPageSize').value : '30';
+
+const sortedProducts = Object.entries(consolidatedMap).sort((a, b) => {
+if (sortOrder === 'asc') return a[1].qtdTotal - b[1].qtdTotal;
+return b[1].qtdTotal - a[1].qtdTotal;
+});
+
+if(sortedProducts.length === 0) {
+tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">Nenhum dado encontrado para o filtro selecionado.</td></tr>`;
+renderPaginationControls('turnoverPagination', [], pageSizeVal, currentPageTurnover, 'changeTurnoverPage');
+return;
+}
+
+const { pageItems } = renderPaginationControls('turnoverPagination', sortedProducts, pageSizeVal, currentPageTurnover, 'changeTurnoverPage');
+
+pageItems.forEach(([prodName, info]) => {
+let turnoverRatio = info.estoque > 0 ? (info.qtdTotal / info.estoque) : info.qtdTotal;
+let badgeColor = turnoverRatio >= 1 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+
+const tr = document.createElement('tr');
+tr.className = "hover:bg-slate-800/50 transition-colors";
+tr.innerHTML = `
+<td class="p-4 font-bold text-amber-400">${prodName}</td>
+<td class="p-4"><span class="px-2.5 py-1 bg-slate-800 text-slate-300 rounded-md text-xs font-medium border border-slate-700">${info.categoria}</span></td>
+<td class="p-4 text-center font-bold text-slate-100">${info.estoque} un</td>
+<td class="p-4 text-center font-bold text-white">${info.qtdTotal} un</td>
+<td class="p-4 text-right font-semibold text-slate-200">${formatCurrency(info.faturamentoTotal)}</td>
+<td class="p-4 text-center">
+<span class="px-3 py-1 rounded-lg text-xs font-bold border ${badgeColor}">
+${turnoverRatio.toFixed(2)}x (Giro)
+</span>
+</td>
+`;
+tbody.appendChild(tr);
+});
 }
 
 function renderConsolidatedProducts(consolidatedMap) {
@@ -805,20 +925,22 @@ if(!tbody) return;
 tbody.innerHTML = '';
 
 const sortBy = document.getElementById('consolidatedSortBy') ? document.getElementById('consolidatedSortBy').value : 'faturamento';
+const pageSizeVal = document.getElementById('consolidatedPageSize') ? document.getElementById('consolidatedPageSize').value : '30';
 
 const sortedProducts = Object.entries(consolidatedMap).sort((a, b) => {
-if (sortBy === 'quantidade') {
-return b[1].qtdTotal - a[1].qtdTotal;
-}
+if (sortBy === 'quantidade') return b[1].qtdTotal - a[1].qtdTotal;
 return b[1].faturamentoTotal - a[1].faturamentoTotal;
 });
 
 if(sortedProducts.length === 0) {
 tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">Nenhum dado encontrado para o filtro selecionado.</td></tr>`;
+renderPaginationControls('consolidatedPagination', [], pageSizeVal, currentPageConsolidated, 'changeConsolidatedPage');
 return;
 }
 
-sortedProducts.forEach(([prodName, info]) => {
+const { pageItems } = renderPaginationControls('consolidatedPagination', sortedProducts, pageSizeVal, currentPageConsolidated, 'changeConsolidatedPage');
+
+pageItems.forEach(([prodName, info]) => {
 const tr = document.createElement('tr');
 tr.className = "hover:bg-slate-800/50 transition-colors";
 tr.innerHTML = `
@@ -841,15 +963,9 @@ if(!tbody) return;
 tbody.innerHTML = '';
 
 const clientStats = {};
-
 filteredData.forEach(row => {
 const faturamento = row.qtd * row.vlrUnit;
-if(!clientStats[row.cliente]) {
-clientStats[row.cliente] = {
-faturamento: 0,
-vendasCount: 0
-};
-}
+if(!clientStats[row.cliente]) clientStats[row.cliente] = { faturamento: 0, vendasCount: 0 };
 clientStats[row.cliente].faturamento += faturamento;
 clientStats[row.cliente].vendasCount += 1;
 });
@@ -899,19 +1015,9 @@ chartTopValueInst = new Chart(ctxVal, {
 type: 'bar',
 data: {
 labels: topVal.map(i => i[0]),
-datasets: [{
-label: 'Faturamento (R$)',
-data: topVal.map(i => i[1]),
-backgroundColor: '#fbbf24',
-borderRadius: 6
-}]
+datasets: [{ label: 'Faturamento (R$)', data: topVal.map(i => i[1]), backgroundColor: '#fbbf24', borderRadius: 6 }]
 },
-options: {
-indexAxis: 'y',
-responsive: true,
-maintainAspectRatio: false,
-plugins: { legend: { display: false } }
-}
+options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
 });
 
 const topQty = Object.entries(prodQty).sort((a,b) => b[1] - a[1]).slice(0, 10);
@@ -921,19 +1027,9 @@ chartTopQtyInst = new Chart(ctxQty, {
 type: 'bar',
 data: {
 labels: topQty.map(i => i[0]),
-datasets: [{
-label: 'Unidades Vendidas',
-data: topQty.map(i => i[1]),
-backgroundColor: '#818cf8',
-borderRadius: 6
-}]
+datasets: [{ label: 'Unidades Vendidas', data: topQty.map(i => i[1]), backgroundColor: '#818cf8', borderRadius: 6 }]
 },
-options: {
-indexAxis: 'y',
-responsive: true,
-maintainAspectRatio: false,
-plugins: { legend: { display: false } }
-}
+options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
 });
 
 const topCat = Object.entries(catVal).sort((a,b) => b[1] - a[1]);
@@ -943,15 +1039,9 @@ chartCategoryInst = new Chart(ctxCat, {
 type: 'doughnut',
 data: {
 labels: topCat.map(i => i[0]),
-datasets: [{
-data: topCat.map(i => i[1]),
-backgroundColor: ['#34d399', '#fbbf24', '#818cf8', '#f472b6', '#a78bfa', '#22d3ee']
-}]
+datasets: [{ data: topCat.map(i => i[1]), backgroundColor: ['#34d399', '#fbbf24', '#818cf8', '#f472b6', '#a78bfa', '#22d3ee'] }]
 },
-options: {
-responsive: true,
-maintainAspectRatio: false
-}
+options: { responsive: true, maintainAspectRatio: false }
 });
 
 const topClient = Object.entries(clientVal).sort((a,b) => b[1] - a[1]).slice(0, 5);
@@ -961,15 +1051,9 @@ chartClientsInst = new Chart(ctxClient, {
 type: 'pie',
 data: {
 labels: topClient.map(i => i[0]),
-datasets: [{
-data: topClient.map(i => i[1]),
-backgroundColor: ['#fbbf24', '#34d399', '#818cf8', '#f87171', '#38bdf8']
-}]
+datasets: [{ data: topClient.map(i => i[1]), backgroundColor: ['#fbbf24', '#34d399', '#818cf8', '#f87171', '#38bdf8'] }]
 },
-options: {
-responsive: true,
-maintainAspectRatio: false
-}
+options: { responsive: true, maintainAspectRatio: false }
 });
 }
 
@@ -979,10 +1063,9 @@ if(!tbody) return;
 tbody.innerHTML = '';
 
 const mode = document.getElementById('projMode') ? document.getElementById('projMode').value : 'synthetic';
+const pageSizeVal = document.getElementById('projPageSize') ? document.getElementById('projPageSize').value : '30';
 const thClient = document.getElementById('thProjClient');
-if (thClient) {
-thClient.style.display = (mode === 'analytic') ? '' : 'none';
-}
+if (thClient) thClient.style.display = (mode === 'analytic') ? '' : 'none';
 
 const startDateVal = document.getElementById('projStartDate') ? document.getElementById('projStartDate').value : '';
 const endDateVal = document.getElementById('projEndDate') ? document.getElementById('projEndDate').value : '';
@@ -993,18 +1076,10 @@ const onlySuggestionFilter = document.getElementById('filterOnlySuggestion') ? d
 
 let filteredData = globalData;
 
-if (startDateVal) {
-filteredData = filteredData.filter(row => row.data >= startDateVal);
-}
-if (endDateVal) {
-filteredData = filteredData.filter(row => row.data <= endDateVal);
-}
-if (selectedClient !== 'all') {
-filteredData = filteredData.filter(row => row.cliente === selectedClient);
-}
-if (selectedCat !== 'all') {
-filteredData = filteredData.filter(row => row.categoria === selectedCat);
-}
+if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
+if (endDateVal) filteredData = filteredData.filter(row => row.data <= endDateVal);
+if (selectedClient !== 'all') filteredData = filteredData.filter(row => row.cliente === selectedClient);
+if (selectedCat !== 'all') filteredData = filteredData.filter(row => row.categoria === selectedCat);
 if (projSearchTerm) {
 filteredData = filteredData.filter(row =>
 row.produto.toLowerCase().includes(projSearchTerm) ||
@@ -1033,31 +1108,36 @@ productStats[key].estoqueAtual = row.estoque;
 productStats[key].datas.push(new Date(row.data));
 });
 
-const sortedKeys = Object.keys(productStats).sort((a, b) => productStats[b].totalQtdVendida - productStats[a].totalQtdVendida);
+let sortedKeys = Object.keys(productStats).sort((a, b) => productStats[b].totalQtdVendida - productStats[a].totalQtdVendida);
+
+if (onlySuggestionFilter) {
+sortedKeys = sortedKeys.filter(key => {
+const stats = productStats[key];
+let suggestion = Math.max(0, stats.totalQtdVendida - stats.estoqueAtual);
+return suggestion > 0;
+});
+}
 
 if (sortedKeys.length === 0) {
 tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Nenhum produto encontrado para o filtro selecionado.</td></tr>`;
+renderPaginationControls('projPagination', [], pageSizeVal, currentPageProj, 'changeProjPage');
 return;
 }
 
-sortedKeys.forEach(key => {
-const stats = productStats[key];
+const { pageItems } = renderPaginationControls('projPagination', sortedKeys, pageSizeVal, currentPageProj, 'changeProjPage');
 
+pageItems.forEach(key => {
+const stats = productStats[key];
 let weeksSpan = 4;
 if(stats.datas.length > 1) {
 const minDate = new Date(Math.min.apply(null, stats.datas));
 const maxDate = new Date(Math.max.apply(null, stats.datas));
-const diffTime = Math.abs(maxDate - minDate);
-const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+const diffDays = Math.ceil(Math.abs(maxDate - minDate) / (1000 * 60 * 60 * 24));
 weeksSpan = Math.max(1, Math.ceil(diffDays / 7));
 }
 
 const avgWeeklySales = stats.totalQtdVendida / weeksSpan;
 let suggestion = Math.max(0, stats.totalQtdVendida - stats.estoqueAtual);
-
-if (onlySuggestionFilter && suggestion <= 0) {
-return;
-}
 
 const tr = document.createElement('tr');
 tr.className = "hover:bg-slate-800/50 transition-colors";
@@ -1083,11 +1163,7 @@ let globalEntries = [
 
 const savedEntries = localStorage.getItem('nexxa_entries');
 if (savedEntries) {
-try {
-globalEntries = JSON.parse(savedEntries);
-} catch(e) {
-console.error("Erro ao carregar notas de entrada salvas:", e);
-}
+try { globalEntries = JSON.parse(savedEntries); } catch(e) { console.error("Erro ao carregar notas salvas:", e); }
 }
 
 function handleEntryFile(e) {
@@ -1109,7 +1185,7 @@ produto: item['Produto'] || item['produto'] || item['Nome do Produto'] || 'Não 
 descricao: item['Descrição'] || item['descricao'] || item['Descricao'] || '',
 data: parseExcelDate(item['Data'] || item['data']),
 qtd: parseDecimal(item['Quantidade'] || item['quantidade'] || item['Qtd']),
-precoUnit: parseDecimal(item['Preço Unitário'] || item['preco_unitario'] || item['Preco Unitario'] || item['Preço Unitario'])
+precoUnit: parseDecimal(item['Preço Unitário'] || item['preco_unitario'] || item['Preco Unitario'])
 })).filter(row => row.data !== null);
 
 if(importedEntries.length > 0) {
@@ -1118,16 +1194,16 @@ globalEntries = globalEntries.filter(row => !importedSuppliers.has(row.fornecedo
 
 localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
 renderEntries();
-alert("Notas de entrada importadas com sucesso! Os dados dos fornecedores importados foram atualizados.");
+alert("Notas de entrada importadas com sucesso!");
 } else {
-alert("Nenhum dado válido encontrado na planilha de entradas.");
+alert("Nenhum dado válido encontrado.");
 }
 } else {
 alert("A planilha de entradas parece estar vazia.");
 }
 } catch(err) {
 console.error(err);
-alert("Erro ao ler o arquivo Excel de entradas. Verifique o formato das colunas.");
+alert("Erro ao ler o arquivo Excel de entradas.");
 }
 };
 reader.readAsArrayBuffer(file);
@@ -1219,8 +1295,7 @@ let weeksSpan = 4;
 if(stats.datas.length > 1) {
 const minDate = new Date(Math.min.apply(null, stats.datas));
 const maxDate = new Date(Math.max.apply(null, stats.datas));
-const diffTime = Math.abs(maxDate - minDate);
-const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+const diffDays = Math.ceil(Math.abs(maxDate - minDate) / (1000 * 60 * 60 * 24));
 weeksSpan = Math.max(1, Math.ceil(diffDays / 7));
 }
 const avgWeeklySales = stats.totalQtdVendida / weeksSpan;
@@ -1229,9 +1304,7 @@ let suggestion = Math.max(0, stats.totalQtdVendida - stats.estoqueAtual);
 if (onlySuggestionFilter && suggestion <= 0) return;
 
 let rowObj = {};
-if (mode === 'analytic') {
-rowObj["Cliente"] = stats.cliente;
-}
+if (mode === 'analytic') rowObj["Cliente"] = stats.cliente;
 rowObj["Produto"] = stats.produto;
 rowObj["Categoria"] = stats.categoria;
 rowObj["Estoque Atual"] = stats.estoqueAtual;
@@ -1288,10 +1361,10 @@ populateFilterDropdowns();
 populateProjFilterDropdowns();
 updateAllViews();
 renderEntries();
-alert("Base de dados completa restaurada e atualizada com sucesso!");
+alert("Base de dados restaurada com sucesso!");
 } catch(err) {
 console.error(err);
-alert("Erro ao importar o arquivo de backup. Verifique se é um arquivo .json válido gerado pelo NEXXA.");
+alert("Erro ao importar o arquivo de backup.");
 }
 };
 reader.readAsText(file);
@@ -1309,15 +1382,11 @@ const currentClient = clientSelect.value;
 const currentCat = catSelect.value;
 
 clientSelect.innerHTML = '<option value="all">Todos os Clientes</option>';
-clients.forEach(c => {
-clientSelect.innerHTML += `<option value="${c}">${c}</option>`;
-});
+clients.forEach(c => { clientSelect.innerHTML += `<option value="${c}">${c}</option>`; });
 clientSelect.value = clients.includes(currentClient) ? currentClient : 'all';
 
 catSelect.innerHTML = '<option value="all">Todas as Categorias</option>';
-categories.forEach(cat => {
-catSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
-});
+categories.forEach(cat => { catSelect.innerHTML += `<option value="${cat}">${cat}</option>`; });
 catSelect.value = categories.includes(currentCat) ? currentCat : 'all';
 }
 
@@ -1335,11 +1404,13 @@ startDate.setDate(today.getDate() - days);
 document.getElementById('projEndDate').value = today.toISOString().split('T')[0];
 document.getElementById('projStartDate').value = startDate.toISOString().split('T')[0];
 }
+currentPageProj = 1;
 renderProjection();
 }
 
 function onProjCustomDateChange() {
 document.getElementById('projDatePreset').value = 'custom';
+currentPageProj = 1;
 renderProjection();
 }
 
