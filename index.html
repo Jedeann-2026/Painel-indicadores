@@ -469,7 +469,7 @@ Projeção Mês: R$ 0,00
 <table class="w-full text-left border-collapse text-sm">
 <thead>
 <tr class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800">
-<th class="p-4 font-semibold">Cliente / Loja</th>
+<th class="p-4 font-semibold" id="thStockClient">Cliente / Loja</th>
 <th class="p-4 font-semibold">Produto</th>
 <th class="p-4 font-semibold">EAN</th>
 <th class="p-4 font-semibold">Categoria</th>
@@ -1305,6 +1305,7 @@ renderStockView();
 
 function renderStockView() {
 const tbody = document.getElementById('stockTableBody');
+const thClient = document.getElementById('thStockClient');
 if (!tbody) return;
 tbody.innerHTML = '';
 
@@ -1315,6 +1316,11 @@ const selectedCat = document.getElementById('stockCatFilter') ? document.getElem
 const selectedProd = document.getElementById('stockProdFilter') ? document.getElementById('stockProdFilter').value.trim().toLowerCase() : '';
 const searchTerm = document.getElementById('stockSearchInput') ? document.getElementById('stockSearchInput').value.trim().toLowerCase() : '';
 const pageSizeVal = document.getElementById('stockPageSize') ? document.getElementById('stockPageSize').value : '30';
+
+// Controla a visibilidade da coluna Cliente na tabela de estoque
+if (thClient) {
+thClient.style.display = (selectedClient === 'all') ? 'none' : '';
+}
 
 let filteredData = globalData;
 
@@ -1342,9 +1348,62 @@ if (diff > 0) daysCount = diff;
 
 const stockMap = {};
 
-// Mapeia todas as linhas da base respeitando os filtros independentes da aba de estoque
+if (selectedClient === 'all') {
+// Quando "Todos os Clientes" estiver selecionado: agrupa e soma por produto (sem separar cliente)
 globalData.forEach(row => {
-if (selectedClient !== 'all' && row.cliente !== selectedClient) return;
+if (selectedCat !== 'all' && row.categoria !== selectedCat) return;
+
+const key = row.produto.trim().toUpperCase();
+if (!stockMap[key]) {
+stockMap[key] = {
+produto: row.produto,
+ean: row.ean || '',
+categoria: row.categoria,
+qtdVendida: 0,
+estoqueAtual: 0
+};
+}
+});
+
+// Mapeia e soma as quantidades vendidas e o estoque atual consolidado por produto
+let filteredGlobalForStock = globalData;
+if (startDateVal) filteredGlobalForStock = filteredGlobalForStock.filter(row => row.data >= startDateVal);
+if (endDateVal) filteredGlobalForStock = filteredGlobalForStock.filter(row => row.data <= endDateVal);
+if (selectedCat !== 'all') filteredGlobalForStock = filteredGlobalForStock.filter(row => row.categoria === selectedCat);
+
+// Para o estoque atual consolidado, pegamos o último valor de estoque cadastrado de cada cliente por produto ou somamos.
+// Geralmente somamos o estoque de todas as lojas para a visão geral:
+let latestStockPerClientProd = {};
+globalData.forEach(row => {
+if (selectedCat !== 'all' && row.categoria !== selectedCat) return;
+const cpKey = `${row.cliente}___${row.produto}`;
+latestStockPerClientProd[cpKey] = row.estoque;
+});
+
+let aggregatedStock = {};
+Object.keys(latestStockPerClientProd).forEach(cpKey => {
+const prodName = cpKey.split('___')[1];
+const stockVal = latestStockPerClientProd[cpKey];
+aggregatedStock[prodName] = (aggregatedStock[prodName] || 0) + stockVal;
+});
+
+filteredGlobalForStock.forEach(row => {
+const key = row.produto.trim().toUpperCase();
+if (stockMap[key]) {
+stockMap[key].qtdVendida += row.qtd;
+if (row.ean) stockMap[key].ean = row.ean;
+}
+});
+
+// Atribui o estoque total somado
+Object.keys(stockMap).forEach(key => {
+stockMap[key].estoqueAtual = aggregatedStock[stockMap[key].produto] || 0;
+});
+
+} else {
+// Quando um cliente específico for selecionado
+globalData.forEach(row => {
+if (row.cliente !== selectedClient) return;
 if (selectedCat !== 'all' && row.categoria !== selectedCat) return;
 
 const key = `${row.cliente}___${row.produto}`;
@@ -1368,6 +1427,7 @@ stockMap[key].estoqueAtual = row.estoque;
 if (row.ean) stockMap[key].ean = row.ean;
 }
 });
+}
 
 let sortedProducts = Object.values(stockMap);
 if (selectedClient !== 'all') {
@@ -1376,11 +1436,24 @@ sortedProducts = sortedProducts.filter(item => item.cliente === selectedClient);
 if (selectedCat !== 'all') {
 sortedProducts = sortedProducts.filter(item => item.categoria === selectedCat);
 }
+if (selectedProd !== '') {
+sortedProducts = sortedProducts.filter(item => item.produto.toLowerCase().includes(selectedProd));
+}
+if (searchTerm !== '') {
+sortedProducts = sortedProducts.filter(item =>
+(item.cliente && item.cliente.toLowerCase().includes(searchTerm)) ||
+item.produto.toLowerCase().includes(searchTerm) ||
+item.categoria.toLowerCase().includes(searchTerm) ||
+(item.ean && item.ean.toLowerCase().includes(searchTerm))
+);
+}
 
 sortedProducts.sort((a, b) => b.qtdVendida - a.qtdVendida);
 
+const totalCols = (selectedClient === 'all') ? 8 : 9;
+
 if (sortedProducts.length === 0) {
-tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">Nenhum registro encontrado para o filtro.</td></tr>`;
+tbody.innerHTML = `<tr><td colspan="${totalCols}" class="p-4 text-center text-slate-500">Nenhum registro encontrado para o filtro.</td></tr>`;
 renderPaginationControls('stockPagination', [], pageSizeVal, currentPageStock, 'changeStockPage');
 return;
 }
@@ -1408,11 +1481,16 @@ statusBadge = `<span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 font-
 
 const tr = document.createElement('tr');
 tr.className = "hover:bg-slate-800/50 transition-colors";
-tr.innerHTML = `
+
+let clientTdHtml = (selectedClient === 'all') ? '' : `
 <td class="p-4 font-semibold text-slate-100 flex items-center space-x-1.5">
 <i class="fa-solid fa-shop text-amber-400 text-xs"></i>
 <span>${item.cliente}</span>
 </td>
+`;
+
+tr.innerHTML = `
+${clientTdHtml}
 <td class="p-4 font-bold text-amber-400">${item.produto}</td>
 <td class="p-4 text-xs font-mono text-slate-400">${item.ean || '-'}</td>
 <td class="p-4"><span class="px-2.5 py-1 bg-slate-800 text-slate-300 rounded-md text-xs font-medium border border-slate-700">${item.categoria}</span></td>
