@@ -102,7 +102,7 @@ display: none !important;
 
 <div class="text-xs text-slate-400 flex items-center space-x-2">
 <i class="fa-solid fa-circle-info text-amber-400"></i>
-<span>Suporta colunas: Categoria, Produto, EAN, Qtd. pedida, Qtd. disponível, Preço filial</span>
+<span>Suporta colunas: Cliente/Filial, Categoria, Produto, EAN, Qtd. pedida, Qtd. disponível, Preço filial</span>
 </div>
 </div>
 
@@ -199,21 +199,21 @@ display: none !important;
 </div>
 </div>
 
-<!-- Faturamento Mensal por Semana e Projeção -->
+<!-- Faturamento Mensal - 4 Últimas Semanas -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
 <div class="p-5 border-b border-slate-800 flex justify-between items-center">
 <div>
 <h2 class="font-bold text-white text-base">
-<i class="fa-solid fa-calendar-weeks text-amber-400 mr-2"></i>Faturamento Mensal por Semana
+<i class="fa-solid fa-calendar-weeks text-amber-400 mr-2"></i>Faturamento das 4 Últimas Semanas
 </h2>
-<p class="text-xs text-slate-400 mt-0.5">Distribuição do faturamento por semana do mês ativo.</p>
+<p class="text-xs text-slate-400 mt-0.5">Distribuição do faturamento por blocos semanais (Semana 1 a 4 do mês ou período).</p>
 </div>
 <span id="projecaoBadge" class="text-xs font-bold bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-lg border border-indigo-500/20">
 Projeção Mês: R$ 0,00
 </span>
 </div>
-<div class="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4" id="weeklyCardsContainer">
-<!-- Cards semanais via JS -->
+<div class="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4" id="weeklyCardsContainer">
+<!-- Cards das 4 semanas via JS -->
 </div>
 </div>
 
@@ -389,12 +389,12 @@ Projeção Mês: R$ 0,00
 </div>
 </div>
 
-<!-- ABA NOVA: ESTOQUE (CONTROLE DE MÍNIMO E MÁXIMO) -->
+<!-- ABA DE ESTOQUE (COM CLIENTE REINCORPORADO) -->
 <div id="tab-stock" class="space-y-6 hidden">
 <div class="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800 space-y-6">
 <div>
 <h2 class="text-lg font-bold text-white"><i class="fa-solid fa-boxes-stacked text-amber-400 mr-2"></i>Gestão de Estoque - Mínimo e Máximo</h2>
-<p class="text-xs text-slate-400 mt-1">Visão completa do estoque atual, cálculo automático de Mínimo/Máximo baseado em vendas e status de segurança do produto.</p>
+<p class="text-xs text-slate-400 mt-1">Visão completa do estoque atual, cálculo automático de Mínimo/Máximo baseado em vendas e status de segurança por Cliente/Loja.</p>
 </div>
 
 <!-- Filtros da Aba Estoque -->
@@ -448,10 +448,11 @@ Projeção Mês: R$ 0,00
 <table class="w-full text-left border-collapse text-sm">
 <thead>
 <tr class="bg-slate-950 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-800">
+<th class="p-4 font-semibold">Cliente / Loja</th>
 <th class="p-4 font-semibold">Produto</th>
 <th class="p-4 font-semibold">EAN</th>
 <th class="p-4 font-semibold">Categoria</th>
-<th class="p-4 font-semibold text-center">Qtd. Vendida (Período)</th>
+<th class="p-4 font-semibold text-center">Qtd. Vendida</th>
 <th class="p-4 font-semibold text-center">Estoque Atual</th>
 <th class="p-4 font-semibold text-center">Estoque Mínimo</th>
 <th class="p-4 font-semibold text-center">Estoque Máximo</th>
@@ -610,8 +611,8 @@ Projeção Mês: R$ 0,00
 <!-- Lógica JavaScript -->
 <script>
 let globalData = [
-{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "PERFUM", produto: "ALGODAO", ean: "78944880", data: "2026-10-21", qtd: 18, vlrUnit: 1.29, custoUnit: 0.80, estoque: 86 },
-{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "MERCADO", produto: "ACUCAR", ean: "78964338", data: "2026-10-21", qtd: 12, vlrUnit: 2.99, custoUnit: 1.90, estoque: 128 },
+{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "PERFUM", produto: "ALGODAO", ean: "78944880", data: "2026-10-01", qtd: 18, vlrUnit: 1.29, custoUnit: 0.80, estoque: 86 },
+{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "MERCADO", produto: "ACUCAR", ean: "78964338", data: "2026-10-10", qtd: 12, vlrUnit: 2.99, custoUnit: 1.90, estoque: 128 },
 { cliente: "ANNA BEATRIZ (MARINHA)", categoria: "HIGIENE", produto: "ENXAG", ean: "78910241", data: "2026-10-21", qtd: 3, vlrUnit: 12.89, custoUnit: 8.50, estoque: 19 }
 ];
 
@@ -752,23 +753,31 @@ updateAllViews();
 }
 
 function parseExcelDate(val) {
-if (val === 0 || val === '0' || !val) return new Date().toISOString().split('T')[0];
+if (!val || val === 0 || val === '0') return new Date().toISOString().split('T')[0];
+
 if (typeof val === 'number') {
 const excelDate = new Date((val - (25567 + 2)) * 86400 * 1000);
-return excelDate.toISOString().split('T')[0];
-}
-let str = String(val).trim();
-if (str === '0' || str === '') return new Date().toISOString().split('T')[0];
-
-if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) {
-const parts = str.split('/');
-const day = parts[0].padStart(2, '0');
-const month = parts[1].padStart(2, '0');
-const year = parts[2];
+const year = excelDate.getUTCFullYear();
+const month = String(excelDate.getUTCMonth() + 1).padStart(2, '0');
+const day = String(excelDate.getUTCDate()).padStart(2, '0');
 return `${year}-${month}-${day}`;
 }
 
-if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+let str = String(val).trim();
+if (str.includes('/')) {
+const parts = str.split('/');
+if (parts.length === 3) {
+const day = parts[0].padStart(2, '0');
+const month = parts[1].padStart(2, '0');
+const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+return `${year}-${month}-${day}`;
+}
+}
+
+if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+return str.substring(0, 10);
+}
+
 return new Date().toISOString().split('T')[0];
 }
 
@@ -853,10 +862,10 @@ products.forEach(p => { prodList.innerHTML += `<option value="${p}">`; });
 
 function downloadTemplateCSV() {
 const csvContent = "data:text/csv;charset=utf-8,\uFEFF" +
-"Categoria;Produto;EAN;Qtd. pedida;Qtd. disponível;Preço filial\n" +
-"PERFUM;ALGODAO;78944880;18;86;1,29\n" +
-"MERCADO;ACUCAR;78964338;12;128;2,99\n" +
-"HIGIENE;ENXAG;78910241;3;19;12,89";
+"Cliente;Categoria;Produto;EAN;Qtd. pedida;Qtd. disponível;Preço filial;Data\n" +
+"ANNA BEATRIZ (MARINHA);PERFUM;ALGODAO;78944880;18;86;1,29;2026-10-01\n" +
+"ANNA BEATRIZ (MARINHA);MERCADO;ACUCAR;78964338;12;128;2,99;2026-10-10\n" +
+"ANNA BEATRIZ (MARINHA);HIGIENE;ENXAG;78910241;3;19;12,89;2026-10-21";
 
 const encodedUri = encodeURI(csvContent);
 const link = document.createElement("a");
@@ -1030,46 +1039,55 @@ document.getElementById('card-vendas').innerText = totalVendasCount;
 document.getElementById('card-preco-medio').innerText = formatCurrency(precoMedioUnitario);
 
 renderStorePerformance(clientValueMap, filteredData, totalFaturamento);
-renderWeeklyPerformance(filteredData);
+renderWeeklyPerformanceFourWeeks(filteredData, totalFaturamento);
 renderCharts(prodValueMap, prodQtyMap, catValueMap, clientValueMap);
 renderTurnoverTable(consolidatedProdMap);
 renderConsolidatedProducts(consolidatedProdMap);
 }
 
-function renderWeeklyPerformance(filteredData) {
+// Função dos Cards Semanais ajustada estritamente para 4 Semanas
+function renderWeeklyPerformanceFourWeeks(filteredData, totalFaturamentoFiltrado) {
 const container = document.getElementById('weeklyCardsContainer');
 const badgeProjecao = document.getElementById('projecaoBadge');
 if (!container) return;
 
 container.innerHTML = '';
-const weeklyTotals = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-let totalMesAcumulado = 0;
+const weeklyTotals = { 1: 0, 2: 0, 3: 0, 4: 0 };
 
 filteredData.forEach(row => {
 if (!row.data) return;
-const dateObj = new Date(row.data);
-const dayOfMonth = dateObj.getUTCDate();
+const dayOfMonth = parseInt(row.data.split('-')[2]);
 const faturamento = row.qtd * row.vlrUnit;
 
-totalMesAcumulado += faturamento;
-
-if (dayOfMonth <= 7) weeklyTotals[1] += faturamento;
-else if (dayOfMonth <= 14) weeklyTotals[2] += faturamento;
-else if (dayOfMonth <= 21) weeklyTotals[3] += faturamento;
-else if (dayOfMonth <= 28) weeklyTotals[4] += faturamento;
-else weeklyTotals[5] += faturamento;
+// Distribuição estrita para 4 semanas (7 dias por semana, acumulando o final no 4º card)
+if (dayOfMonth <= 7) {
+weeklyTotals[1] += faturamento;
+} else if (dayOfMonth <= 14) {
+weeklyTotals[2] += faturamento;
+} else if (dayOfMonth <= 21) {
+weeklyTotals[3] += faturamento;
+} else {
+weeklyTotals[4] += faturamento;
+}
 });
 
-for (let sem = 1; sem <= 5; sem++) {
-const valorSemana = weeklyTotals[sem];
-const percentual = totalMesAcumulado > 0 ? ((valorSemana / totalMesAcumulado) * 100).toFixed(1) : 0;
+const labelsSemanas = [
+{ id: 1, desc: "Dia 01 a 07" },
+{ id: 2, desc: "Dia 08 a 14" },
+{ id: 3, desc: "Dia 15 a 21" },
+{ id: 4, desc: "Dia 22 ao Fim" }
+];
+
+labelsSemanas.forEach(sem => {
+const valorSemana = weeklyTotals[sem.id];
+const percentual = totalFaturamentoFiltrado > 0 ? ((valorSemana / totalFaturamentoFiltrado) * 100).toFixed(1) : 0;
 
 const card = document.createElement('div');
 card.className = "bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between space-y-2";
 card.innerHTML = `
 <div class="flex justify-between items-center text-xs text-slate-400 font-semibold uppercase">
-<span>Semana ${sem}</span>
-<i class="fa-solid fa-calendar-day text-amber-400/70"></i>
+<span>Semana ${sem.id}</span>
+<span class="text-[10px] text-slate-500 font-normal">(${sem.desc})</span>
 </div>
 <div class="text-lg font-bold text-white">${formatCurrency(valorSemana)}</div>
 <div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
@@ -1078,14 +1096,14 @@ card.innerHTML = `
 <div class="text-[10px] text-slate-500 text-right font-medium">${percentual}% do total</div>
 `;
 container.appendChild(card);
-}
+});
 
 const hoje = new Date();
 const diaAtual = hoje.getDate();
 const ultimoDiaDoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
 
-if (diaAtual > 0 && totalMesAcumulado > 0) {
-const mediaDiaria = totalMesAcumulado / diaAtual;
+if (diaAtual > 0 && totalFaturamentoFiltrado > 0) {
+const mediaDiaria = totalFaturamentoFiltrado / diaAtual;
 const projecaoTotal = mediaDiaria * ultimoDiaDoMes;
 if (badgeProjecao) {
 badgeProjecao.innerText = `Projeção Mês: ${formatCurrency(projecaoTotal)}`;
@@ -1095,7 +1113,7 @@ badgeProjecao.innerText = `Projeção Mês: R$ 0,00`;
 }
 }
 
-// --- ABA DE ESTOQUE (MÍNIMO E MÁXIMO) ---
+// --- ABA DE ESTOQUE ---
 function populateStockFilterDropdowns() {
 const clients = [...new Set(globalData.map(i => i.cliente))].sort();
 const categories = [...new Set(globalData.map(i => i.categoria))].sort();
@@ -1169,13 +1187,13 @@ if (selectedCat !== 'all') filteredData = filteredData.filter(row => row.categor
 if (selectedProd !== '') filteredData = filteredData.filter(row => row.produto.toLowerCase().includes(selectedProd));
 if (searchTerm !== '') {
 filteredData = filteredData.filter(row =>
+row.cliente.toLowerCase().includes(searchTerm) ||
 row.produto.toLowerCase().includes(searchTerm) ||
 row.categoria.toLowerCase().includes(searchTerm) ||
 (row.ean && row.ean.toLowerCase().includes(searchTerm))
 );
 }
 
-// Calcula período em dias para média
 let daysCount = 30;
 if (startDateVal && endDateVal) {
 const d1 = new Date(startDateVal);
@@ -1187,8 +1205,10 @@ if (diff > 0) daysCount = diff;
 const stockMap = {};
 
 globalData.forEach(row => {
-if (!stockMap[row.produto]) {
-stockMap[row.produto] = {
+const key = `${row.cliente}___${row.produto}`;
+if (!stockMap[key]) {
+stockMap[key] = {
+cliente: row.cliente,
 produto: row.produto,
 ean: row.ean || '',
 categoria: row.categoria,
@@ -1199,8 +1219,10 @@ estoqueAtual: row.estoque
 });
 
 filteredData.forEach(row => {
-if (!stockMap[row.produto]) {
-stockMap[row.produto] = {
+const key = `${row.cliente}___${row.produto}`;
+if (!stockMap[key]) {
+stockMap[key] = {
+cliente: row.cliente,
 produto: row.produto,
 ean: row.ean || '',
 categoria: row.categoria,
@@ -1208,15 +1230,20 @@ qtdVendida: 0,
 estoqueAtual: row.estoque
 };
 }
-stockMap[row.produto].qtdVendida += row.qtd;
-stockMap[row.produto].estoqueAtual = row.estoque;
-if (row.ean) stockMap[row.produto].ean = row.ean;
+stockMap[key].qtdVendida += row.qtd;
+stockMap[key].estoqueAtual = row.estoque;
+if (row.ean) stockMap[key].ean = row.ean;
 });
 
-const sortedProducts = Object.values(stockMap).sort((a, b) => b.qtdVendida - a.qtdVendida);
+let sortedProducts = Object.values(stockMap);
+if (selectedClient !== 'all') {
+sortedProducts = sortedProducts.filter(item => item.cliente === selectedClient);
+}
+
+sortedProducts.sort((a, b) => b.qtdVendida - a.qtdVendida);
 
 if (sortedProducts.length === 0) {
-tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Nenhum registro encontrado para o filtro.</td></tr>`;
+tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">Nenhum registro encontrado para o filtro.</td></tr>`;
 renderPaginationControls('stockPagination', [], pageSizeVal, currentPageStock, 'changeStockPage');
 return;
 }
@@ -1226,9 +1253,7 @@ const { pageItems } = renderPaginationControls('stockPagination', sortedProducts
 pageItems.forEach(item => {
 const mediaDiaria = item.qtdVendida / daysCount;
 
-// Mínimo = Venda estimada para 7 dias (mínimo de 5 unidades)
 let minCalc = Math.max(5, Math.ceil(mediaDiaria * 7));
-// Máximo = Venda estimada para 30 dias (máximo de 20 unidades de piso)
 let maxCalc = Math.max(20, Math.ceil(mediaDiaria * 30));
 
 if (minCalc >= maxCalc) maxCalc = minCalc + 10;
@@ -1247,6 +1272,10 @@ statusBadge = `<span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 font-
 const tr = document.createElement('tr');
 tr.className = "hover:bg-slate-800/50 transition-colors";
 tr.innerHTML = `
+<td class="p-4 font-semibold text-slate-100 flex items-center space-x-1.5">
+<i class="fa-solid fa-shop text-amber-400 text-xs"></i>
+<span>${item.cliente}</span>
+</td>
 <td class="p-4 font-bold text-amber-400">${item.produto}</td>
 <td class="p-4 text-xs font-mono text-slate-400">${item.ean || '-'}</td>
 <td class="p-4"><span class="px-2.5 py-1 bg-slate-800 text-slate-300 rounded-md text-xs font-medium border border-slate-700">${item.categoria}</span></td>
@@ -1497,15 +1526,13 @@ ean: row.ean || '',
 categoria: row.categoria,
 totalQtdVendida: 0,
 estoqueAtual: row.estoque,
-custoUnit: row.custoUnit,
-datas: []
+custoUnit: row.custoUnit
 };
 }
 productStats[key].totalQtdVendida += row.qtd;
 productStats[key].estoqueAtual = row.estoque;
 productStats[key].custoUnit = row.custoUnit;
 if(row.ean) productStats[key].ean = row.ean;
-productStats[key].datas.push(new Date(row.data));
 });
 
 let sortedKeys = Object.keys(productStats).sort((a, b) => productStats[b].totalQtdVendida - productStats[a].totalQtdVendida);
