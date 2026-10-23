@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Inventário - Leitura com Quantidade</title>
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<!-- HTML5 QR Code / Barcode Scanner -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<!-- SheetJS (Para ler Excel .xlsx / .xls) -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<!-- PapaParse (Para ler arquivos CSV) -->
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<style>
+#reader video {
+width: 100% !important;
+height: 100% !important;
+object-fit: cover !important;
+border-radius: 0.75rem;
+}
+#reader {
+border: none !important;
+}
+#reader__scan_region {
+background: #000;
+border-radius: 0.75rem;
+overflow: hidden;
+}
+#reader__dashboard {
+display: none !important;
+}
+</style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-12">
+
+<!-- Header / Navbar -->
+<header class="bg-indigo-700 text-white shadow-md sticky top-0 z-30">
+<div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
+<div class="flex items-center gap-2">
+<i data-lucide="boxes" class="w-7 h-7 text-indigo-200"></i>
+<h1 class="font-bold text-xl tracking-tight">EstoqueCam Pro</h1>
+</div>
+<div class="flex items-center gap-2">
+<button id="btnOpenImportModal" class="bg-indigo-600 hover:bg-indigo-800 text-white text-xs sm:text-sm font-medium px-3 py-1.5 rounded-lg border border-indigo-500 transition flex items-center gap-1.5">
+<i data-lucide="file-up" class="w-4 h-4"></i>
+<span class="hidden sm:inline">Importar EAN</span>
+<span class="sm:hidden">Importar</span>
+</button>
+<button id="btnExportCSV" class="bg-indigo-800 hover:bg-indigo-900 text-indigo-100 text-xs sm:text-sm font-medium px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+<i data-lucide="download" class="w-4 h-4"></i>
+<span class="hidden sm:inline">Exportar</span>
+</button>
+</div>
+</div>
+</header>
+
+<!-- Container Principal -->
+<main class="max-w-5xl mx-auto px-4 mt-6 space-y-6">
+
+<!-- Bloco da Câmera -->
+<section class="bg-white rounded-2xl shadow-sm p-4 border border-slate-200">
+<div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+
+<div class="w-full md:w-1/2 flex flex-col items-center">
+<div id="scanner-wrapper" class="w-full h-64 bg-slate-900 rounded-xl overflow-hidden relative flex items-center justify-center border-2 border-dashed border-slate-300">
+<div id="reader" class="w-full h-full"></div>
+<div id="scanner-placeholder" class="text-center p-4">
+<i data-lucide="camera" class="w-12 h-12 text-slate-500 mx-auto mb-2"></i>
+<p class="text-slate-400 text-sm">Câmera desligada</p>
+</div>
+</div>
+
+<!-- Botão Ligar / Desligar Câmera -->
+<div class="flex gap-2 mt-3 w-full">
+<button id="btnToggleCam" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-xl shadow transition flex items-center justify-center gap-2">
+<i data-lucide="camera" class="w-5 h-5"></i>
+<span id="camBtnText">Ligar Câmera</span>
+</button>
+</div>
+</div>
+
+<!-- Instruções / Modo -->
+<div class="w-full md:w-1/2 space-y-3">
+<h2 class="font-bold text-slate-700 text-lg flex items-center gap-2">
+<i data-lucide="scan" class="w-5 h-5 text-indigo-600"></i>
+Fluxo de Leitura Ativo
+</h2>
+<div class="p-4 bg-indigo-50 border border-indigo-200 rounded-xl text-sm text-indigo-900 space-y-2">
+<p class="font-semibold flex items-center gap-1.5">
+<i data-lucide="zap" class="w-4 h-4 text-amber-500"></i> Modos de Bip Automático:
+</p>
+<ul class="list-disc list-inside text-xs text-indigo-800 space-y-1">
+<li>Ao bipar um código EAN, a câmera abre a janela de quantidade.</li>
+<li>Informe se é <strong>Entrada (+), Saída (-) ou Defina a Qtd Exata</strong>.</li>
+<li>Ao confirmar, a gravação é feita e a câmera volta a ler o próximo item automaticamente!</li>
+</ul>
+</div>
+
+<!-- Última Leitura -->
+<div id="lastScanResult" class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-sm font-medium flex items-center justify-between">
+<span id="scanMsg">Aguardando bip na câmera...</span>
+<span id="scanEan" class="font-mono bg-white px-2 py-0.5 rounded border text-xs font-bold">---</span>
+</div>
+</div>
+
+</div>
+</section>
+
+<!-- Lista de Estoque Cadastrado -->
+<section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+<!-- Filtros e Busca -->
+<div class="p-4 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row justify-between items-center gap-3">
+<div class="relative w-full sm:w-72">
+<i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+<input type="text" id="searchInput" placeholder="Buscar por EAN ou nome..." class="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+</div>
+<div class="text-xs text-slate-500 font-medium">
+Total de itens cadastrados: <span id="totalItemsCount" class="font-bold text-slate-800">0</span>
+</div>
+</div>
+
+<!-- Tabela -->
+<div class="overflow-x-auto">
+<table class="w-full text-left text-sm">
+<thead class="bg-slate-100 text-slate-600 text-xs uppercase border-b border-slate-200">
+<tr>
+<th class="py-3 px-4">EAN / Código</th>
+<th class="py-3 px-4">Descrição</th>
+<th class="py-3 px-4">Categoria</th>
+<th class="py-3 px-4 text-center">Quantidade</th>
+<th class="py-3 px-4 text-right">Ações</th>
+</tr>
+</thead>
+<tbody id="inventoryTable" class="divide-y divide-slate-100">
+<!-- Renderizado dinamicamente -->
+</tbody>
+</table>
+</div>
+
+<!-- Sem itens -->
+<div id="emptyState" class="p-8 text-center hidden">
+<i data-lucide="box" class="w-12 h-12 text-slate-300 mx-auto mb-2"></i>
+<p class="text-slate-500 font-medium">Nenhum produto cadastrado no estoque.</p>
+<p class="text-slate-400 text-xs">Importe um arquivo CSV/Excel ou bipe um novo produto.</p>
+</div>
+</section>
+
+</main>
+
+<!-- MODAL 1: QUANTIDADE APÓS BIPAR CÓDIGO (NOVO FLUXO) -->
+<div id="qtyModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+<div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-150">
+
+<div class="p-4 bg-indigo-600 text-white flex justify-between items-center">
+<h3 class="font-bold text-base flex items-center gap-2">
+<i data-lucide="barcode" class="w-5 h-5"></i> Código Detectado
+</h3>
+<span id="modalEanBadge" class="font-mono bg-indigo-800 px-2.5 py-1 rounded text-xs font-bold text-indigo-100">--</span>
+</div>
+
+<div class="p-5 space-y-4">
+<!-- Nome/Descrição do Produto -->
+<div>
+<label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Descrição do Produto</label>
+<input type="text" id="modalDescInput" placeholder="Digite a descrição se for item novo..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+<p id="modalStatusText" class="text-xs text-slate-400 mt-1"></p>
+</div>
+
+<!-- Seletor do Tipo de Ação -->
+<div>
+<label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Ação da Quantidade</label>
+<div class="grid grid-cols-3 gap-2">
+<button type="button" onclick="setQtyOp('add')" id="btnOpAdd" class="py-2 px-3 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 bg-indigo-50 border-indigo-500 text-indigo-700">
+<i data-lucide="plus" class="w-4 h-4"></i> Somar (+)
+</button>
+<button type="button" onclick="setQtyOp('sub')" id="btnOpSub" class="py-2 px-3 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 bg-slate-50 border-slate-200 text-slate-600">
+<i data-lucide="minus" class="w-4 h-4"></i> Subtrair (-)
+</button>
+<button type="button" onclick="setQtyOp('set')" id="btnOpSet" class="py-2 px-3 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 bg-slate-50 border-slate-200 text-slate-600">
+<i data-lucide="equal" class="w-4 h-4"></i> Definir Total
+</button>
+</div>
+</div>
+
+<!-- Campo de Valor de Quantidade -->
+<div>
+<label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Quantidade</label>
+<div class="flex items-center gap-2">
+<button type="button" onclick="adjustModalQty(-1)" class="p-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-700 text-lg">-</button>
+<input type="number" id="modalQtyInput" value="1" min="1" class="w-full text-center bg-slate-50 border border-slate-300 rounded-xl py-2 text-xl font-bold text-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+<button type="button" onclick="adjustModalQty(1)" class="p-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-700 text-lg">+</button>
+</div>
+</div>
+</div>
+
+<div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-between gap-2">
+<button type="button" id="btnCancelQtyModal" class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium rounded-xl text-xs sm:text-sm transition">
+Cancelar
+</button>
+<button type="button" id="btnSaveQtyModal" class="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-md">
+<i data-lucide="check" class="w-4 h-4"></i> Confirmar e Próximo
+</button>
+</div>
+
+</div>
+</div>
+
+<!-- MODAL 2: IMPORTAÇÃO DE ARQUIVO (CSV/EXCEL) -->
+<div id="importModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+<div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+<div class="p-4 bg-indigo-700 text-white flex justify-between items-center">
+<h3 class="font-bold text-lg flex items-center gap-2">
+<i data-lucide="file-up" class="w-5 h-5"></i> Importar Lista de Produtos
+</h3>
+<button id="btnCloseImportModal" class="text-indigo-200 hover:text-white transition">
+<i data-lucide="x" class="w-6 h-6"></i>
+</button>
+</div>
+
+<div class="p-6 space-y-4 overflow-y-auto">
+<p class="text-xs text-slate-600 leading-relaxed">
+Selecione um arquivo <strong>CSV, TXT ou Excel (.xlsx, .xls)</strong> contendo os Códigos EAN e Descrições.
+</p>
+
+<label for="fileInput" class="border-2 border-dashed border-indigo-200 hover:border-indigo-500 bg-indigo-50/50 hover:bg-indigo-50 p-6 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition">
+<i data-lucide="upload-cloud" class="w-10 h-10 text-indigo-600 mb-2"></i>
+<span class="text-sm font-semibold text-slate-700">Clique ou arraste o arquivo aqui</span>
+<span class="text-xs text-slate-400 mt-1">Formatos: CSV, XLSX, XLS, TXT</span>
+<input type="file" id="fileInput" accept=".csv, .xlsx, .xls, .txt" class="hidden">
+</label>
+
+<div id="mappingArea" class="hidden space-y-3 pt-3 border-t border-slate-200">
+<p class="text-xs font-bold text-slate-700 uppercase">Selecione as Colunas do seu Arquivo:</p>
+<div class="grid grid-cols-2 gap-3">
+<div>
+<label class="block text-xs text-slate-500 mb-1 font-medium">Coluna do Código EAN</label>
+<select id="selectEanCol" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs font-medium focus:ring-2 focus:ring-indigo-500"></select>
+</div>
+<div>
+<label class="block text-xs text-slate-500 mb-1 font-medium">Coluna da Descrição</label>
+<select id="selectDescCol" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs font-medium focus:ring-2 focus:ring-indigo-500"></select>
+</div>
+</div>
+<div class="text-xs text-indigo-600 font-medium flex items-center gap-1" id="previewRowsCount"></div>
+</div>
+</div>
+
+<div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+<button id="btnCancelImport" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium rounded-xl text-sm transition">Cancelar</button>
+<button id="btnConfirmImport" disabled class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium rounded-xl text-sm transition flex items-center gap-2">
+<i data-lucide="check" class="w-4 h-4"></i> Concluir Importação
+</button>
+</div>
+</div>
+</div>
+
+<!-- SCRIPT JS -->
+<script>
+// --- ESTADO ---
+let inventory = JSON.parse(localStorage.getItem('inventory_db')) || [];
+let html5QrcodeScanner = null;
+let isCamScanning = false;
+let activeEan = "";
+let currentQtyOp = "add"; // 'add', 'sub', 'set'
+let rawImportData = [];
+
+// Web Audio API para Som
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playBeep(freq = 1040, duration = 0.12) {
+if (audioCtx.state === 'suspended') audioCtx.resume();
+const osc = audioCtx.createOscillator();
+const gain = audioCtx.createGain();
+osc.type = 'sine';
+osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+osc.connect(gain);
+gain.connect(audioCtx.destination);
+osc.start();
+osc.stop(audioCtx.currentTime + duration);
+}
+
+// --- INICIALIZAÇÃO ---
+document.addEventListener('DOMContentLoaded', () => {
+lucide.createIcons();
+renderInventory();
+
+document.getElementById('searchInput').addEventListener('input', renderInventory);
+document.getElementById('btnToggleCam').addEventListener('click', toggleCamera);
+
+// Modal Qty Listeners
+document.getElementById('btnSaveQtyModal').addEventListener('click', confirmAndNextScan);
+document.getElementById('btnCancelQtyModal').addEventListener('click', cancelQtyModal);
+
+// Permitir confirmar pressionando 'Enter' no campo de quantidade
+document.getElementById('modalQtyInput').addEventListener('keyup', (e) => {
+if (e.key === 'Enter') confirmAndNextScan();
+});
+
+// Modal Import Listeners
+document.getElementById('btnOpenImportModal').addEventListener('click', () => openImportModal(true));
+document.getElementById('btnCloseImportModal').addEventListener('click', () => openImportModal(false));
+document.getElementById('btnCancelImport').addEventListener('click', () => openImportModal(false));
+document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+document.getElementById('btnConfirmImport').addEventListener('click', executeImport);
+document.getElementById('btnExportCSV').addEventListener('click', exportToCSV);
+});
+
+// --- RENDERIZAR TABELA ---
+function renderInventory() {
+const tbody = document.getElementById('inventoryTable');
+const emptyState = document.getElementById('emptyState');
+const search = document.getElementById('searchInput').value.toLowerCase().trim();
+
+tbody.innerHTML = '';
+
+const filtered = inventory.filter(item =>
+item.ean.toLowerCase().includes(search) ||
+item.desc.toLowerCase().includes(search) ||
+(item.cat && item.cat.toLowerCase().includes(search))
+);
+
+document.getElementById('totalItemsCount').textContent = inventory.length;
+
+if (filtered.length === 0) {
+emptyState.classList.remove('hidden');
+} else {
+emptyState.classList.add('hidden');
+filtered.forEach(item => {
+const tr = document.createElement('tr');
+tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+tr.innerHTML = `
+<td class="py-3 px-4 font-mono text-xs font-semibold text-indigo-700">${item.ean}</td>
+<td class="py-3 px-4 font-medium text-slate-800">${item.desc}</td>
+<td class="py-3 px-4 text-xs text-slate-500">${item.cat || '-'}</td>
+<td class="py-3 px-4 text-center">
+<div class="inline-flex items-center border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+<button onclick="updateQuantity('${item.ean}', -1)" class="px-2 py-1 bg-slate-50 hover:bg-slate-100 text-slate-600 transition border-r">-</button>
+<span class="px-3 py-1 font-bold text-sm text-slate-800">${item.qty}</span>
+<button onclick="updateQuantity('${item.ean}', 1)" class="px-2 py-1 bg-slate-50 hover:bg-slate-100 text-slate-600 transition border-l">+</button>
+</div>
+</td>
+<td class="py-3 px-4 text-right">
+<div class="flex items-center justify-end gap-1">
+<button onclick="deleteProduct('${item.ean}')" class="p-1.5 text-slate-500 hover:text-rose-600 rounded-lg hover:bg-slate-100 transition" title="Excluir">
+<i data-lucide="trash-2" class="w-4 h-4"></i>
+</button>
+</div>
+</td>
+`;
+tbody.appendChild(tr);
+});
+lucide.createIcons();
+}
+}
+
+function saveToStorage() {
+localStorage.setItem('inventory_db', JSON.stringify(inventory));
+renderInventory();
+}
+
+function updateQuantity(ean, change) {
+const item = inventory.find(i => i.ean === ean);
+if (item) {
+item.qty = Math.max(0, item.qty + change);
+saveToStorage();
+}
+}
+
+function deleteProduct(ean) {
+if (confirm(`Deseja realmente excluir o item ${ean}?`)) {
+inventory = inventory.filter(i => i.ean !== ean);
+saveToStorage();
+}
+}
+
+// --- GERENCIAMENTO DA CÂMERA ---
+function toggleCamera() {
+if (isCamScanning) {
+stopCamera();
+} else {
+startCamera();
+}
+}
+
+function startCamera() {
+document.getElementById('scanner-placeholder').classList.add('hidden');
+html5QrcodeScanner = new Html5Qrcode("reader");
+
+const config = {
+fps: 15,
+qrbox: { width: 280, height: 160 },
+experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+};
+
+html5QrcodeScanner.start(
+{ facingMode: "environment" },
+config,
+onScanSuccess
+).then(() => {
+isCamScanning = true;
+document.getElementById('camBtnText').textContent = "Desligar Câmera";
+document.getElementById('btnToggleCam').classList.replace('bg-indigo-600', 'bg-rose-600');
+document.getElementById('btnToggleCam').classList.replace('hover:bg-indigo-700', 'hover:bg-rose-700');
+}).catch(err => {
+alert("Erro ao acessar a câmera: " + err);
+document.getElementById('scanner-placeholder').classList.remove('hidden');
+});
+}
+
+function stopCamera() {
+if (html5QrcodeScanner) {
+html5QrcodeScanner.stop().then(() => {
+html5QrcodeScanner.clear();
+isCamScanning = false;
+document.getElementById('camBtnText').textContent = "Ligar Câmera";
+document.getElementById('btnToggleCam').classList.replace('bg-rose-600', 'bg-indigo-600');
+document.getElementById('btnToggleCam').classList.replace('hover:bg-rose-700', 'hover:bg-indigo-700');
+document.getElementById('scanner-placeholder').classList.remove('hidden');
+}).catch(() => {});
+}
+}
+
+// --- LEITURA DO CÓDIGO E ABERTURA DO MODAL DE QUANTIDADE ---
+function onScanSuccess(decodedText) {
+playBeep();
+activeEan = decodedText;
+
+// Pausa a câmera para o usuário digitar a quantidade
+if (html5QrcodeScanner && isCamScanning) {
+html5QrcodeScanner.pause(true);
+}
+
+openQtyModal(decodedText);
+}
+
+function openQtyModal(ean) {
+const modal = document.getElementById('qtyModal');
+const badge = document.getElementById('modalEanBadge');
+const descInput = document.getElementById('modalDescInput');
+const qtyInput = document.getElementById('modalQtyInput');
+const statusText = document.getElementById('modalStatusText');
+
+badge.textContent = ean;
+qtyInput.value = 1;
+setQtyOp('add');
+
+const existingItem = inventory.find(i => i.ean === ean);
+
+if (existingItem) {
+descInput.value = existingItem.desc;
+statusText.textContent = `Item já cadastrado! Estoque Atual: ${existingItem.qty} un.`;
+statusText.className = "text-xs text-indigo-600 font-semibold mt-1";
+} else {
+descInput.value = `Produto Novo ${ean.slice(-4)}`;
+statusText.textContent = "Código novo. Informe a descrição e a quantidade inicial.";
+statusText.className = "text-xs text-amber-600 font-semibold mt-1";
+}
+
+modal.classList.remove('hidden');
+setTimeout(() => {
+qtyInput.focus();
+qtyInput.select();
+}, 100);
+}
+
+function setQtyOp(op) {
+currentQtyOp = op;
+const btnAdd = document.getElementById('btnOpAdd');
+const btnSub = document.getElementById('btnOpSub');
+const btnSet = document.getElementById('btnOpSet');
+
+const activeClass = "bg-indigo-50 border-indigo-500 text-indigo-700";
+const inactiveClass = "bg-slate-50 border-slate-200 text-slate-600";
+
+btnAdd.className = `py-2 px-3 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 ${op === 'add' ? activeClass : inactiveClass}`;
+btnSub.className = `py-2 px-3 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 ${op === 'sub' ? activeClass : inactiveClass}`;
+btnSet.className = `py-2 px-3 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 ${op === 'set' ? activeClass : inactiveClass}`;
+}
+
+function adjustModalQty(val) {
+const input = document.getElementById('modalQtyInput');
+let currentVal = parseInt(input.value) || 0;
+input.value = Math.max(1, currentVal + val);
+}
+
+// --- CONFIRMAR QUANTIDADE E RETORNAR CÂMERA AUTOMATICAMENTE ---
+function confirmAndNextScan() {
+const desc = document.getElementById('modalDescInput').value.trim() || `Produto ${activeEan}`;
+const amount = Math.max(0, parseInt(document.getElementById('modalQtyInput').value) || 0);
+
+let existingItem = inventory.find(i => i.ean === activeEan);
+
+if (existingItem) {
+existingItem.desc = desc;
+if (currentQtyOp === 'add') {
+existingItem.qty += amount;
+} else if (currentQtyOp === 'sub') {
+existingItem.qty = Math.max(0, existingItem.qty - amount);
+} else if (currentQtyOp === 'set') {
+existingItem.qty = amount;
+}
+} else {
+inventory.push({
+ean: activeEan,
+desc: desc,
+qty: amount,
+cat: 'Geral'
+});
+}
+
+saveToStorage();
+
+// Feedback visual na tela principal
+document.getElementById('scanMsg').textContent = `Gravado: ${desc} (${amount} un)`;
+document.getElementById('scanEan').textContent = activeEan;
+
+// Fecha o Modal
+document.getElementById('qtyModal').classList.add('hidden');
+
+// Reativa a câmera imediatamente para próxima leitura!
+if (html5QrcodeScanner && isCamScanning) {
+setTimeout(() => {
+html5QrcodeScanner.resume();
+}, 300);
+}
+}
+
+function cancelQtyModal() {
+document.getElementById('qtyModal').classList.add('hidden');
+if (html5QrcodeScanner && isCamScanning) {
+html5QrcodeScanner.resume();
+}
+}
+
+// --- IMPORTAÇÃO E EXPORTAÇÃO ---
+function openImportModal(show) {
+const modal = document.getElementById('importModal');
+if (show) {
+modal.classList.remove('hidden');
+document.getElementById('fileInput').value = '';
+document.getElementById('mappingArea').classList.add('hidden');
+document.getElementById('btnConfirmImport').disabled = true;
+} else {
+modal.classList.add('hidden');
+}
+}
+
+function handleFileUpload(e) {
+const file = e.target.files[0];
+if (!file) return;
+
+const fileName = file.name.toLowerCase();
+
+if (fileName.endsWith('.csv') || fileName.endsWith('.txt')) {
+Papa.parse(file, {
+header: true,
+skipEmptyLines: true,
+complete: function(results) { setupMappingUI(results.data); }
+});
+} else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+const reader = new FileReader();
+reader.onload = function(evt) {
+const data = new Uint8Array(evt.target.result);
+const workbook = XLSX.read(data, { type: 'array' });
+const firstSheet = workbook.SheetNames[0];
+const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
+setupMappingUI(jsonData);
+};
+reader.readAsArrayBuffer(file);
+}
+}
+
+function setupMappingUI(data) {
+if (!data || data.length === 0) return alert("Arquivo vazio.");
+rawImportData = data;
+const columns = Object.keys(data[0]);
+
+const selectEan = document.getElementById('selectEanCol');
+const selectDesc = document.getElementById('selectDescCol');
+
+selectEan.innerHTML = ''; selectDesc.innerHTML = '';
+
+columns.forEach(col => {
+selectEan.appendChild(new Option(col, col));
+selectDesc.appendChild(new Option(col, col));
+});
+
+selectEan.value = columns.find(c => c.toLowerCase().includes('ean') || c.toLowerCase().includes('cod')) || columns[0];
+selectDesc.value = columns.find(c => c.toLowerCase().includes('desc') || c.toLowerCase().includes('nome')) || columns[1] || columns[0];
+
+document.getElementById('previewRowsCount').textContent = `${data.length} registros prontos para importar.`;
+document.getElementById('mappingArea').classList.remove('hidden');
+document.getElementById('btnConfirmImport').disabled = false;
+}
+
+function executeImport() {
+const eanCol = document.getElementById('selectEanCol').value;
+const descCol = document.getElementById('selectDescCol').value;
+
+let importedCount = 0;
+rawImportData.forEach(row => {
+const ean = String(row[eanCol] || '').trim();
+const desc = String(row[descCol] || '').trim();
+
+if (ean) {
+const existing = inventory.find(i => i.ean === ean);
+if (existing) {
+existing.desc = desc || existing.desc;
+} else {
+inventory.push({ ean, desc: desc || 'Item sem nome', qty: 0, cat: 'Importado' });
+}
+importedCount++;
+}
+});
+
+saveToStorage();
+openImportModal(false);
+alert(`Sucesso! ${importedCount} produtos importados.`);
+}
+
+function exportToCSV() {
+if (inventory.length === 0) return alert("Não há dados para exportar.");
+const csvContent = "data:text/csv;charset=utf-8,"
++ ["EAN,Descricao,Quantidade,Categoria"]
+.concat(inventory.map(i => `"${i.ean}","${i.desc}",${i.qty},"${i.cat || ''}"`))
+.join("\n");
+
+const link = document.createElement("a");
+link.setAttribute("href", encodeURI(csvContent));
+link.setAttribute("download", `estoque_${new Date().toISOString().slice(0,10)}.csv`);
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
+}
+</script>
+</body>
+</html>
+
