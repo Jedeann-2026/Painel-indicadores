@@ -1,3 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXXA conveniências - Painel de Indicadores</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- SheetJS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- FontAwesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+@media print {
+body * {
+visibility: hidden;
+}
+#tab-projection, #tab-projection *, #tab-stock, #tab-stock * {
+visibility: visible;
+}
+#tab-projection, #tab-stock {
+position: absolute;
+left: 0;
+top: 0;
+width: 100%;
+margin: 0;
+padding: 0;
+background: white !important;
+color: black !important;
+}
+.no-print {
+display: none !important;
+}
+}
+</style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col">
+
+<!-- Cabeçalho -->
+<header class="bg-slate-900 text-white shadow-md border-b border-slate-800 no-print">
+<div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+<div class="flex items-center space-x-3">
+<div class="bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
+<i class="fa-solid fa-chart-line text-2xl text-amber-400"></i>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tight text-amber-400">NEXXA conveniências</h1>
+<p class="text-xs text-slate-400">Gestão inteligente de estoque, faturamento e reposição</p>
+</div>
+</div>
+
+<!-- Navegação de Abas -->
+<div class="flex flex-wrap bg-slate-950 p-1 rounded-xl border border-slate-800 gap-1">
+<button onclick="switchTab('dashboard')" id="btn-tab-dashboard" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-all bg-amber-400 text-slate-950 font-bold shadow-sm">
+<i class="fa-solid fa-chart-pie mr-1.5"></i>Dashboard
+</button>
+<button onclick="switchTab('stock')" id="btn-tab-stock" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white">
+<i class="fa-solid fa-boxes-stacked mr-1.5"></i>Estoque
+</button>
+<button onclick="switchTab('projection')" id="btn-tab-projection" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white">
+<i class="fa-solid fa-cart-shopping mr-1.5"></i>Projeção de Compras
+</button>
+<button onclick="switchTab('entries')" id="btn-tab-entries" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white">
+<i class="fa-solid fa-file-invoice-dollar mr-1.5"></i>Notas de Entrada
+</button>
+</div>
+</div>
+</header>
+
+<!-- Conteúdo Principal -->
+<main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
+
+<!-- Barra de Ações / Importação -->
+<div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 no-print">
+<div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+<label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-medium shadow-sm transition-all flex items-center justify-center space-x-2">
+<i class="fa-solid fa-file-excel"></i>
+<span>Importar Planilha</span>
+<input type="file" id="excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFile(event)">
+</label>
 <button onclick="downloadTemplateCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-center space-x-2 border border-slate-700">
 <i class="fa-solid fa-download"></i>
 <span>Modelo Vendas</span>
