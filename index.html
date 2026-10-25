@@ -1,85 +1,3 @@
-<!DOCTYPE html>
-<html lang="pt-PT">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEXXA conveniências - Painel de Indicadores</title>
-<!-- Tailwind CSS -->
-<script src="https://cdn.tailwindcss.com"></script>
-<!-- SheetJS -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<!-- FontAwesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-@media print {
-body * {
-visibility: hidden;
-}
-#tab-projection, #tab-projection *, #tab-stock, #tab-stock * {
-visibility: visible;
-}
-#tab-projection, #tab-stock {
-position: absolute;
-left: 0;
-top: 0;
-width: 100%;
-margin: 0;
-padding: 0;
-background: white !important;
-color: black !important;
-}
-.no-print {
-display: none !important;
-}
-}
-</style>
-</head>
-<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col">
-
-<!-- Cabeçalho -->
-<header class="bg-slate-900 text-white shadow-md border-b border-slate-800 no-print">
-<div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-<div class="flex items-center space-x-3">
-<div class="bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
-<i class="fa-solid fa-chart-line text-2xl text-amber-400"></i>
-</div>
-<div>
-<h1 class="text-xl font-bold tracking-tight text-amber-400">NEXXA conveniências</h1>
-<p class="text-xs text-slate-400">Gestão inteligente de estoque, faturamento e reposição</p>
-</div>
-</div>
-
-<!-- Navegação de Abas -->
-<div class="flex flex-wrap bg-slate-950 p-1 rounded-xl border border-slate-800 gap-1">
-<button onclick="switchTab('dashboard')" id="btn-tab-dashboard" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-all bg-amber-400 text-slate-950 font-bold shadow-sm">
-<i class="fa-solid fa-chart-pie mr-1.5"></i>Dashboard
-</button>
-<button onclick="switchTab('stock')" id="btn-tab-stock" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white">
-<i class="fa-solid fa-boxes-stacked mr-1.5"></i>Estoque
-</button>
-<button onclick="switchTab('projection')" id="btn-tab-projection" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white">
-<i class="fa-solid fa-cart-shopping mr-1.5"></i>Projeção de Compras
-</button>
-<button onclick="switchTab('entries')" id="btn-tab-entries" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white">
-<i class="fa-solid fa-file-invoice-dollar mr-1.5"></i>Notas de Entrada
-</button>
-</div>
-</div>
-</header>
-
-<!-- Conteúdo Principal -->
-<main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
-
-<!-- Barra de Ações / Importação -->
-<div class="bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 no-print">
-<div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
-<label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-medium shadow-sm transition-all flex items-center justify-center space-x-2">
-<i class="fa-solid fa-file-excel"></i>
-<span>Importar Planilha</span>
-<input type="file" id="excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFile(event)">
-</label>
 <button onclick="downloadTemplateCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-center space-x-2 border border-slate-700">
 <i class="fa-solid fa-download"></i>
 <span>Modelo Vendas</span>
@@ -142,6 +60,10 @@ display: none !important;
 <datalist id="prodList"></datalist>
 </div>
 <input type="text" id="searchInput" placeholder="Pesquisar..." onkeyup="updateAllViews()" class="px-4 py-2 text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 text-slate-200 w-full sm:w-44">
+<button onclick="exportSummaryCardsToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5" title="Exportar resumo dos indicadores para Excel">
+<i class="fa-solid fa-file-excel"></i>
+<span>Exportar Cards</span>
+</button>
 </div>
 </div>
 
@@ -181,7 +103,13 @@ display: none !important;
 <h2 class="font-bold text-white text-base"><i class="fa-solid fa-store text-amber-400 mr-2"></i>Desempenho por Loja / Cliente</h2>
 <p class="text-xs text-slate-400 mt-0.5">Indicadores de faturamento, total de vendas e ticket médio calculados com base nos filtros ativos.</p>
 </div>
+<div class="flex items-center space-x-3">
+<button onclick="exportStorePerfToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5">
+<i class="fa-solid fa-file-excel"></i>
+<span>Excel</span>
+</button>
 <span class="text-xs font-semibold bg-amber-400/10 text-amber-400 px-3 py-1 rounded-lg border border-amber-400/20">Resumo de Indicadores</span>
+</div>
 </div>
 <div class="overflow-x-auto">
 <table class="w-full text-left border-collapse text-sm">
@@ -208,9 +136,15 @@ display: none !important;
 </h2>
 <p class="text-xs text-slate-400 mt-0.5">Distribuição do faturamento pelas 4 semanas dentro do período do filtro geral.</p>
 </div>
-<span id="projecaoBadge" class="text-xs font-bold bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-lg border border-indigo-500/20">
+<div class="flex items-center space-x-3">
+<button onclick="exportFourWeeksToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5">
+<i class="fa-solid fa-file-excel"></i>
+<span>Excel</span>
+</button>
+<span id="projecaoBadge" class="text-xs font-bold bg-indigo-500/10 text-indigo-400 px-3 py-1.5 rounded-lg border border-indigo-500/20">
 Projeção Mês: R$ 0,00
 </span>
+</div>
 </div>
 <div class="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4" id="weeklyCardsContainer">
 <!-- Cards das 4 semanas via JS -->
@@ -228,12 +162,18 @@ Projeção Mês: R$ 0,00
 </div>
 
 <!-- Filtro Exclusivo deste Bloco -->
+<div class="flex flex-wrap items-center gap-3">
 <div class="flex items-center space-x-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 shadow-sm">
 <i class="fa-solid fa-calendar-days text-indigo-400 text-xs"></i>
 <span class="text-xs text-slate-400 font-medium">De:</span>
 <input type="date" id="compStartDate" onchange="renderCustomWeeklyComparison()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
 <span class="text-xs text-slate-400 font-medium ml-1">Até:</span>
 <input type="date" id="compEndDate" onchange="renderCustomWeeklyComparison()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+</div>
+<button onclick="exportCustomWeeklyToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5">
+<i class="fa-solid fa-file-excel"></i>
+<span>Excel</span>
+</button>
 </div>
 </div>
 
@@ -299,6 +239,11 @@ Projeção Mês: R$ 0,00
 <p class="text-xs text-slate-400 mt-0.5">Analise a velocidade de saída e o volume de vendas por produto no período.</p>
 </div>
 <div class="flex flex-wrap items-center gap-3">
+<button onclick="exportTurnoverToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5">
+<i class="fa-solid fa-file-excel"></i>
+<span>Excel</span>
+</button>
+
 <label class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-xs font-semibold text-slate-300 cursor-pointer select-none">
 <input type="checkbox" id="filterStockLowTurnover" onchange="currentPageTurnover=1; renderDashboard()" class="rounded text-amber-400 focus:ring-amber-400 w-4 h-4 bg-slate-900 border-slate-700">
 <span class="text-amber-400">Estoque e Baixo/Sem Giro</span>
@@ -343,6 +288,11 @@ Projeção Mês: R$ 0,00
 <p class="text-xs text-slate-400 mt-0.5">Resumo consolidado por produto com controle dinâmico de ordenação e estoque único.</p>
 </div>
 <div class="flex flex-wrap items-center gap-3">
+<button onclick="exportConsolidatedToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5">
+<i class="fa-solid fa-file-excel"></i>
+<span>Excel</span>
+</button>
+
 <div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
 <span class="text-xs font-medium text-slate-400">Exibir:</span>
 <select id="consolidatedPageSize" onchange="currentPageConsolidated=1; renderDashboard()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
@@ -387,6 +337,11 @@ Projeção Mês: R$ 0,00
 <h2 class="font-bold text-white text-base">Detalhamento Analítico (Por Lançamento)</h2>
 <p class="text-xs text-slate-400 mt-0.5">Listagem detalhada dos lançamentos individuais filtrados.</p>
 </div>
+<div class="flex flex-wrap items-center gap-3">
+<button onclick="exportAnalyticToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1.5">
+<i class="fa-solid fa-file-excel"></i>
+<span>Excel</span>
+</button>
 <div class="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
 <span class="text-xs font-medium text-slate-400">Exibir:</span>
 <select id="analyticPageSize" onchange="currentPageAnalytic=1; renderDashboard()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
@@ -396,6 +351,7 @@ Projeção Mês: R$ 0,00
 <option value="100">100 / pág</option>
 <option value="all">Todos</option>
 </select>
+</div>
 </div>
 </div>
 <div class="overflow-x-auto">
@@ -990,7 +946,7 @@ function changeAnalyticPage(newPage) { currentPageAnalytic = newPage; renderDash
 function changeProjPage(newPage) { currentPageProj = newPage; renderProjection(); }
 function changeStockPage(newPage) { currentPageStock = newPage; renderStockView(); }
 
-function renderDashboard() {
+function getFilteredDashboardData() {
 const startDateVal = document.getElementById('startDate') ? document.getElementById('startDate').value : '';
 const endDateVal = document.getElementById('endDate') ? document.getElementById('endDate').value : '';
 const selectedClient = document.getElementById('clientFilter') ? document.getElementById('clientFilter').value : 'all';
@@ -1013,6 +969,12 @@ row.categoria.toLowerCase().includes(searchTerm) ||
 (row.ean && row.ean.toLowerCase().includes(searchTerm))
 );
 }
+
+return { filteredData, startDateVal, endDateVal, selectedClient, selectedCat, selectedProd, searchTerm };
+}
+
+function renderDashboard() {
+const { filteredData, selectedClient, selectedCat } = getFilteredDashboardData();
 
 let totalFaturamento = 0;
 let totalCustoVendas = 0;
@@ -1982,6 +1944,323 @@ tr.innerHTML = `
 detailTbody.appendChild(tr);
 });
 }
+}
+
+// --- FUNÇÕES DE EXPORTAÇÃO EXCEL DOS CARDS E TABELAS ---
+
+function exportToExcelFile(dataArray, fileName, sheetName) {
+if (!dataArray || dataArray.length === 0) {
+alert("Nenhum dado disponível para exportar no momento.");
+return;
+}
+const worksheet = XLSX.utils.json_to_sheet(dataArray);
+const workbook = XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(workbook, worksheet, sheetName || "Dados");
+XLSX.writeFile(workbook, `${fileName}_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
+function exportSummaryCardsToExcel() {
+const { filteredData, selectedClient, selectedCat } = getFilteredDashboardData();
+
+let totalFaturamento = 0;
+let totalCustoVendas = 0;
+let totalQtdUnidades = 0;
+
+filteredData.forEach(row => {
+totalFaturamento += (row.qtd * row.vlrUnit);
+totalCustoVendas += (row.qtd * row.custoUnit);
+totalQtdUnidades += row.qtd;
+});
+
+let uniqueStockMap = {};
+globalData.forEach(row => {
+if (selectedClient !== 'all' && row.cliente !== selectedClient) return;
+if (selectedCat !== 'all' && row.categoria !== selectedCat) return;
+const key = `${row.cliente}___${row.produto}`;
+uniqueStockMap[key] = {
+estoque: row.estoque,
+custoUnit: row.custoUnit > 0 ? row.custoUnit : 1
+};
+});
+
+let totalEstoqueVal = 0;
+Object.values(uniqueStockMap).forEach(item => {
+totalEstoqueVal += (item.estoque * item.custoUnit);
+});
+
+const lucroBruto = totalFaturamento - totalCustoVendas;
+const margem = totalFaturamento > 0 ? (lucroBruto / totalFaturamento) * 100 : 0;
+const precoMedioUnitario = totalQtdUnidades > 0 ? (totalFaturamento / totalQtdUnidades) : 0;
+
+const summaryData = [
+{
+"Indicador": "Faturamento Total",
+"Valor": totalFaturamento,
+"Formatação": formatCurrency(totalFaturamento)
+},
+{
+"Indicador": "Lucro Bruto Estimado",
+"Valor": lucroBruto,
+"Formatação": formatCurrency(lucroBruto)
+},
+{
+"Indicador": "Margem de Lucro (%)",
+"Valor": Number(margem.toFixed(2)),
+"Formatação": `${margem.toFixed(1)}%`
+},
+{
+"Indicador": "Valor em Estoque",
+"Valor": totalEstoqueVal,
+"Formatação": formatCurrency(totalEstoqueVal)
+},
+{
+"Indicador": "Total de Vendas (Registros)",
+"Valor": filteredData.length,
+"Formatação": String(filteredData.length)
+},
+{
+"Indicador": "Preço Médio por Unidade",
+"Valor": precoMedioUnitario,
+"Formatação": formatCurrency(precoMedioUnitario)
+}
+];
+
+exportToExcelFile(summaryData, "indicadores_gerais_nexxa", "Resumo Indicadores");
+}
+
+function exportStorePerfToExcel() {
+const { filteredData } = getFilteredDashboardData();
+
+let grandTotal = 0;
+const clientStats = {};
+
+filteredData.forEach(row => {
+const faturamento = row.qtd * row.vlrUnit;
+grandTotal += faturamento;
+if (!clientStats[row.cliente]) clientStats[row.cliente] = { faturamento: 0, vendasCount: 0 };
+clientStats[row.cliente].faturamento += faturamento;
+clientStats[row.cliente].vendasCount += 1;
+});
+
+const exportData = Object.entries(clientStats)
+.sort((a, b) => b[1].faturamento - a[1].faturamento)
+.map(([storeName, stats]) => {
+const ticketMedio = stats.vendasCount > 0 ? (stats.faturamento / stats.vendasCount) : 0;
+const participacao = grandTotal > 0 ? ((stats.faturamento / grandTotal) * 100) : 0;
+return {
+"Loja / Cliente": storeName,
+"Qtd. Vendas": stats.vendasCount,
+"Faturamento Total": stats.faturamento,
+"Ticket Médio": ticketMedio,
+"Participação (%)": Number(participacao.toFixed(2))
+};
+});
+
+exportToExcelFile(exportData, "desempenho_loja_cliente_nexxa", "Desempenho Lojas");
+}
+
+function exportFourWeeksToExcel() {
+const { filteredData } = getFilteredDashboardData();
+
+let grandTotal = 0;
+const weeklyTotals = { 1: 0, 2: 0, 3: 0, 4: 0 };
+
+filteredData.forEach(row => {
+if (!row.data) return;
+const dayOfMonth = parseInt(row.data.split('-')[2]);
+const faturamento = row.qtd * row.vlrUnit;
+grandTotal += faturamento;
+
+if (dayOfMonth <= 7) weeklyTotals[1] += faturamento;
+else if (dayOfMonth <= 14) weeklyTotals[2] += faturamento;
+else if (dayOfMonth <= 21) weeklyTotals[3] += faturamento;
+else weeklyTotals[4] += faturamento;
+});
+
+const labelsSemanas = [
+{ id: 1, nome: "Semana 1", desc: "Dia 01 a 07" },
+{ id: 2, nome: "Semana 2", desc: "Dia 08 a 14" },
+{ id: 3, nome: "Semana 3", desc: "Dia 15 a 21" },
+{ id: 4, nome: "Semana 4", desc: "Dia 22 ao Fim" }
+];
+
+const exportData = labelsSemanas.map(sem => {
+const valorSemana = weeklyTotals[sem.id];
+const percentual = grandTotal > 0 ? ((valorSemana / grandTotal) * 100) : 0;
+return {
+"Semana": sem.nome,
+"Período": sem.desc,
+"Faturamento": valorSemana,
+"Participação (%)": Number(percentual.toFixed(2))
+};
+});
+
+exportToExcelFile(exportData, "faturamento_4_semanas_nexxa", "4 Semanas");
+}
+
+function exportCustomWeeklyToExcel() {
+const compStart = document.getElementById('compStartDate') ? document.getElementById('compStartDate').value : '';
+const compEnd = document.getElementById('compEndDate') ? document.getElementById('compEndDate').value : '';
+const selectedClient = document.getElementById('clientFilter') ? document.getElementById('clientFilter').value : 'all';
+const selectedCat = document.getElementById('catFilter') ? document.getElementById('catFilter').value : 'all';
+const selectedProd = document.getElementById('prodFilter') ? document.getElementById('prodFilter').value.trim().toLowerCase() : '';
+const searchTerm = document.getElementById('searchInput') ? document.getElementById('searchInput').value.trim().toLowerCase() : '';
+
+let compData = globalData;
+
+if (compStart) compData = compData.filter(row => row.data >= compStart);
+if (compEnd) compData = compData.filter(row => row.data <= compEnd);
+if (selectedClient !== 'all') compData = compData.filter(row => row.cliente === selectedClient);
+if (selectedCat !== 'all') compData = compData.filter(row => row.categoria === selectedCat);
+if (selectedProd !== '') compData = compData.filter(row => row.produto.toLowerCase().includes(selectedProd));
+if (searchTerm !== '') {
+compData = compData.filter(row =>
+row.produto.toLowerCase().includes(searchTerm) ||
+row.cliente.toLowerCase().includes(searchTerm) ||
+row.categoria.toLowerCase().includes(searchTerm) ||
+(row.ean && row.ean.toLowerCase().includes(searchTerm))
+);
+}
+
+const weeklyTotals = { 1: 0, 2: 0, 3: 0, 4: 0 };
+let totalCompFat = 0;
+
+compData.forEach(row => {
+if (!row.data) return;
+const dayOfMonth = parseInt(row.data.split('-')[2]);
+const faturamento = row.qtd * row.vlrUnit;
+totalCompFat += faturamento;
+
+if (dayOfMonth <= 7) weeklyTotals[1] += faturamento;
+else if (dayOfMonth <= 14) weeklyTotals[2] += faturamento;
+else if (dayOfMonth <= 21) weeklyTotals[3] += faturamento;
+else weeklyTotals[4] += faturamento;
+});
+
+const labelsSemanas = [
+{ id: 1, nome: "Semana 1", desc: "Dia 01 a 07" },
+{ id: 2, nome: "Semana 2", desc: "Dia 08 a 14" },
+{ id: 3, nome: "Semana 3", desc: "Dia 15 a 21" },
+{ id: 4, nome: "Semana 4", desc: "Dia 22 ao Fim" }
+];
+
+const exportData = labelsSemanas.map(sem => {
+const valorSemana = weeklyTotals[sem.id];
+const percentual = totalCompFat > 0 ? ((valorSemana / totalCompFat) * 100) : 0;
+return {
+"Semana": sem.nome,
+"Intervalo": sem.desc,
+"Faturamento": valorSemana,
+"Participação (%)": Number(percentual.toFixed(2))
+};
+});
+
+exportToExcelFile(exportData, "comparativo_semanal_personalizado_nexxa", "Comparativo Semanal");
+}
+
+function exportTurnoverToExcel() {
+const { filteredData } = getFilteredDashboardData();
+const filterStockLowTurnover = document.getElementById('filterStockLowTurnover') ? document.getElementById('filterStockLowTurnover').checked : false;
+
+const consolidatedProdMap = {};
+filteredData.forEach(row => {
+const faturamento = row.qtd * row.vlrUnit;
+if (!consolidatedProdMap[row.produto]) {
+consolidatedProdMap[row.produto] = {
+ean: row.ean || '',
+categoria: row.categoria,
+qtdTotal: 0,
+faturamentoTotal: 0,
+estoque: row.estoque
+};
+}
+consolidatedProdMap[row.produto].qtdTotal += row.qtd;
+consolidatedProdMap[row.produto].faturamentoTotal += faturamento;
+consolidatedProdMap[row.produto].estoque = row.estoque;
+if (row.ean) consolidatedProdMap[row.produto].ean = row.ean;
+});
+
+let sortedProducts = Object.entries(consolidatedProdMap);
+
+if (filterStockLowTurnover) {
+sortedProducts = sortedProducts.filter(([prodName, info]) => {
+return info.estoque > 0 && info.qtdTotal <= 1;
+});
+}
+
+sortedProducts.sort((a, b) => b[1].estoque - a[1].estoque);
+
+const exportData = sortedProducts.map(([prodName, info]) => {
+let turnoverRatio = info.estoque > 0 ? (info.qtdTotal / info.estoque) : info.qtdTotal;
+let statusGiro = info.qtdTotal === 0 ? "Sem Giro (0x)" : `${turnoverRatio.toFixed(2)}x (Giro)`;
+return {
+"Produto": prodName,
+"EAN": info.ean || '',
+"Categoria": info.categoria,
+"Estoque Atual": info.estoque,
+"Qtd. Vendida (Período)": info.qtdTotal,
+"Faturamento Total": info.faturamentoTotal,
+"Velocidade / Giro": statusGiro
+};
+});
+
+exportToExcelFile(exportData, "indicador_giro_produtos_nexxa", "Giro de Produtos");
+}
+
+function exportConsolidatedToExcel() {
+const { filteredData } = getFilteredDashboardData();
+const sortBy = document.getElementById('consolidatedSortBy') ? document.getElementById('consolidatedSortBy').value : 'faturamento';
+
+const consolidatedProdMap = {};
+filteredData.forEach(row => {
+const faturamento = row.qtd * row.vlrUnit;
+if (!consolidatedProdMap[row.produto]) {
+consolidatedProdMap[row.produto] = {
+ean: row.ean || '',
+categoria: row.categoria,
+qtdTotal: 0,
+faturamentoTotal: 0,
+estoque: row.estoque
+};
+}
+consolidatedProdMap[row.produto].qtdTotal += row.qtd;
+consolidatedProdMap[row.produto].faturamentoTotal += faturamento;
+consolidatedProdMap[row.produto].estoque = row.estoque;
+if (row.ean) consolidatedProdMap[row.produto].ean = row.ean;
+});
+
+const sortedProducts = Object.entries(consolidatedProdMap).sort((a, b) => {
+if (sortBy === 'quantidade') return b[1].qtdTotal - a[1].qtdTotal;
+return b[1].faturamentoTotal - a[1].faturamentoTotal;
+});
+
+const exportData = sortedProducts.map(([prodName, info]) => ({
+"Produto": prodName,
+"EAN": info.ean || '',
+"Qtd. Total Vendida": info.qtdTotal,
+"Estoque Atual": info.estoque,
+"Faturamento Total": info.faturamentoTotal
+}));
+
+exportToExcelFile(exportData, "detalhamento_consolidado_produtos_nexxa", "Consolidado Produtos");
+}
+
+function exportAnalyticToExcel() {
+const { filteredData } = getFilteredDashboardData();
+
+const exportData = filteredData.map(row => ({
+"Cliente": row.cliente,
+"Categoria": row.categoria,
+"Produto": row.produto,
+"EAN": row.ean || '',
+"Data": row.data,
+"Quantidade": row.qtd,
+"Valor Unitário": row.vlrUnit,
+"Valor Total": row.qtd * row.vlrUnit,
+"Estoque Atual": row.estoque
+}));
+
+exportToExcelFile(exportData, "detalhamento_analitico_lancamentos_nexxa", "Analítico Lançamentos");
 }
 
 function exportProjectionToExcel() {
