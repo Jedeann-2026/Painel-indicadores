@@ -1,11 +1,19 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="pt-PT" class="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NEXXA conveniências - Painel de Indicadores</title>
 <!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+darkMode: 'class',
+theme: {
+extend: {}
+}
+}
+</script>
 <!-- SheetJS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <!-- Chart.js -->
@@ -36,7 +44,7 @@ display: none !important;
 }
 </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col">
+<body class="bg-slate-950 text-slate-100 dark:bg-slate-950 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col transition-colors duration-200" id="mainBody">
 
 <!-- Cabeçalho -->
 <header class="bg-slate-900 text-white shadow-md border-b border-slate-800 no-print">
@@ -51,6 +59,7 @@ display: none !important;
 </div>
 </div>
 
+<div class="flex items-center gap-3">
 <!-- Navegação de Abas -->
 <div class="flex flex-wrap bg-slate-950 p-1 rounded-xl border border-slate-800 gap-1">
 <button onclick="switchTab('dashboard')" id="btn-tab-dashboard" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-all bg-amber-400 text-slate-950 font-bold shadow-sm">
@@ -64,6 +73,12 @@ display: none !important;
 </button>
 <button onclick="switchTab('entries')" id="btn-tab-entries" class="px-3.5 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white">
 <i class="fa-solid fa-file-invoice-dollar mr-1.5"></i>Notas de Entrada
+</button>
+</div>
+
+<!-- Botão Tema Dia/Noite -->
+<button onclick="toggleTheme()" class="bg-slate-800 hover:bg-slate-700 text-amber-400 p-2.5 rounded-xl border border-slate-700 transition-all shadow-sm" title="Alternar entre Modo Dia e Noite">
+<i id="themeIcon" class="fa-solid fa-sun text-sm"></i>
 </button>
 </div>
 </div>
@@ -94,7 +109,7 @@ display: none !important;
 <input type="file" id="backup-file" accept=".json" class="hidden" onchange="importFullDatabaseJSON(event)">
 </label>
 
-<button onclick="clearFullDatabase()" class="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/40 px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-1.5 shadow-sm" title="Limpar todos os dados cadastrados">
+<button onclick="openClearModal()" class="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/40 px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-1.5 shadow-sm" title="Limpar dados cadastrados por período ou total">
 <i class="fa-solid fa-trash-can text-xs"></i>
 <span>Limpar Base</span>
 </button>
@@ -698,6 +713,44 @@ Projeção Mês: R$ 0,00
 
 </main>
 
+<!-- MODAL DE LIMPEZA DE BASE POR PERÍODO -->
+<div id="clearModal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center hidden">
+<div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md space-y-4 shadow-xl">
+<div class="flex justify-between items-center">
+<h3 class="font-bold text-white text-base flex items-center"><i class="fa-solid fa-triangle-exclamation text-amber-400 mr-2"></i>Limpeza de Base de Dados</h3>
+<button onclick="closeClearModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+</div>
+<p class="text-xs text-slate-400">Escolha se deseja limpar todos os registros ou apenas os dados compreendidos em um intervalo de datas.</p>
+
+<div class="space-y-3 pt-2">
+<div class="flex items-center space-x-2">
+<input type="radio" name="clearType" id="clearTypeAll" value="all" checked onchange="toggleClearMode()" class="text-amber-400 focus:ring-amber-400">
+<label for="clearTypeAll" class="text-xs font-semibold text-slate-200 cursor-pointer">Apagar TUDO (Toda a base)</label>
+</div>
+<div class="flex items-center space-x-2">
+<input type="radio" name="clearType" id="clearTypePeriod" value="period" onchange="toggleClearMode()" class="text-amber-400 focus:ring-amber-400">
+<label for="clearTypePeriod" class="text-xs font-semibold text-slate-200 cursor-pointer">Apagar por Período Específico</label>
+</div>
+
+<div id="clearPeriodContainer" class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2 hidden">
+<div class="flex items-center justify-between text-xs text-slate-400">
+<span>De:</span>
+<input type="date" id="clearStartDate" class="bg-slate-900 border border-slate-800 text-slate-200 px-2 py-1 rounded text-xs">
+</div>
+<div class="flex items-center justify-between text-xs text-slate-400">
+<span>Até:</span>
+<input type="date" id="clearEndDate" class="bg-slate-900 border border-slate-800 text-slate-200 px-2 py-1 rounded text-xs">
+</div>
+</div>
+</div>
+
+<div class="flex justify-end space-x-2 pt-2">
+<button onclick="closeClearModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold">Cancelar</button>
+<button onclick="executeClearDatabase()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold">Confirmar Limpeza</button>
+</div>
+</div>
+</div>
+
 <footer class="bg-slate-900 border-t border-slate-800 py-4 mt-auto no-print">
 <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
 <span class="text-amber-400 font-bold">NEXXA conveniências</span> &copy; 2026 — Painel de Indicadores Comercial.
@@ -762,6 +815,18 @@ let chartTopQtyInst = null;
 let chartCategoryInst = null;
 let chartClientsInst = null;
 
+function setDefaultCurrentDate() {
+const todayStr = new Date().toISOString().split('T')[0];
+const startDateInput = document.getElementById('startDate');
+if (startDateInput && !startDateInput.value) {
+startDateInput.value = todayStr;
+}
+const compStartInput = document.getElementById('compStartDate');
+if (compStartInput && !compStartInput.value) {
+compStartInput.value = todayStr;
+}
+}
+
 function updateAllViews() {
 syncCostsWithEntries();
 currentPageTurnover = 1;
@@ -774,7 +839,60 @@ renderStockView();
 renderProjection();
 }
 
-function clearFullDatabase() {
+// MODO DIA / NOITE (TEMA)
+function toggleTheme() {
+const htmlEl = document.documentElement;
+const iconEl = document.getElementById('themeIcon');
+if (htmlEl.classList.contains('dark')) {
+htmlEl.classList.remove('dark');
+iconEl.className = "fa-solid fa-moon text-sm";
+localStorage.setItem('nexxa_theme', 'light');
+} else {
+htmlEl.classList.add('dark');
+iconEl.className = "fa-solid fa-sun text-sm";
+localStorage.setItem('nexxa_theme', 'dark');
+}
+}
+
+function initTheme() {
+const savedTheme = localStorage.getItem('nexxa_theme');
+const htmlEl = document.documentElement;
+const iconEl = document.getElementById('themeIcon');
+if (savedTheme === 'light') {
+htmlEl.classList.remove('dark');
+if(iconEl) iconEl.className = "fa-solid fa-moon text-sm";
+} else {
+htmlEl.classList.add('dark');
+if(iconEl) iconEl.className = "fa-solid fa-sun text-sm";
+}
+}
+
+// MODAL DE LIMPEZA DE BASE
+function openClearModal() {
+document.getElementById('clearModal').classList.remove('hidden');
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('clearStartDate').value = today;
+document.getElementById('clearEndDate').value = today;
+}
+
+function closeClearModal() {
+document.getElementById('clearModal').classList.add('hidden');
+}
+
+function toggleClearMode() {
+const isPeriod = document.getElementById('clearTypePeriod').checked;
+const container = document.getElementById('clearPeriodContainer');
+if (isPeriod) {
+container.classList.remove('hidden');
+} else {
+container.classList.add('hidden');
+}
+}
+
+function executeClearDatabase() {
+const isPeriod = document.getElementById('clearTypePeriod').checked;
+
+if (!isPeriod) {
 if (confirm("Tem certeza que deseja apagar TODOS os dados? Esta ação não pode ser desfeita.")) {
 globalData = [];
 globalEntries = [];
@@ -785,7 +903,32 @@ populateProjFilterDropdowns();
 populateStockFilterDropdowns();
 updateAllViews();
 renderEntries();
+closeClearModal();
 alert("Base de dados limpa com sucesso!");
+}
+} else {
+const sDate = document.getElementById('clearStartDate').value;
+const eDate = document.getElementById('clearEndDate').value;
+if (!sDate || !eDate) {
+alert("Por favor, selecione as datas inicial e final para a limpeza.");
+return;
+}
+
+if (confirm(`Tem certeza que deseja apagar os registros do período de ${sDate} até ${eDate}?`)) {
+globalData = globalData.filter(row => row.data < sDate || row.data > eDate);
+globalEntries = globalEntries.filter(row => row.data < sDate || row.data > eDate);
+
+localStorage.setItem('nexxa_data', JSON.stringify(globalData));
+localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
+
+populateFilterDropdowns();
+populateProjFilterDropdowns();
+populateStockFilterDropdowns();
+updateAllViews();
+renderEntries();
+closeClearModal();
+alert("Registros do período removidos com sucesso!");
+}
 }
 }
 
@@ -914,13 +1057,8 @@ estoque: parseDecimal(item['Qtd. disponível'] || item['Qtd. em Estoque'] || ite
 })).filter(row => row.produto !== 'Não informado' && row.produto !== '');
 
 if(importedRows.length > 0) {
-// Identifica exatamente quais pares de (Cliente + Data) estão presentes na importação
 const importedKeys = new Set(importedRows.map(r => `${r.cliente}___${r.data}`));
-
-// Preserva apenas os registros globais cujas chaves (Cliente + Data) NÃO estão na importação atual
 const preservedData = globalData.filter(r => !importedKeys.has(`${r.cliente}___${r.data}`));
-
-// Junta os dados preservados com as novas linhas importadas
 globalData = [...preservedData, ...importedRows];
 
 localStorage.setItem('nexxa_data', JSON.stringify(globalData));
@@ -1100,12 +1238,13 @@ consolidatedProdMap[row.produto].custoUnit = row.custoUnit;
 if(row.ean) consolidatedProdMap[row.produto].ean = row.ean;
 });
 
-// CÁLCULO DO VALOR EM ESTOQUE NO DASHBOARD
+// CÁLCULO CORRIGIDO DO VALOR EM ESTOQUE (Respeitando filtros de cliente e categoria ativos)
 let uniqueStockMap = {};
 globalData.forEach(row => {
 if (selectedClient !== 'all' && row.cliente !== selectedClient) return;
 if (selectedCat !== 'all' && row.categoria !== selectedCat) return;
 const key = `${row.cliente}___${row.produto}`;
+// Mantém o registro mais recente ou atualiza com o estoque do lançamento filtrado
 uniqueStockMap[key] = {
 estoque: row.estoque,
 custoUnit: row.custoUnit > 0 ? row.custoUnit : 1
@@ -1307,7 +1446,6 @@ container.appendChild(card);
 });
 }
 
-// --- ABA DE ESTOQUE ---
 function populateStockFilterDropdowns() {
 const clients = [...new Set(globalData.map(i => i.cliente))].sort();
 const categories = [...new Set(globalData.map(i => i.categoria))].sort();
@@ -2028,8 +2166,6 @@ detailTbody.appendChild(tr);
 }
 }
 
-// --- FUNÇÕES DE EXPORTAÇÃO EXCEL DOS CARDS E TABELAS ---
-
 function exportToExcelFile(dataArray, fileName, sheetName) {
 if (!dataArray || dataArray.length === 0) {
 alert("Nenhum dado disponível para exportar no momento.");
@@ -2505,16 +2641,21 @@ renderProjection();
 }
 
 function onProjCustomDateChange() {
-document.getElementById('projDatePreset').value = 'custom';
+const presetEl = document.getElementById('projDatePreset');
+if (presetEl) presetEl.value = 'custom';
 currentPageProj = 1;
 renderProjection();
 }
 
+window.onload = function() {
+initTheme();
+setDefaultCurrentDate();
 populateFilterDropdowns();
 populateProjFilterDropdowns();
 populateStockFilterDropdowns();
 updateAllViews();
 renderEntries();
+};
 </script>
 </body>
 </html>
