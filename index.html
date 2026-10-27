@@ -775,8 +775,10 @@ function getOfficialStock(clientName, ean, productName) {
 
   for (let k in globalOfficialStock) {
     let item = globalOfficialStock[k];
-    if (item.produto && item.produto.trim().toUpperCase() === cleanName) {
-      return Number(item.estoque) || 0;
+    if (item.cliente && item.cliente.trim().toUpperCase() === cleanClient) {
+      if (item.produto && item.produto.trim().toUpperCase() === cleanName) {
+        return Number(item.estoque) || 0;
+      }
     }
   }
   return 0;
@@ -1524,6 +1526,7 @@ if (isAllClients) {
     if (item.ean && !stockMap[identifier].ean) stockMap[identifier].ean = item.ean;
   }
 } else {
+  // Coleta produtos das vendas do cliente selecionado
   filteredData.forEach(row => {
     const key = `${row.cliente}___${row.produto}`;
     if (!stockMap[key]) {
@@ -1540,6 +1543,7 @@ if (isAllClients) {
     if (row.ean) stockMap[key].ean = row.ean;
   });
 
+  // Garante inclusão de TODOS os itens do estoque oficial do cliente (mesmo sem vendas)
   for (let k in globalOfficialStock) {
     let item = globalOfficialStock[k];
     if (item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
