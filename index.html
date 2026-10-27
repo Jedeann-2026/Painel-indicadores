@@ -288,6 +288,15 @@ Projeção: R$ 0,00
 
 <!-- 4º BLOCO: Seção de Gráficos -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+<!-- GRÁFICO NOVO: Faturamento Mensal -->
+<div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col lg:col-span-2">
+<div class="flex justify-between items-center mb-3">
+<h2 class="font-bold text-white text-sm md:text-base"><i class="fa-solid fa-calendar-days text-emerald-400 mr-2"></i>Faturamento Mensal</h2>
+<span class="text-[10px] md:text-xs text-emerald-400 font-medium bg-emerald-400/10 px-2 py-0.5 rounded border border-emerald-400/20">Evolução Mensal</span>
+</div>
+<div class="relative flex-grow h-60 md:h-72"><canvas id="chartMonthlyRevenue"></canvas></div>
+</div>
+
 <div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col lg:col-span-2">
 <div class="flex justify-between items-center mb-3">
 <h2 class="font-bold text-white text-sm md:text-base"><i class="fa-solid fa-chart-column text-amber-400 mr-2"></i>Faturamento Diário (30 Dias)</h2>
@@ -823,6 +832,7 @@ let currentPageAnalytic = 1;
 let currentPageProj = 1;
 let currentPageStock = 1;
 
+let chartMonthlyRevenueInst = null;
 let chartLast30DaysInst = null;
 let chartTopValueInst = null;
 let chartTopQtyInst = null;
@@ -1807,6 +1817,35 @@ function renderCharts(prodVal, prodQty, catVal, clientVal, filteredData) {
 Chart.defaults.color = '#94a3b8';
 Chart.defaults.borderColor = '#1e293b';
 
+// 1. Gráfico de Faturamento Mensal
+const monthlyMap = {};
+const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+filteredData.forEach(row => {
+if (!row.data) return;
+const parts = row.data.split('-');
+if (parts.length >= 2) {
+const yearMonthKey = `${parts[0]}-${parts[1]}`;
+monthlyMap[yearMonthKey] = (monthlyMap[yearMonthKey] || 0) + (row.qtd * row.vlrUnit);
+}
+});
+
+const sortedMonthKeys = Object.keys(monthlyMap).sort();
+const monthlyLabels = sortedMonthKeys.map(key => {
+const [yr, mo] = key.split('-');
+return `${monthNames[parseInt(mo, 10) - 1]}/${yr}`;
+});
+const monthlyValues = sortedMonthKeys.map(key => monthlyMap[key]);
+
+const ctxMonthly = document.getElementById('chartMonthlyRevenue').getContext('2d');
+if (chartMonthlyRevenueInst) chartMonthlyRevenueInst.destroy();
+chartMonthlyRevenueInst = new Chart(ctxMonthly, {
+type: 'bar',
+data: { labels: monthlyLabels, datasets: [{ label: 'Faturamento Mensal (R$)', data: monthlyValues, backgroundColor: '#10b981', borderRadius: 6 }] },
+options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#1e293b' } } } }
+});
+
+// 2. Gráfico Diário (30 Dias)
 const dailyMap = {};
 let maxDateStr = '';
 filteredData.forEach(r => { if (!maxDateStr || r.data > maxDateStr) maxDateStr = r.data; });
