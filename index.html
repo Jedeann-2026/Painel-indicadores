@@ -924,7 +924,7 @@ populateFilterDropdowns();
 updateAllViews();
 renderEntries();
 closeClearModal();
-alert("Base limpa!");
+alert("Base limpa com sucesso!");
 }
 } else if (clearType === 'stock') {
 if (confirm("Deseja apagar APENAS a base de estoque oficial?")) {
@@ -939,15 +939,15 @@ alert("Estoque oficial limpo com sucesso!");
 const clearClient = document.getElementById('clearClientSelect').value;
 const sDate = document.getElementById('clearStartDate').value;
 const eDate = document.getElementById('clearEndDate').value;
-if (!sDate || !eDate) { alert("Selecione as datas."); return; }
+if (!sDate || !eDate) { alert("Selecione as datas de início e fim."); return; }
 
 const msg = clearClient === 'all' 
   ? `Apagar vendas de todos os clientes de ${sDate} até ${eDate}?` 
-  : `Apagar vendas do cliente ${clearClient} de ${sDate} até ${eDate}?`;
+  : `Apagar vendas do cliente "${clearClient}" de ${sDate} até ${eDate}?`;
 
 if (confirm(msg)) {
 globalData = globalData.filter(row => {
-  const matchClient = (clearClient === 'all' || row.cliente === clearClient);
+  const matchClient = (clearClient === 'all' || row.cliente.trim().toUpperCase() === clearClient.trim().toUpperCase());
   const matchDate = (row.data >= sDate && row.data <= eDate);
   return !(matchClient && matchDate);
 });
@@ -955,7 +955,7 @@ localStorage.setItem('nexxa_data', JSON.stringify(globalData));
 populateFilterDropdowns();
 updateAllViews();
 closeClearModal();
-alert("Registros de vendas removidos!");
+alert("Registros de vendas removidos com sucesso!");
 }
 }
 }
@@ -1077,6 +1077,18 @@ alert("Planilha de vendas importada com sucesso!");
 reader.readAsArrayBuffer(file);
 }
 
+function getObjectValueIgnoreCase(obj, candidates) {
+if (!obj) return null;
+const keys = Object.keys(obj);
+for (let c of candidates) {
+const keyMatch = keys.find(k => k.trim().toLowerCase() === c.toLowerCase());
+if (keyMatch && obj[keyMatch] !== undefined && obj[keyMatch] !== null) {
+return obj[keyMatch];
+}
+}
+return null;
+}
+
 function handleStockFile(e) {
 const file = e.target.files[0];
 if (!file) return;
@@ -1091,13 +1103,18 @@ const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
 if(json.length > 0) {
 let count = 0;
 json.forEach(item => {
-const cliente = String(item['Cliente'] || item['cliente'] || item['Loja'] || item['loja'] || 'Geral').trim();
-const ean = String(item['EAN'] || item['ean'] || item['Ean'] || '').trim();
-const nome = String(item['Nome'] || item['nome'] || item['Produto'] || item['produto'] || '').trim();
-const estoque = parseDecimal(item['Estoque'] || item['estoque'] || item['Quantidade'] || item['quantidade'] || 0);
+const rawClient = getObjectValueIgnoreCase(item, ['cliente', 'loja', 'filial']) || 'Geral';
+const rawEan = getObjectValueIgnoreCase(item, ['ean', 'codigo', 'cod']);
+const rawNome = getObjectValueIgnoreCase(item, ['nome', 'produto', 'nome do produto', 'descricao']);
+const rawEstoque = getObjectValueIgnoreCase(item, ['estoque', 'quantidade', 'qtd', 'saldo']);
+
+const cliente = String(rawClient).trim();
+const ean = rawEan ? String(rawEan).trim() : '';
+const nome = rawNome ? String(rawNome).trim() : '';
+const estoque = parseDecimal(rawEstoque);
 
 if (cliente && (ean || nome)) {
-const identifier = ean || nome.toUpperCase();
+const identifier = ean ? ean : nome.toUpperCase();
 const key = `${cliente.toUpperCase()}___${identifier}`;
 globalOfficialStock[key] = {
 cliente: cliente,
@@ -1113,8 +1130,8 @@ if(count > 0) {
 localStorage.setItem('nexxa_official_stock', JSON.stringify(globalOfficialStock));
 populateFilterDropdowns();
 updateAllViews();
-alert(`Estoque por cliente importado com sucesso! ${count} registros atualizados.`);
-} else { alert("Nenhuma coluna válida encontrada."); }
+alert(`Estoque por cliente importado com sucesso! ${count} registros processados.`);
+} else { alert("Nenhuma coluna válida (cliente, ean/nome, estoque) encontrada."); }
 } else { alert("Planilha de estoque vazia."); }
 } catch(err) { alert("Erro ao ler arquivo de estoque."); }
 };
@@ -1316,17 +1333,11 @@ if(row.ean) consolidatedProdMap[row.produto].ean = row.ean;
 
 let totalEstoqueVal = 0;
 let checkedStockKeys = {};
-globalData.forEach(row => {
-if (selectedClient !== 'all' && row.cliente !== selectedClient) return;
-if (selectedCat !== 'all' && row.categoria !== selectedCat) return;
-const key = `${row.cliente}___${row.produto}`;
-if (!checkedStockKeys[key]) {
-checkedStockKeys[key] = true;
-const stock = getOfficialStock(row.cliente, row.ean, row.produto);
-const cost = row.custoUnit > 0 ? row.custoUnit : 1;
-totalEstoqueVal += (stock * cost);
+for (let k in globalOfficialStock) {
+  let item = globalOfficialStock[k];
+  if (selectedClient !== 'all' && item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
+  totalEstoqueVal += (Number(item.estoque) || 0) * 1; 
 }
-});
 
 const analyticPageSizeVal = document.getElementById('analyticPageSize') ? document.getElementById('analyticPageSize').value : '30';
 const { pageItems: analyticPageItems } = renderPaginationControls('analyticPagination', filteredData, analyticPageSizeVal, currentPageAnalytic, 'changeAnalyticPage');
@@ -1521,72 +1532,48 @@ if (diff > 0) daysCount = diff;
 
 const stockMap = {};
 
-if (isAllClients) {
-  filteredData.forEach(row => {
-    const key = (row.ean ? row.ean : row.produto.trim().toUpperCase());
-    if (!stockMap[key]) {
-      stockMap[key] = {
-        produto: row.produto,
-        ean: row.ean || '',
-        categoria: row.categoria,
-        qtdVendida: 0,
-        estoqueAtual: 0
-      };
-    }
-    stockMap[key].qtdVendida += row.qtd;
-    if (row.ean) stockMap[key].ean = row.ean;
-  });
+// 1. Preenche primeiro os registros do estoque oficial cadastrado para o cliente selecionado ou geral
+for (let k in globalOfficialStock) {
+  let item = globalOfficialStock[k];
+  if (!isAllClients && item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
+  
+  let key = isAllClients 
+    ? (item.ean ? item.ean.trim() : item.produto.trim().toUpperCase()) 
+    : `${item.cliente.trim().toUpperCase()}___${item.produto.trim().toUpperCase()}`;
 
-  for (let k in globalOfficialStock) {
-    let item = globalOfficialStock[k];
-    let identifier = (item.ean ? item.ean : item.produto.trim().toUpperCase());
-    if (!stockMap[identifier]) {
-      stockMap[identifier] = {
-        produto: item.produto,
-        ean: item.ean || '',
-        categoria: 'GERAL',
-        qtdVendida: 0,
-        estoqueAtual: 0
-      };
-    }
-    stockMap[identifier].estoqueAtual += Number(item.estoque) || 0;
-    if (item.ean && !stockMap[identifier].ean) stockMap[identifier].ean = item.ean;
-  }
-} else {
-  // Carrega primeiro todos os itens do estoque oficial do cliente selecionado (garantindo que mesmo sem vendas apareçam com saldo)
-  for (let k in globalOfficialStock) {
-    let item = globalOfficialStock[k];
-    if (item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
-    let mapKey = `${item.cliente}___${item.produto}`;
-    stockMap[mapKey] = {
+  if (!stockMap[key]) {
+    stockMap[key] = {
       cliente: item.cliente,
       produto: item.produto,
       ean: item.ean || '',
       categoria: 'GERAL',
       qtdVendida: 0,
-      estoqueAtual: Number(item.estoque) || 0
+      estoqueAtual: 0
     };
   }
-
-  // Soma as vendas do período correspondentes para esses ou outros produtos do cliente
-  filteredData.forEach(row => {
-    if (row.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) return;
-    const mapKey = `${row.cliente}___${row.produto}`;
-    if (!stockMap[mapKey]) {
-      stockMap[mapKey] = {
-        cliente: row.cliente,
-        produto: row.produto,
-        ean: row.ean || '',
-        categoria: row.categoria,
-        qtdVendida: 0,
-        estoqueAtual: getOfficialStock(row.cliente, row.ean, row.produto)
-      };
-    }
-    stockMap[mapKey].qtdVendida += row.qtd;
-    if (row.ean) stockMap[mapKey].ean = row.ean;
-    if (row.categoria && stockMap[mapKey].categoria === 'GERAL') stockMap[mapKey].categoria = row.categoria;
-  });
+  stockMap[key].estoqueAtual += Number(item.estoque) || 0;
 }
+
+// 2. Soma a quantidade vendida correspondente do período
+filteredData.forEach(row => {
+  let key = isAllClients 
+    ? (row.ean ? row.ean.trim() : row.produto.trim().toUpperCase())
+    : `${row.cliente.trim().toUpperCase()}___${row.produto.trim().toUpperCase()}`;
+
+  if (!stockMap[key]) {
+    stockMap[key] = {
+      cliente: row.cliente,
+      produto: row.produto,
+      ean: row.ean || '',
+      categoria: row.categoria,
+      qtdVendida: 0,
+      estoqueAtual: getOfficialStock(row.cliente, row.ean, row.produto)
+    };
+  }
+  stockMap[key].qtdVendida += row.qtd;
+  if (row.categoria && stockMap[key].categoria === 'GERAL') stockMap[key].categoria = row.categoria;
+  if (row.ean && !stockMap[key].ean) stockMap[key].ean = row.ean;
+});
 
 let sortedProducts = Object.values(stockMap);
 if (selectedCat !== 'all') sortedProducts = sortedProducts.filter(item => item.categoria === selectedCat);
@@ -2147,18 +2134,11 @@ let totalFaturamento = 0, totalCustoVendas = 0, totalQtdUnidades = 0;
 filteredData.forEach(row => { totalFaturamento += (row.qtd * row.vlrUnit); totalCustoVendas += (row.qtd * row.custoUnit); totalQtdUnidades += row.qtd; });
 
 let totalEstoqueVal = 0;
-let checkedStockKeys = {};
-globalData.forEach(row => {
-if (selectedClient !== 'all' && row.cliente !== selectedClient) return;
-if (selectedCat !== 'all' && row.categoria !== selectedCat) return;
-const key = `${row.cliente}___${row.produto}`;
-if (!checkedStockKeys[key]) {
-checkedStockKeys[key] = true;
-const stock = getOfficialStock(row.cliente, row.ean, row.produto);
-const cost = row.custoUnit > 0 ? row.custoUnit : 1;
-totalEstoqueVal += (stock * cost);
+for (let k in globalOfficialStock) {
+  let item = globalOfficialStock[k];
+  if (selectedClient !== 'all' && item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
+  totalEstoqueVal += (Number(item.estoque) || 0) * 1;
 }
-});
 
 const lucroBruto = totalFaturamento - totalCustoVendas;
 const margem = totalFaturamento > 0 ? (lucroBruto / totalFaturamento) * 100 : 0;
