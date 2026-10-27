@@ -99,7 +99,7 @@ display: none !important;
 <input type="file" id="excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFile(event)">
 </label>
 
-<label class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-xl text-xs font-medium shadow-sm transition-all flex items-center justify-center space-x-1.5 flex-1 sm:flex-none" title="Colunas: cliente, ean, nome, estoque">
+<label class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-xl text-xs font-medium shadow-sm transition-all flex items-center justify-center space-x-1.5 flex-1 sm:flex-none" title="Colunas: cliente, ean, nome, categoria, estoque">
 <i class="fa-solid fa-boxes-stacked"></i>
 <span>Imp. Estoque por Cliente</span>
 <input type="file" id="stock-excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleStockFile(event)">
@@ -755,9 +755,9 @@ let globalEntries = [
 ];
 
 let globalOfficialStock = {
-  "ANNA BEATRIZ (MARINHA)___78944880": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ALGODAO", ean: "78944880", estoque: 86 },
-  "ANNA BEATRIZ (MARINHA)___78964338": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ACUCAR", ean: "78964338", estoque: 128 },
-  "ANNA BEATRIZ (MARINHA)___78910241": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ENXAG", ean: "78910241", estoque: 19 }
+  "ANNA BEATRIZ (MARINHA)___78944880": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ALGODAO", ean: "78944880", categoria: "PERFUM", estoque: 86 },
+  "ANNA BEATRIZ (MARINHA)___78964338": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ACUCAR", ean: "78964338", categoria: "MERCADO", estoque: 128 },
+  "ANNA BEATRIZ (MARINHA)___78910241": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ENXAG", ean: "78910241", categoria: "HIGIENE", estoque: 19 }
 };
 
 let selectedOrderKey = null;
@@ -1106,11 +1106,13 @@ json.forEach(item => {
 const rawClient = getObjectValueIgnoreCase(item, ['cliente', 'loja', 'filial']) || 'Geral';
 const rawEan = getObjectValueIgnoreCase(item, ['ean', 'codigo', 'cod']);
 const rawNome = getObjectValueIgnoreCase(item, ['nome', 'produto', 'nome do produto', 'descricao']);
+const rawCategoria = getObjectValueIgnoreCase(item, ['categoria', 'cat', 'grupo']) || 'GERAL';
 const rawEstoque = getObjectValueIgnoreCase(item, ['estoque', 'quantidade', 'qtd', 'saldo']);
 
 const cliente = String(rawClient).trim();
 const ean = rawEan ? String(rawEan).trim() : '';
 const nome = rawNome ? String(rawNome).trim() : '';
+const categoria = String(rawCategoria).trim();
 const estoque = parseDecimal(rawEstoque);
 
 if (cliente && (ean || nome)) {
@@ -1120,6 +1122,7 @@ globalOfficialStock[key] = {
 cliente: cliente,
 produto: nome || identifier,
 ean: ean,
+categoria: categoria,
 estoque: estoque
 };
 count++;
@@ -1140,9 +1143,9 @@ reader.readAsArrayBuffer(file);
 
 function downloadStockTemplateCSV() {
 const csvContent = "data:text/csv;charset=utf-8,\uFEFF" +
-"cliente;ean;nome;estoque\n" +
-"ANNA BEATRIZ (MARINHA);78944880;ALGODAO;86\n" +
-"ANNA BEATRIZ (MARINHA);78964338;ACUCAR;128";
+"cliente;ean;nome;categoria;estoque\n" +
+"ANNA BEATRIZ (MARINHA);78944880;ALGODAO;PERFUM;86\n" +
+"ANNA BEATRIZ (MARINHA);78964338;ACUCAR;MERCADO;128";
 const encodedUri = encodeURI(csvContent);
 const link = document.createElement("a");
 link.setAttribute("href", encodedUri);
@@ -1154,13 +1157,17 @@ link.remove();
 
 function populateFilterDropdowns() {
 const clientsSet = new Set();
-globalData.forEach(i => clientsSet.add(i.cliente));
+const categoriesSet = new Set();
+globalData.forEach(i => {
+  clientsSet.add(i.cliente);
+  categoriesSet.add(i.categoria);
+});
 for(let k in globalOfficialStock) {
   if(globalOfficialStock[k].cliente) clientsSet.add(globalOfficialStock[k].cliente);
+  if(globalOfficialStock[k].categoria) categoriesSet.add(globalOfficialStock[k].categoria);
 }
 const clients = [...clientsSet].sort();
-
-const categories = [...new Set(globalData.map(i => i.categoria))].sort();
+const categories = [...categoriesSet].sort();
 const products = [...new Set(globalData.map(i => i.produto))].sort();
 
 const clientSelect = document.getElementById('clientFilter');
@@ -1332,7 +1339,6 @@ if(row.ean) consolidatedProdMap[row.produto].ean = row.ean;
 });
 
 let totalEstoqueVal = 0;
-let checkedStockKeys = {};
 for (let k in globalOfficialStock) {
   let item = globalOfficialStock[k];
   if (selectedClient !== 'all' && item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
@@ -1532,7 +1538,6 @@ if (diff > 0) daysCount = diff;
 
 const stockMap = {};
 
-// 1. Preenche primeiro os registros do estoque oficial cadastrado para o cliente selecionado ou geral
 for (let k in globalOfficialStock) {
   let item = globalOfficialStock[k];
   if (!isAllClients && item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
@@ -1546,15 +1551,15 @@ for (let k in globalOfficialStock) {
       cliente: item.cliente,
       produto: item.produto,
       ean: item.ean || '',
-      categoria: 'GERAL',
+      categoria: item.categoria || 'GERAL',
       qtdVendida: 0,
       estoqueAtual: 0
     };
   }
   stockMap[key].estoqueAtual += Number(item.estoque) || 0;
+  if (item.categoria && stockMap[key].categoria === 'GERAL') stockMap[key].categoria = item.categoria;
 }
 
-// 2. Soma a quantidade vendida correspondente do período
 filteredData.forEach(row => {
   let key = isAllClients 
     ? (row.ean ? row.ean.trim() : row.produto.trim().toUpperCase())
@@ -1923,13 +1928,14 @@ if (isAllClients) {
       productStats[identifier] = {
         produto: item.produto,
         ean: item.ean || '',
-        categoria: 'GERAL',
+        categoria: item.categoria || 'GERAL',
         totalQtdVendida: 0,
         estoqueAtual: 0,
         custoUnit: 1
       };
     }
     productStats[identifier].estoqueAtual += Number(item.estoque) || 0;
+    if (item.categoria && productStats[identifier].categoria === 'GERAL') productStats[identifier].categoria = item.categoria;
     if (item.ean && !productStats[identifier].ean) productStats[identifier].ean = item.ean;
   }
 } else {
@@ -1941,7 +1947,7 @@ if (isAllClients) {
       cliente: item.cliente,
       produto: item.produto,
       ean: item.ean || '',
-      categoria: 'GERAL',
+      categoria: item.categoria || 'GERAL',
       totalQtdVendida: 0,
       estoqueAtual: Number(item.estoque) || 0,
       custoUnit: 1
@@ -1965,6 +1971,7 @@ if (isAllClients) {
     productStats[mapKey].totalQtdVendida += row.qtd;
     productStats[mapKey].estoqueAtual = getOfficialStock(row.cliente, row.ean, row.produto);
     productStats[mapKey].custoUnit = row.custoUnit;
+    if (row.categoria && productStats[mapKey].categoria === 'GERAL') productStats[mapKey].categoria = row.categoria;
   });
 }
 
@@ -2195,7 +2202,7 @@ estoque: getOfficialStock(selectedClient !== 'all' ? selectedClient : row.client
 map[row.produto].qtdTotal += row.qtd;
 map[row.produto].faturamentoTotal += (row.qtd * row.vlrUnit);
 });
-const data = Object.entries(map).map(([p, i]) => ({ "Produto": p, "EAN": i.ean, "Qtd": i.qtdTotal, "Estoque Oficial": i.estoque, "Faturamento": i.faturamentoTotal }));
+const data = Object.entries(map).map(([p, i]) => ({ "Produto": p, "EAN": i.ean, "Categoria": i.categoria, "Qtd": i.qtdTotal, "Estoque Oficial": i.estoque, "Faturamento": i.faturamentoTotal }));
 exportToExcelFile(data, "consolidado_produtos", "Produtos");
 }
 function exportAnalyticToExcel() {
