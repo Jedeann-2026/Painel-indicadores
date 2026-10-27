@@ -1712,7 +1712,7 @@ pageItems.forEach(rowObj => {
   if (rowObj.isTotal) {
     tr.className = "bg-slate-950/80 border-t border-b-2 border-amber-500/40 font-bold text-amber-300";
     tr.innerHTML = `
-      <td class="p-3 font-bold text-amber-400 flex items-center space-x-1"><i class="fa-solid fa-calculator text-xs mr-1"></i>TOTAL (${rowObj.produto})</td>
+      <td class="p-3 font-bold text-amber-400 flex items-center space-x-1"><i class="fa-solid fa-calculator text-xs mr-1"></i>TOTAL </td> 
       <td class="p-3 font-bold text-amber-300">${rowObj.produto}</td>
       <td class="p-3 text-xs font-mono text-slate-400">${rowObj.ean || '-'}</td>
       <td class="p-3"><span class="px-2 py-0.5 bg-amber-500/10 text-amber-300 rounded text-[11px] border border-amber-500/20">${rowObj.categoria}</span></td>
