@@ -473,9 +473,15 @@ Projeção: R$ 0,00
 <!-- ABA DE ESTOQUE -->
 <div id="tab-stock" class="space-y-4 md:space-y-6 hidden">
 <div class="bg-slate-900 p-4 md:p-6 rounded-2xl shadow-sm border border-slate-800 space-y-4 md:space-y-6">
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
 <div>
 <h2 class="text-base md:text-lg font-bold text-white"><i class="fa-solid fa-boxes-stacked text-amber-400 mr-2"></i>Gestão de Estoque - Mínimo e Máximo</h2>
 <p class="text-[11px] md:text-xs text-slate-400 mt-1">Visão baseada na tabela oficial de estoque por cliente.</p>
+</div>
+<button onclick="exportStockToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1 shrink-0">
+<i class="fa-solid fa-file-excel"></i>
+<span>Exportar Estoque</span>
+</button>
 </div>
 
 <div class="bg-slate-950 p-3 md:p-4 rounded-xl border border-slate-800 flex flex-col lg:flex-row items-center justify-between gap-3 no-print">
@@ -701,10 +707,16 @@ Projeção: R$ 0,00
 </div>
 <div class="flex items-center space-x-2">
 <input type="radio" name="clearType" id="clearTypePeriod" value="period" onchange="toggleClearMode()" class="text-amber-400 focus:ring-amber-400">
-<label for="clearTypePeriod" class="text-xs font-semibold text-slate-200 cursor-pointer">Apagar Vendas por Período</label>
+<label for="clearTypePeriod" class="text-xs font-semibold text-slate-200 cursor-pointer">Apagar Vendas por Período / Cliente</label>
 </div>
 
 <div id="clearPeriodContainer" class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2 hidden">
+<div class="flex items-center justify-between text-xs text-slate-400">
+<span>Cliente:</span>
+<select id="clearClientSelect" class="bg-slate-900 border border-slate-800 text-slate-200 px-2 py-1 rounded text-xs w-48">
+<option value="all">Todos os Clientes</option>
+</select>
+</div>
 <div class="flex items-center justify-between text-xs text-slate-400">
 <span>De:</span>
 <input type="date" id="clearStartDate" class="bg-slate-900 border border-slate-800 text-slate-200 px-2 py-1 rounded text-xs">
@@ -875,6 +887,20 @@ document.getElementById('clearModal').classList.remove('hidden');
 const today = new Date().toISOString().split('T')[0];
 document.getElementById('clearStartDate').value = today;
 document.getElementById('clearEndDate').value = today;
+
+const clientsSet = new Set();
+globalData.forEach(i => clientsSet.add(i.cliente));
+for(let k in globalOfficialStock) {
+  if(globalOfficialStock[k].cliente) clientsSet.add(globalOfficialStock[k].cliente);
+}
+const clients = [...clientsSet].sort();
+const clearClientSelect = document.getElementById('clearClientSelect');
+if (clearClientSelect) {
+  clearClientSelect.innerHTML = '<option value="all">Todos os Clientes</option>';
+  clients.forEach(c => {
+    clearClientSelect.innerHTML += `<option value="${c}">${c}</option>`;
+  });
+}
 }
 
 function closeClearModal() { document.getElementById('clearModal').classList.add('hidden'); }
@@ -910,11 +936,21 @@ closeClearModal();
 alert("Estoque oficial limpo com sucesso!");
 }
 } else {
+const clearClient = document.getElementById('clearClientSelect').value;
 const sDate = document.getElementById('clearStartDate').value;
 const eDate = document.getElementById('clearEndDate').value;
 if (!sDate || !eDate) { alert("Selecione as datas."); return; }
-if (confirm(`Apagar vendas de ${sDate} até ${eDate}?`)) {
-globalData = globalData.filter(row => row.data < sDate || row.data > eDate);
+
+const msg = clearClient === 'all' 
+  ? `Apagar vendas de todos os clientes de ${sDate} até ${eDate}?` 
+  : `Apagar vendas do cliente ${clearClient} de ${sDate} até ${eDate}?`;
+
+if (confirm(msg)) {
+globalData = globalData.filter(row => {
+  const matchClient = (clearClient === 'all' || row.cliente === clearClient);
+  const matchDate = (row.data >= sDate && row.data <= eDate);
+  return !(matchClient && matchDate);
+});
 localStorage.setItem('nexxa_data', JSON.stringify(globalData));
 populateFilterDropdowns();
 updateAllViews();
@@ -1462,23 +1498,14 @@ container.appendChild(card);
 });
 }
 
-function renderStockView() {
-const tbody = document.getElementById('stockTableBody');
-const thClientCol = document.getElementById('thStockClientCol');
-if (!tbody) return;
-tbody.innerHTML = '';
-
+function getStockFilteredData() {
 const startDateVal = document.getElementById('stockStartDate') ? document.getElementById('stockStartDate').value : '';
 const endDateVal = document.getElementById('stockEndDate') ? document.getElementById('stockEndDate').value : '';
 const selectedClient = document.getElementById('stockClientFilter') ? document.getElementById('stockClientFilter').value : 'all';
 const selectedCat = document.getElementById('stockCatFilter') ? document.getElementById('stockCatFilter').value : 'all';
 const searchTerm = document.getElementById('stockSearchInput') ? document.getElementById('stockSearchInput').value.trim().toLowerCase() : '';
-const pageSizeVal = document.getElementById('stockPageSize') ? document.getElementById('stockPageSize').value : '30';
 
 const isAllClients = (selectedClient === 'all');
-if (thClientCol) {
-  thClientCol.style.display = isAllClients ? 'none' : '';
-}
 
 let filteredData = globalData;
 if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
@@ -1526,11 +1553,27 @@ if (isAllClients) {
     if (item.ean && !stockMap[identifier].ean) stockMap[identifier].ean = item.ean;
   }
 } else {
-  // Coleta produtos das vendas do cliente selecionado
+  // Carrega primeiro todos os itens do estoque oficial do cliente selecionado (garantindo que mesmo sem vendas apareçam com saldo)
+  for (let k in globalOfficialStock) {
+    let item = globalOfficialStock[k];
+    if (item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
+    let mapKey = `${item.cliente}___${item.produto}`;
+    stockMap[mapKey] = {
+      cliente: item.cliente,
+      produto: item.produto,
+      ean: item.ean || '',
+      categoria: 'GERAL',
+      qtdVendida: 0,
+      estoqueAtual: Number(item.estoque) || 0
+    };
+  }
+
+  // Soma as vendas do período correspondentes para esses ou outros produtos do cliente
   filteredData.forEach(row => {
-    const key = `${row.cliente}___${row.produto}`;
-    if (!stockMap[key]) {
-      stockMap[key] = {
+    if (row.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) return;
+    const mapKey = `${row.cliente}___${row.produto}`;
+    if (!stockMap[mapKey]) {
+      stockMap[mapKey] = {
         cliente: row.cliente,
         produto: row.produto,
         ean: row.ean || '',
@@ -1539,28 +1582,10 @@ if (isAllClients) {
         estoqueAtual: getOfficialStock(row.cliente, row.ean, row.produto)
       };
     }
-    stockMap[key].qtdVendida += row.qtd;
-    if (row.ean) stockMap[key].ean = row.ean;
+    stockMap[mapKey].qtdVendida += row.qtd;
+    if (row.ean) stockMap[mapKey].ean = row.ean;
+    if (row.categoria && stockMap[mapKey].categoria === 'GERAL') stockMap[mapKey].categoria = row.categoria;
   });
-
-  // Garante inclusão de TODOS os itens do estoque oficial do cliente (mesmo sem vendas)
-  for (let k in globalOfficialStock) {
-    let item = globalOfficialStock[k];
-    if (item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
-    let mapKey = `${item.cliente}___${item.produto}`;
-    if (!stockMap[mapKey]) {
-      stockMap[mapKey] = {
-        cliente: item.cliente,
-        produto: item.produto,
-        ean: item.ean || '',
-        categoria: 'GERAL',
-        qtdVendida: 0,
-        estoqueAtual: Number(item.estoque) || 0
-      };
-    } else {
-      stockMap[mapKey].estoqueAtual = Number(item.estoque) || 0;
-    }
-  }
 }
 
 let sortedProducts = Object.values(stockMap);
@@ -1575,6 +1600,22 @@ sortedProducts = sortedProducts.filter(item =>
 }
 
 sortedProducts.sort((a, b) => b.qtdVendida - a.qtdVendida);
+
+return { sortedProducts, isAllClients, daysCount };
+}
+
+function renderStockView() {
+const tbody = document.getElementById('stockTableBody');
+const thClientCol = document.getElementById('thStockClientCol');
+if (!tbody) return;
+tbody.innerHTML = '';
+
+const pageSizeVal = document.getElementById('stockPageSize') ? document.getElementById('stockPageSize').value : '30';
+const { sortedProducts, isAllClients, daysCount } = getStockFilteredData();
+
+if (thClientCol) {
+  thClientCol.style.display = isAllClients ? 'none' : '';
+}
 
 const colspanVal = isAllClients ? 8 : 9;
 if (sortedProducts.length === 0) {
@@ -1591,23 +1632,31 @@ let minCalc = Math.max(5, Math.ceil(mediaDiaria * 7));
 let maxCalc = Math.max(20, Math.ceil(mediaDiaria * 30));
 if (minCalc >= maxCalc) maxCalc = minCalc + 10;
 
+let statusStr = 'Ideal';
 let statusBadge = '';
 if (item.estoqueAtual <= 0) {
+statusStr = 'Zerado';
 statusBadge = `<span class="px-2 py-0.5 bg-rose-500/10 text-rose-400 font-bold rounded text-xs">Zerado</span>`;
 } else if (item.estoqueAtual < minCalc) {
+statusStr = 'Baixo';
 statusBadge = `<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 font-bold rounded text-xs">Baixo</span>`;
 } else if (item.estoqueAtual > maxCalc) {
+statusStr = 'Excesso';
 statusBadge = `<span class="px-2 py-0.5 bg-purple-500/10 text-purple-400 font-bold rounded text-xs">Excesso</span>`;
 } else {
 statusBadge = `<span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 font-bold rounded text-xs">Ideal</span>`;
 }
+
+item._minCalc = minCalc;
+item._maxCalc = maxCalc;
+item._statusStr = statusStr;
 
 const tr = document.createElement('tr');
 tr.className = "hover:bg-slate-800/50 transition-colors";
 
 let rowHtml = '';
 if (!isAllClients) {
-  rowHtml += `<td class="p-3 font-semibold text-slate-100">${item.cliente}</td>`;
+  rowHtml += `<td class="p-3 font-semibold text-slate-100">${item.cliente || '-'}</td>`;
 }
 rowHtml += `
 <td class="p-3 font-bold text-amber-400">${item.produto}</td>
@@ -1622,6 +1671,32 @@ rowHtml += `
 tr.innerHTML = rowHtml;
 tbody.appendChild(tr);
 });
+}
+
+function exportStockToExcel() {
+const { sortedProducts, isAllClients } = getStockFilteredData();
+if (!sortedProducts || sortedProducts.length === 0) {
+  alert("Nenhum dado de estoque para exportar.");
+  return;
+}
+
+const exportData = sortedProducts.map(item => {
+  const baseObj = {};
+  if (!isAllClients) {
+    baseObj["Cliente"] = item.cliente || 'Geral';
+  }
+  baseObj["Produto"] = item.produto;
+  baseObj["EAN"] = item.ean || '';
+  baseObj["Categoria"] = item.categoria;
+  baseObj["Vendida"] = item.qtdVendida;
+  baseObj["Estoque Oficial"] = item.estoqueAtual;
+  baseObj["Mínimo"] = item._minCalc || 0;
+  baseObj["Máximo"] = item._maxCalc || 0;
+  baseObj["Status"] = item._statusStr || 'Ideal';
+  return baseObj;
+});
+
+exportToExcelFile(exportData, "gestao_estoque_oficial", "Estoque");
 }
 
 function renderTurnoverTable(consolidatedMap) {
@@ -1871,10 +1946,26 @@ if (isAllClients) {
     if (item.ean && !productStats[identifier].ean) productStats[identifier].ean = item.ean;
   }
 } else {
+  for (let k in globalOfficialStock) {
+    let item = globalOfficialStock[k];
+    if (item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
+    let mapKey = `${item.cliente}___${item.produto}`;
+    productStats[mapKey] = {
+      cliente: item.cliente,
+      produto: item.produto,
+      ean: item.ean || '',
+      categoria: 'GERAL',
+      totalQtdVendida: 0,
+      estoqueAtual: Number(item.estoque) || 0,
+      custoUnit: 1
+    };
+  }
+
   filteredData.forEach(row => {
-    const key = `${row.cliente}___${row.produto}`;
-    if(!productStats[key]) {
-      productStats[key] = {
+    if (row.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) return;
+    const mapKey = `${row.cliente}___${row.produto}`;
+    if(!productStats[mapKey]) {
+      productStats[mapKey] = {
         cliente: row.cliente,
         produto: row.produto,
         ean: row.ean || '',
@@ -1884,29 +1975,10 @@ if (isAllClients) {
         custoUnit: row.custoUnit
       };
     }
-    productStats[key].totalQtdVendida += row.qtd;
-    productStats[key].estoqueAtual = getOfficialStock(row.cliente, row.ean, row.produto);
-    productStats[key].custoUnit = row.custoUnit;
+    productStats[mapKey].totalQtdVendida += row.qtd;
+    productStats[mapKey].estoqueAtual = getOfficialStock(row.cliente, row.ean, row.produto);
+    productStats[mapKey].custoUnit = row.custoUnit;
   });
-
-  for (let k in globalOfficialStock) {
-    let item = globalOfficialStock[k];
-    if (item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
-    let mapKey = `${item.cliente}___${item.produto}`;
-    if (!productStats[mapKey]) {
-      productStats[mapKey] = {
-        cliente: item.cliente,
-        produto: item.produto,
-        ean: item.ean || '',
-        categoria: 'GERAL',
-        totalQtdVendida: 0,
-        estoqueAtual: Number(item.estoque) || 0,
-        custoUnit: 1
-      };
-    } else {
-      productStats[mapKey].estoqueAtual = Number(item.estoque) || 0;
-    }
-  }
 }
 
 let sortedKeys = Object.keys(productStats).sort((a, b) => productStats[b].totalQtdVendida - productStats[a].totalQtdVendida);
