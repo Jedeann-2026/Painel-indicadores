@@ -59,14 +59,12 @@ display: none !important;
 <p class="text-[10px] md:text-xs text-slate-400">Gestão inteligente de estoque e vendas</p>
 </div>
 </div>
-<!-- Botão Tema (Visível no topo mobile) -->
-<button onclick="toggleTheme()" class="md:hidden bg-slate-800 hover:bg-slate-700 text-amber-400 p-2 rounded-xl border border-slate-700 transition-all shadow-sm" title="Alternar entre Modo Dia e Noite">
+<button onclick="toggleTheme()" class="md:hidden bg-slate-800 hover:bg-slate-700 text-amber-400 p-2 rounded-xl border border-slate-700 transition-all shadow-sm" title="Alternar Tema">
 <i id="themeIconMobile" class="fa-solid fa-sun text-sm"></i>
 </button>
 </div>
 
 <div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
-<!-- Navegação de Abas (Com rolagem horizontal para celulares) -->
 <div class="flex overflow-x-auto w-full md:w-auto bg-slate-950 p-1 rounded-xl border border-slate-800 gap-1 no-scrollbar">
 <button onclick="switchTab('dashboard')" id="btn-tab-dashboard" class="px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all bg-amber-400 text-slate-950 font-bold shadow-sm whitespace-nowrap">
 <i class="fa-solid fa-chart-pie mr-1"></i>Dashboard
@@ -82,8 +80,7 @@ display: none !important;
 </button>
 </div>
 
-<!-- Botão Tema Desktop -->
-<button onclick="toggleTheme()" class="hidden md:block bg-slate-800 hover:bg-slate-700 text-amber-400 p-2.5 rounded-xl border border-slate-700 transition-all shadow-sm" title="Alternar entre Modo Dia e Noite">
+<button onclick="toggleTheme()" class="hidden md:block bg-slate-800 hover:bg-slate-700 text-amber-400 p-2.5 rounded-xl border border-slate-700 transition-all shadow-sm" title="Alternar Tema">
 <i id="themeIcon" class="fa-solid fa-sun text-sm"></i>
 </button>
 </div>
@@ -98,18 +95,28 @@ display: none !important;
 <div class="flex flex-wrap items-center gap-2 w-full">
 <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-medium shadow-sm transition-all flex items-center justify-center space-x-1.5 flex-1 sm:flex-none">
 <i class="fa-solid fa-file-excel"></i>
-<span>Importar Planilha</span>
+<span>Imp. Vendas</span>
 <input type="file" id="excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFile(event)">
 </label>
-<button onclick="downloadTemplateCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-center space-x-1.5 border border-slate-700 flex-1 sm:flex-none">
+
+<!-- Botão Importar Estoque com Cliente -->
+<label class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-xl text-xs font-medium shadow-sm transition-all flex items-center justify-center space-x-1.5 flex-1 sm:flex-none" title="Colunas: cliente, ean, nome, estoque">
+<i class="fa-solid fa-boxes-stacked"></i>
+<span>Imp. Estoque por Cliente</span>
+<input type="file" id="stock-excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleStockFile(event)">
+</label>
+
+<button onclick="downloadStockTemplateCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-center space-x-1.5 border border-slate-700">
 <i class="fa-solid fa-download"></i>
-<span>Modelo</span>
+<span>Mod. Estoque</span>
 </button>
-<button onclick="exportFullDatabaseJSON()" class="bg-slate-950 hover:bg-black text-amber-400 px-3 py-2 rounded-xl text-xs font-medium shadow-sm transition-all flex items-center justify-center space-x-1.5 border border-amber-500/30 flex-1 sm:flex-none">
+
+<button onclick="exportFullDatabaseJSON()" class="bg-slate-950 hover:bg-black text-amber-400 px-3 py-2 rounded-xl text-xs font-medium shadow-sm transition-all flex items-center justify-center space-x-1.5 border border-amber-500/30">
 <i class="fa-solid fa-floppy-disk"></i>
 <span>Backup</span>
 </button>
-<label class="cursor-pointer bg-amber-500 hover:bg-amber-600 text-slate-950 px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center justify-center space-x-1.5 flex-1 sm:flex-none">
+
+<label class="cursor-pointer bg-amber-500 hover:bg-amber-600 text-slate-950 px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center justify-center space-x-1.5">
 <i class="fa-solid fa-upload"></i>
 <span>Restaurar</span>
 <input type="file" id="backup-file" accept=".json" class="hidden" onchange="importFullDatabaseJSON(event)">
@@ -119,11 +126,6 @@ display: none !important;
 <i class="fa-solid fa-trash-can text-xs"></i>
 <span>Limpar Base</span>
 </button>
-</div>
-
-<div class="text-[11px] text-slate-400 flex items-center space-x-1.5 w-full">
-<i class="fa-solid fa-circle-info text-amber-400 shrink-0"></i>
-<span>Substitui apenas os registros do cliente e data do arquivo.</span>
 </div>
 </div>
 
@@ -188,7 +190,7 @@ display: none !important;
 <div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-blue-500">
 <p class="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-slate-400">Valor Estoque</p>
 <h3 id="card-estoque-val" class="text-base md:text-xl font-bold text-white mt-1">R$ 0,00</h3>
-<span class="text-[10px] md:text-xs text-blue-400 font-medium mt-1 md:mt-2 inline-flex items-center"><i class="fa-solid fa-boxes-stacked mr-1"></i> Filtro ativo</span>
+<span class="text-[10px] md:text-xs text-blue-400 font-medium mt-1 md:mt-2 inline-flex items-center"><i class="fa-solid fa-boxes-stacked mr-1"></i> Estoque por Cliente</span>
 </div>
 <div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-amber-500">
 <p class="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-slate-400">Total Vendas</p>
@@ -364,7 +366,7 @@ Projeção: R$ 0,00
 <th class="p-3 font-semibold">Produto</th>
 <th class="p-3 font-semibold">EAN</th>
 <th class="p-3 font-semibold">Categoria</th>
-<th class="p-3 font-semibold text-center">Estoque</th>
+<th class="p-3 font-semibold text-center">Estoque Oficial</th>
 <th class="p-3 font-semibold text-center">Vendida</th>
 <th class="p-3 font-semibold text-right">Faturamento</th>
 <th class="p-3 font-semibold text-center">Giro</th>
@@ -414,7 +416,7 @@ Projeção: R$ 0,00
 <th class="p-3 font-semibold">Produto</th>
 <th class="p-3 font-semibold">EAN</th>
 <th class="p-3 font-semibold text-center">Qtd Total</th>
-<th class="p-3 font-semibold text-center">Estoque</th>
+<th class="p-3 font-semibold text-center">Estoque Oficial</th>
 <th class="p-3 font-semibold text-right">Faturamento</th>
 </tr>
 </thead>
@@ -474,7 +476,7 @@ Projeção: R$ 0,00
 <div class="bg-slate-900 p-4 md:p-6 rounded-2xl shadow-sm border border-slate-800 space-y-4 md:space-y-6">
 <div>
 <h2 class="text-base md:text-lg font-bold text-white"><i class="fa-solid fa-boxes-stacked text-amber-400 mr-2"></i>Gestão de Estoque - Mínimo e Máximo</h2>
-<p class="text-[11px] md:text-xs text-slate-400 mt-1">Cálculo de segurança por cliente ou geral.</p>
+<p class="text-[11px] md:text-xs text-slate-400 mt-1">Visão baseada na tabela oficial de estoque por cliente.</p>
 </div>
 
 <div class="bg-slate-950 p-3 md:p-4 rounded-xl border border-slate-800 flex flex-col lg:flex-row items-center justify-between gap-3 no-print">
@@ -521,12 +523,12 @@ Projeção: R$ 0,00
 <table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
 <thead>
 <tr class="bg-slate-950 text-slate-400 uppercase text-[10px] md:text-xs tracking-wider border-b border-slate-800">
-<th class="p-3 font-semibold" id="thStockClient">Loja / Cliente</th>
+<th class="p-3 font-semibold">Cliente</th>
 <th class="p-3 font-semibold">Produto</th>
 <th class="p-3 font-semibold">EAN</th>
 <th class="p-3 font-semibold">Categoria</th>
 <th class="p-3 font-semibold text-center">Vendida</th>
-<th class="p-3 font-semibold text-center">Estoque</th>
+<th class="p-3 font-semibold text-center">Estoque Oficial</th>
 <th class="p-3 font-semibold text-center">Mínimo</th>
 <th class="p-3 font-semibold text-center">Máximo</th>
 <th class="p-3 font-semibold text-center">Status</th>
@@ -544,19 +546,11 @@ Projeção: R$ 0,00
 <div class="bg-slate-900 p-4 md:p-6 rounded-2xl shadow-sm border border-slate-800">
 <div class="mb-4">
 <h2 class="text-base md:text-lg font-bold text-white">Sugestão e Projeção de Compras</h2>
-<p class="text-[11px] md:text-xs text-slate-400 mt-1">Consolidação de reposição com base no custo das Notas de Entrada.</p>
+<p class="text-[11px] md:text-xs text-slate-400 mt-1">Cálculo de reposição baseado no estoque oficial por cliente.</p>
 </div>
 
 <div class="bg-slate-950 p-3 md:p-4 rounded-xl border border-slate-800 mb-4 flex flex-col lg:flex-row items-center justify-between gap-3 no-print">
 <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-<div class="flex items-center space-x-1 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 shadow-sm">
-<span class="text-xs text-slate-400 font-medium">Modo:</span>
-<select id="projMode" onchange="currentPageProj=1; renderProjection()" class="text-xs border-0 focus:outline-none bg-transparent font-bold text-amber-400 cursor-pointer">
-<option value="synthetic">Sintético</option>
-<option value="analytic">Analítico</option>
-</select>
-</div>
-
 <div class="flex items-center space-x-1 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 shadow-sm">
 <select id="projDatePreset" onchange="applyProjDatePreset()" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer">
 <option value="all">Todo o Período</option>
@@ -602,11 +596,11 @@ Projeção: R$ 0,00
 <table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
 <thead>
 <tr class="bg-slate-950 text-slate-300 uppercase text-[10px] md:text-xs tracking-wider border-b border-slate-800">
-<th class="p-3 font-semibold" id="thProjClient">Cliente</th>
+<th class="p-3 font-semibold">Cliente</th>
 <th class="p-3 font-semibold">Produto</th>
 <th class="p-3 font-semibold">EAN</th>
 <th class="p-3 font-semibold">Categoria</th>
-<th class="p-3 font-semibold text-center">Estoque</th>
+<th class="p-3 font-semibold text-center">Estoque Oficial</th>
 <th class="p-3 font-semibold text-center">Vendida</th>
 <th class="p-3 font-semibold text-center">Custo Unit</th>
 <th class="p-3 font-semibold text-center">Sugestão Compra</th>
@@ -641,9 +635,8 @@ Projeção: R$ 0,00
 </div>
 </div>
 
-<!-- Tabela Superior: Resumo das Notas/Pedidos -->
 <div class="space-y-2">
-<h3 class="text-xs md:text-sm font-bold text-amber-400 flex items-center"><i class="fa-solid fa-list mr-2"></i>Pedidos Registrados (Toque em um pedido para ver os itens)</h3>
+<h3 class="text-xs md:text-sm font-bold text-amber-400 flex items-center"><i class="fa-solid fa-list mr-2"></i>Pedidos Registrados</h3>
 <div class="overflow-x-auto rounded-xl border border-slate-800 max-h-72 overflow-y-auto">
 <table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
 <thead>
@@ -661,7 +654,6 @@ Projeção: R$ 0,00
 </div>
 </div>
 
-<!-- Bloco Inferior: Itens referentes à Nota/Pedido selecionada -->
 <div class="space-y-2 pt-3 border-t border-slate-800">
 <div class="flex justify-between items-center">
 <h3 id="selectedOrderTitle" class="text-xs md:text-sm font-bold text-amber-400 flex items-center truncate">
@@ -680,7 +672,7 @@ Projeção: R$ 0,00
 </tr>
 </thead>
 <tbody id="entryDetailTableBody" class="divide-y divide-slate-800 text-slate-200">
-<tr><td colspan="5" class="p-4 text-center text-slate-500">Selecione uma nota/pedido na tabela acima.</td></tr>
+<tr><td colspan="5" class="p-4 text-center text-slate-500">Selecione uma nota/pedido.</td></tr>
 </tbody>
 </table>
 </div>
@@ -690,23 +682,23 @@ Projeção: R$ 0,00
 
 </main>
 
-<!-- MODAL DE LIMPEZA DE BASE POR PERÍODO -->
+<!-- MODAL DE LIMPEZA -->
 <div id="clearModal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-3 hidden">
 <div class="bg-slate-900 border border-slate-800 p-5 md:p-6 rounded-2xl w-full max-w-md space-y-4 shadow-xl">
 <div class="flex justify-between items-center">
 <h3 class="font-bold text-white text-sm md:text-base flex items-center"><i class="fa-solid fa-triangle-exclamation text-amber-400 mr-2"></i>Limpeza de Base</h3>
 <button onclick="closeClearModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
 </div>
-<p class="text-xs text-slate-400">Escolha se deseja limpar todos os registros ou apenas os dados de um intervalo de datas.</p>
+<p class="text-xs text-slate-400">Escolha o que deseja limpar na base de dados.</p>
 
 <div class="space-y-3 pt-1">
 <div class="flex items-center space-x-2">
 <input type="radio" name="clearType" id="clearTypeAll" value="all" checked onchange="toggleClearMode()" class="text-amber-400 focus:ring-amber-400">
-<label for="clearTypeAll" class="text-xs font-semibold text-slate-200 cursor-pointer">Apagar TUDO (Toda a base)</label>
+<label for="clearTypeAll" class="text-xs font-semibold text-slate-200 cursor-pointer">Apagar TUDO (Vendas, Entradas e Estoque Oficial)</label>
 </div>
 <div class="flex items-center space-x-2">
 <input type="radio" name="clearType" id="clearTypePeriod" value="period" onchange="toggleClearMode()" class="text-amber-400 focus:ring-amber-400">
-<label for="clearTypePeriod" class="text-xs font-semibold text-slate-200 cursor-pointer">Apagar por Período Específico</label>
+<label for="clearTypePeriod" class="text-xs font-semibold text-slate-200 cursor-pointer">Apagar Vendas por Período</label>
 </div>
 
 <div id="clearPeriodContainer" class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2 hidden">
@@ -737,9 +729,9 @@ Projeção: R$ 0,00
 <!-- Lógica JavaScript -->
 <script>
 let globalData = [
-{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "PERFUM", produto: "ALGODAO", ean: "78944880", data: "2026-10-01", qtd: 18, vlrUnit: 1.29, custoUnit: 0.80, estoque: 86 },
-{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "MERCADO", produto: "ACUCAR", ean: "78964338", data: "2026-10-10", qtd: 12, vlrUnit: 2.99, custoUnit: 1.90, estoque: 128 },
-{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "HIGIENE", produto: "ENXAG", ean: "78910241", data: "2026-10-21", qtd: 3, vlrUnit: 12.89, custoUnit: 8.50, estoque: 19 }
+{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "PERFUM", produto: "ALGODAO", ean: "78944880", data: "2026-10-01", qtd: 18, vlrUnit: 1.29, custoUnit: 0.80 },
+{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "MERCADO", produto: "ACUCAR", ean: "78964338", data: "2026-10-10", qtd: 12, vlrUnit: 2.99, custoUnit: 1.90 },
+{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "HIGIENE", produto: "ENXAG", ean: "78910241", data: "2026-10-21", qtd: 3, vlrUnit: 12.89, custoUnit: 8.50 }
 ];
 
 let globalEntries = [
@@ -747,16 +739,48 @@ let globalEntries = [
 { pedido: "PED-001", fornecedor: "Fornecedor Central SP", produto: "ACUCAR", ean: "78964338", data: "2026-10-15", qtd: 200, precoUnit: 1.90 }
 ];
 
+// ESTOQUE OFICIAL POR CLIENTE (Chave composta: "CLIENTE___EAN_OU_NOME")
+let globalOfficialStock = {
+  "ANNA BEATRIZ (MARINHA)___78944880": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ALGODAO", estoque: 86 },
+  "ANNA BEATRIZ (MARINHA)___78964338": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ACUCAR", estoque: 128 },
+  "ANNA BEATRIZ (MARINHA)___78910241": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ENXAG", estoque: 19 }
+};
+
 let selectedOrderKey = null;
 
 const savedData = localStorage.getItem('nexxa_data');
-if (savedData) {
-try { globalData = JSON.parse(savedData); } catch(e) { console.error("Erro ao carregar dados:", e); }
-}
+if (savedData) { try { globalData = JSON.parse(savedData); } catch(e) {} }
 
 const savedEntries = localStorage.getItem('nexxa_entries');
-if (savedEntries) {
-try { globalEntries = JSON.parse(savedEntries); } catch(e) { console.error("Erro ao carregar notas salvas:", e); }
+if (savedEntries) { try { globalEntries = JSON.parse(savedEntries); } catch(e) {} }
+
+const savedStock = localStorage.getItem('nexxa_official_stock');
+if (savedStock) { try { globalOfficialStock = JSON.parse(savedStock); } catch(e) {} }
+
+function getOfficialStock(clientName, ean, productName) {
+  const cleanClient = clientName ? clientName.trim().toUpperCase() : 'GERAL';
+  const cleanEan = ean ? String(ean).trim() : '';
+  const cleanName = productName ? productName.trim().toUpperCase() : '';
+
+  // Tenta chave por EAN
+  if (cleanEan) {
+    const keyEan = `${cleanClient}___${cleanEan}`;
+    if (globalOfficialStock[keyEan] !== undefined) return Number(globalOfficialStock[keyEan].estoque) || 0;
+  }
+  // Tenta chave por Nome do Produto
+  if (cleanName) {
+    const keyName = `${cleanClient}___${cleanName}`;
+    if (globalOfficialStock[keyName] !== undefined) return Number(globalOfficialStock[keyName].estoque) || 0;
+  }
+
+  // Fallback caso não ache exato para o cliente mas ache pelo produto globalmente
+  for (let k in globalOfficialStock) {
+    let item = globalOfficialStock[k];
+    if (item.produto && item.produto.trim().toUpperCase() === cleanName) {
+      return Number(item.estoque) || 0;
+    }
+  }
+  return 0;
 }
 
 function syncCostsWithEntries() {
@@ -795,13 +819,9 @@ let chartClientsInst = null;
 function setDefaultCurrentDate() {
 const todayStr = new Date().toISOString().split('T')[0];
 const startDateInput = document.getElementById('startDate');
-if (startDateInput && !startDateInput.value) {
-startDateInput.value = todayStr;
-}
+if (startDateInput && !startDateInput.value) startDateInput.value = todayStr;
 const compStartInput = document.getElementById('compStartDate');
-if (compStartInput && !compStartInput.value) {
-compStartInput.value = todayStr;
-}
+if (compStartInput && !compStartInput.value) compStartInput.value = todayStr;
 }
 
 function updateAllViews() {
@@ -856,59 +876,40 @@ document.getElementById('clearStartDate').value = today;
 document.getElementById('clearEndDate').value = today;
 }
 
-function closeClearModal() {
-document.getElementById('clearModal').classList.add('hidden');
-}
+function closeClearModal() { document.getElementById('clearModal').classList.add('hidden'); }
 
 function toggleClearMode() {
 const isPeriod = document.getElementById('clearTypePeriod').checked;
-const container = document.getElementById('clearPeriodContainer');
-if (isPeriod) {
-container.classList.remove('hidden');
-} else {
-container.classList.add('hidden');
-}
+document.getElementById('clearPeriodContainer').classList.toggle('hidden', !isPeriod);
 }
 
 function executeClearDatabase() {
 const isPeriod = document.getElementById('clearTypePeriod').checked;
-
 if (!isPeriod) {
-if (confirm("Tem certeza que deseja apagar TODOS os dados?")) {
+if (confirm("Deseja apagar TODOS os dados (vendas, entradas e estoque oficial)?")) {
 globalData = [];
 globalEntries = [];
+globalOfficialStock = {};
 localStorage.removeItem('nexxa_data');
 localStorage.removeItem('nexxa_entries');
+localStorage.removeItem('nexxa_official_stock');
 populateFilterDropdowns();
-populateProjFilterDropdowns();
-populateStockFilterDropdowns();
 updateAllViews();
 renderEntries();
 closeClearModal();
-alert("Base limpa com sucesso!");
+alert("Base limpa!");
 }
 } else {
 const sDate = document.getElementById('clearStartDate').value;
 const eDate = document.getElementById('clearEndDate').value;
-if (!sDate || !eDate) {
-alert("Selecione as datas.");
-return;
-}
-
-if (confirm(`Apagar registros de ${sDate} até ${eDate}?`)) {
+if (!sDate || !eDate) { alert("Selecione as datas."); return; }
+if (confirm(`Apagar vendas de ${sDate} até ${eDate}?`)) {
 globalData = globalData.filter(row => row.data < sDate || row.data > eDate);
-globalEntries = globalEntries.filter(row => row.data < sDate || row.data > eDate);
-
 localStorage.setItem('nexxa_data', JSON.stringify(globalData));
-localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
-
 populateFilterDropdowns();
-populateProjFilterDropdowns();
-populateStockFilterDropdowns();
 updateAllViews();
-renderEntries();
 closeClearModal();
-alert("Registros removidos!");
+alert("Registros de vendas removidos!");
 }
 }
 }
@@ -919,36 +920,31 @@ const stockTab = document.getElementById('tab-stock');
 const projTab = document.getElementById('tab-projection');
 const entryTab = document.getElementById('tab-entries');
 
-const btnDash = document.getElementById('btn-tab-dashboard');
-const btnStock = document.getElementById('btn-tab-stock');
-const btnProj = document.getElementById('btn-tab-projection');
-const btnEntry = document.getElementById('btn-tab-entries');
-
 dashTab.classList.add('hidden');
 stockTab.classList.add('hidden');
 projTab.classList.add('hidden');
 entryTab.classList.add('hidden');
 
-btnDash.className = "px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap";
-btnStock.className = "px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap";
-btnProj.className = "px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap";
-btnEntry.className = "px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap";
+document.getElementById('btn-tab-dashboard').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap";
+document.getElementById('btn-tab-stock').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap";
+document.getElementById('btn-tab-projection').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap";
+document.getElementById('btn-tab-entries').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap";
 
 if(tabName === 'dashboard') {
 dashTab.classList.remove('hidden');
-btnDash.className = "px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap";
+document.getElementById('btn-tab-dashboard').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap";
 renderDashboard();
 } else if(tabName === 'stock') {
 stockTab.classList.remove('hidden');
-btnStock.className = "px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap";
+document.getElementById('btn-tab-stock').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap";
 renderStockView();
 } else if(tabName === 'projection') {
 projTab.classList.remove('hidden');
-btnProj.className = "px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap";
+document.getElementById('btn-tab-projection').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap";
 renderProjection();
 } else if(tabName === 'entries') {
 entryTab.classList.remove('hidden');
-btnEntry.className = "px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap";
+document.getElementById('btn-tab-entries').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap";
 renderEntries();
 }
 }
@@ -963,7 +959,6 @@ const days = parseInt(preset);
 const today = new Date();
 const startDate = new Date();
 startDate.setDate(today.getDate() - days);
-
 document.getElementById('endDate').value = today.toISOString().split('T')[0];
 document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
 }
@@ -977,41 +972,29 @@ updateAllViews();
 
 function parseExcelDate(val) {
 if (!val || val === 0 || val === '0') return new Date().toISOString().split('T')[0];
-
 if (typeof val === 'number') {
 const excelDate = new Date((val - (25567 + 2)) * 86400 * 1000);
-const year = excelDate.getUTCFullYear();
-const month = String(excelDate.getUTCMonth() + 1).padStart(2, '0');
-const day = String(excelDate.getUTCDate()).padStart(2, '0');
-return `${year}-${month}-${day}`;
+return `${excelDate.getUTCFullYear()}-${String(excelDate.getUTCMonth() + 1).padStart(2, '0')}-${String(excelDate.getUTCDate()).padStart(2, '0')}`;
 }
-
 let str = String(val).trim();
 if (str.includes('/')) {
 const parts = str.split('/');
 if (parts.length === 3) {
-const day = parts[0].padStart(2, '0');
-const month = parts[1].padStart(2, '0');
-const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
-return `${year}-${month}-${day}`;
+return `${parts[2].length === 2 ? '20' + parts[2] : parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
 }
 }
-
-if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
-return str.substring(0, 10);
-}
-
+if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.substring(0, 10);
 return new Date().toISOString().split('T')[0];
 }
 
 function parseDecimal(val) {
 if (val === undefined || val === null || val === '') return 0;
 if (typeof val === 'number') return val;
-let str = String(val).trim().replace(',', '.');
-const num = parseFloat(str);
+let num = parseFloat(String(val).trim().replace(',', '.'));
 return isNaN(num) ? 0 : num;
 }
 
+// IMPORTAÇÃO DE VENDAS
 function handleFile(e) {
 const file = e.target.files[0];
 if (!file) return;
@@ -1020,8 +1003,7 @@ reader.onload = function(evt) {
 try {
 const data = new Uint8Array(evt.target.result);
 const workbook = XLSX.read(data, {type: 'array', cellDates: false});
-const firstSheetName = workbook.SheetNames[0];
-const worksheet = workbook.Sheets[firstSheetName];
+const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
 
 if(json.length > 0) {
@@ -1031,36 +1013,80 @@ categoria: item['Categoria'] || item['categoria'] || 'Geral',
 produto: item['Nome do Produto'] || item['produto'] || item['Produto'] || 'Não informado',
 ean: String(item['EAN'] || item['ean'] || '').trim(),
 data: parseExcelDate(item['Data'] || item['data']),
-qtd: parseDecimal(item['Qtd. pedida'] || item['Quantidade'] || item['quantidade'] || item['Qtd'] || 0),
-vlrUnit: parseDecimal(item['Preço filial'] || item['Valor Unitário'] || item['valor_unitario'] || item['Valor Unitario'] || 0),
-custoUnit: parseDecimal(item['Preço de Custo'] || item['preco_custo'] || 0),
-estoque: parseDecimal(item['Qtd. disponível'] || item['Qtd. em Estoque'] || item['estoque'] || 0)
+qtd: parseDecimal(item['Quantidade'] || item['quantidade'] || item['Qtd'] || 0),
+vlrUnit: parseDecimal(item['Preço filial'] || item['Valor Unitário'] || item['Valor Unitario'] || 0),
+custoUnit: parseDecimal(item['Preço de Custo'] || item['preco_custo'] || 0)
 })).filter(row => row.produto !== 'Não informado' && row.produto !== '');
 
 if(importedRows.length > 0) {
 const importedKeys = new Set(importedRows.map(r => `${r.cliente}___${r.data}`));
-const preservedData = globalData.filter(r => !importedKeys.has(`${r.cliente}___${r.data}`));
-globalData = [...preservedData, ...importedRows];
-
+globalData = [...globalData.filter(r => !importedKeys.has(`${r.cliente}___${r.data}`)), ...importedRows];
 localStorage.setItem('nexxa_data', JSON.stringify(globalData));
 populateFilterDropdowns();
-populateProjFilterDropdowns();
-populateStockFilterDropdowns();
 updateAllViews();
-
-alert("Planilha importada com sucesso!");
-} else {
-alert("Nenhum dado válido encontrado.");
-}
-} else {
-alert("A planilha está vazia.");
-}
-} catch(err) {
-console.error(err);
-alert("Erro ao ler o arquivo Excel.");
-}
+alert("Planilha de vendas importada com sucesso!");
+} else { alert("Nenhum dado válido."); }
+} else { alert("Planilha vazia."); }
+} catch(err) { alert("Erro ao ler o arquivo de vendas."); }
 };
 reader.readAsArrayBuffer(file);
+}
+
+// IMPORTAÇÃO DE ESTOQUE COM CLIENTE (cliente, ean, nome, estoque)
+function handleStockFile(e) {
+const file = e.target.files[0];
+if (!file) return;
+const reader = new FileReader();
+reader.onload = function(evt) {
+try {
+const data = new Uint8Array(evt.target.result);
+const workbook = XLSX.read(data, {type: 'array', cellDates: false});
+const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
+
+if(json.length > 0) {
+let count = 0;
+json.forEach(item => {
+const cliente = String(item['Cliente'] || item['cliente'] || item['Loja'] || item['loja'] || 'Geral').trim();
+const ean = String(item['EAN'] || item['ean'] || item['Ean'] || '').trim();
+const nome = String(item['Nome'] || item['nome'] || item['Produto'] || item['produto'] || '').trim();
+const estoque = parseDecimal(item['Estoque'] || item['estoque'] || item['Quantidade'] || item['quantidade'] || 0);
+
+if (cliente && (ean || nome)) {
+const identifier = ean || nome.toUpperCase();
+const key = `${cliente.toUpperCase()}___${identifier}`;
+globalOfficialStock[key] = {
+cliente: cliente,
+produto: nome || identifier,
+estoque: estoque
+};
+count++;
+}
+});
+
+if(count > 0) {
+localStorage.setItem('nexxa_official_stock', JSON.stringify(globalOfficialStock));
+updateAllViews();
+alert(`Estoque por cliente importado com sucesso! ${count} registros atualizados.`);
+} else { alert("Nenhuma coluna válida encontrada."); }
+} else { alert("Planilha de estoque vazia."); }
+} catch(err) { alert("Erro ao ler arquivo de estoque."); }
+};
+reader.readAsArrayBuffer(file);
+}
+
+function downloadStockTemplateCSV() {
+const csvContent = "data:text/csv;charset=utf-8,\uFEFF" +
+"cliente;ean;nome;estoque\n" +
+"ANNA BEATRIZ (MARINHA);78944880;ALGODAO;86\n" +
+"ANNA BEATRIZ (MARINHA);78964338;ACUCAR;128";
+const encodedUri = encodeURI(csvContent);
+const link = document.createElement("a");
+link.setAttribute("href", encodedUri);
+link.setAttribute("download", "modelo_estoque_por_cliente.csv");
+document.body.appendChild(link);
+link.click();
+link.remove();
 }
 
 function populateFilterDropdowns() {
@@ -1089,17 +1115,15 @@ products.forEach(p => { prodList.innerHTML += `<option value="${p}">`; });
 
 function downloadTemplateCSV() {
 const csvContent = "data:text/csv;charset=utf-8,\uFEFF" +
-"Cliente;Categoria;Produto;EAN;Qtd. pedida;Qtd. disponível;Preço filial;Data\n" +
-"ANNA BEATRIZ (MARINHA);PERFUM;ALGODAO;78944880;18;86;1,29;2026-10-01\n" +
-"ANNA BEATRIZ (MARINHA);MERCADO;ACUCAR;78964338;12;128;2,99;2026-10-10";
-
+"Cliente;Categoria;Produto;EAN;Quantidade;Preço Unitário;Data\n" +
+"ANNA BEATRIZ (MARINHA);PERFUM;ALGODAO;78944880;18;1,29;2026-10-01";
 const encodedUri = encodeURI(csvContent);
 const link = document.createElement("a");
 link.setAttribute("href", encodedUri);
-link.setAttribute("download", "modelo_nexxa_conveniencias.csv");
+link.setAttribute("download", "modelo_vendas_nexxa.csv");
 document.body.appendChild(link);
 link.click();
-document.body.removeChild(link);
+link.remove();
 }
 
 function formatCurrency(val) {
@@ -1135,7 +1159,6 @@ let controlsHtml = `
 </button>
 </div>
 `;
-
 container.innerHTML = controlsHtml;
 return { pageItems, startIdx, endIdx };
 }
@@ -1155,7 +1178,6 @@ const selectedProd = document.getElementById('prodFilter') ? document.getElement
 const searchTerm = document.getElementById('searchInput') ? document.getElementById('searchInput').value.trim().toLowerCase() : '';
 
 let filteredData = globalData;
-
 if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
 if (endDateVal) filteredData = filteredData.filter(row => row.data <= endDateVal);
 if (selectedClient !== 'all') filteredData = filteredData.filter(row => row.cliente === selectedClient);
@@ -1169,7 +1191,6 @@ row.categoria.toLowerCase().includes(searchTerm) ||
 (row.ean && row.ean.toLowerCase().includes(searchTerm))
 );
 }
-
 return { filteredData, startDateVal, endDateVal, selectedClient, selectedCat, selectedProd, searchTerm };
 }
 
@@ -1201,37 +1222,38 @@ prodQtyMap[row.produto] = (prodQtyMap[row.produto] || 0) + row.qtd;
 catValueMap[row.categoria] = (catValueMap[row.categoria] || 0) + faturamento;
 clientValueMap[row.cliente] = (clientValueMap[row.cliente] || 0) + faturamento;
 
+const officialStock = getOfficialStock(row.cliente, row.ean, row.produto);
+
 if (!consolidatedProdMap[row.produto]) {
 consolidatedProdMap[row.produto] = {
 ean: row.ean || '',
 categoria: row.categoria,
 qtdTotal: 0,
 faturamentoTotal: 0,
-estoque: row.estoque,
+estoque: officialStock,
 custoUnit: row.custoUnit
 };
 }
 consolidatedProdMap[row.produto].qtdTotal += row.qtd;
 consolidatedProdMap[row.produto].faturamentoTotal += faturamento;
-consolidatedProdMap[row.produto].estoque = row.estoque;
+consolidatedProdMap[row.produto].estoque = officialStock;
 consolidatedProdMap[row.produto].custoUnit = row.custoUnit;
 if(row.ean) consolidatedProdMap[row.produto].ean = row.ean;
 });
 
-let uniqueStockMap = {};
+// CÁLCULO CORRETO DO VALOR EM ESTOQUE (Respeitando filtros de cliente e categoria)
+let totalEstoqueVal = 0;
+let checkedStockKeys = {};
 globalData.forEach(row => {
 if (selectedClient !== 'all' && row.cliente !== selectedClient) return;
 if (selectedCat !== 'all' && row.categoria !== selectedCat) return;
 const key = `${row.cliente}___${row.produto}`;
-uniqueStockMap[key] = {
-estoque: row.estoque,
-custoUnit: row.custoUnit > 0 ? row.custoUnit : 1
-};
-});
-
-let totalEstoqueVal = 0;
-Object.values(uniqueStockMap).forEach(item => {
-totalEstoqueVal += (item.estoque * item.custoUnit);
+if (!checkedStockKeys[key]) {
+checkedStockKeys[key] = true;
+const stock = getOfficialStock(row.cliente, row.ean, row.produto);
+const cost = row.custoUnit > 0 ? row.custoUnit : 1;
+totalEstoqueVal += (stock * cost);
+}
 });
 
 const analyticPageSizeVal = document.getElementById('analyticPageSize') ? document.getElementById('analyticPageSize').value : '30';
@@ -1241,6 +1263,7 @@ const tbodyAnalytic = document.getElementById('dataTableBody');
 tbodyAnalytic.innerHTML = '';
 analyticPageItems.forEach(row => {
 const faturamento = row.qtd * row.vlrUnit;
+const officialStock = getOfficialStock(row.cliente, row.ean, row.produto);
 const tr = document.createElement('tr');
 tr.className = "hover:bg-slate-800/50 transition-colors";
 tr.innerHTML = `
@@ -1252,7 +1275,7 @@ tr.innerHTML = `
 <td class="p-3 text-center font-semibold text-slate-100">${row.qtd}</td>
 <td class="p-3 text-right text-slate-300">${formatCurrency(row.vlrUnit)}</td>
 <td class="p-3 text-right font-bold text-slate-100">${formatCurrency(faturamento)}</td>
-<td class="p-3 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">${row.estoque}</span></td>
+<td class="p-3 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">${officialStock}</span></td>
 `;
 tbodyAnalytic.appendChild(tr);
 });
@@ -1288,7 +1311,6 @@ filteredData.forEach(row => {
 if (!row.data) return;
 const dayOfMonth = parseInt(row.data.split('-')[2]);
 const faturamento = row.qtd * row.vlrUnit;
-
 if (dayOfMonth <= 7) weeklyTotals[1] += faturamento;
 else if (dayOfMonth <= 14) weeklyTotals[2] += faturamento;
 else if (dayOfMonth <= 21) weeklyTotals[3] += faturamento;
@@ -1305,7 +1327,6 @@ const labelsSemanas = [
 labelsSemanas.forEach(sem => {
 const valorSemana = weeklyTotals[sem.id];
 const percentual = totalFaturamentoFiltrado > 0 ? ((valorSemana / totalFaturamentoFiltrado) * 100).toFixed(1) : 0;
-
 const card = document.createElement('div');
 card.className = "bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between space-y-2";
 card.innerHTML = `
@@ -1325,7 +1346,6 @@ container.appendChild(card);
 const hoje = new Date();
 const diaAtual = hoje.getDate();
 const ultimoDiaDoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
-
 if (diaAtual > 0 && totalFaturamentoFiltrado > 0) {
 const mediaDiaria = totalFaturamentoFiltrado / diaAtual;
 const projecaoTotal = mediaDiaria * ultimoDiaDoMes;
@@ -1370,7 +1390,6 @@ if (!row.data) return;
 const dayOfMonth = parseInt(row.data.split('-')[2]);
 const faturamento = row.qtd * row.vlrUnit;
 totalCompFat += faturamento;
-
 if (dayOfMonth <= 7) weeklyTotals[1] += faturamento;
 else if (dayOfMonth <= 14) weeklyTotals[2] += faturamento;
 else if (dayOfMonth <= 21) weeklyTotals[3] += faturamento;
@@ -1390,7 +1409,6 @@ const labelsSemanas = [
 labelsSemanas.forEach(sem => {
 const valorSemana = weeklyTotals[sem.id];
 const percentual = totalCompFat > 0 ? ((valorSemana / totalCompFat) * 100).toFixed(1) : 0;
-
 const card = document.createElement('div');
 card.className = "bg-slate-950 p-3.5 rounded-xl border border-indigo-500/20 flex flex-col justify-between space-y-2";
 card.innerHTML = `
@@ -1408,54 +1426,8 @@ container.appendChild(card);
 });
 }
 
-function populateStockFilterDropdowns() {
-const clients = [...new Set(globalData.map(i => i.cliente))].sort();
-const categories = [...new Set(globalData.map(i => i.categoria))].sort();
-const products = [...new Set(globalData.map(i => i.produto))].sort();
-
-const clientSelect = document.getElementById('stockClientFilter');
-const catSelect = document.getElementById('stockCatFilter');
-if(!clientSelect || !catSelect) return;
-
-const currentClient = clientSelect.value;
-const currentCat = catSelect.value;
-
-clientSelect.innerHTML = '<option value="all">Todos os Clientes</option>';
-clients.forEach(c => { clientSelect.innerHTML += `<option value="${c}">${c}</option>`; });
-clientSelect.value = clients.includes(currentClient) ? currentClient : 'all';
-
-catSelect.innerHTML = '<option value="all">Todas as Categorias</option>';
-categories.forEach(cat => { catSelect.innerHTML += `<option value="${cat}">${cat}</option>`; });
-catSelect.value = categories.includes(currentCat) ? currentCat : 'all';
-}
-
-function applyStockDatePreset() {
-const preset = document.getElementById('stockDatePreset').value;
-if (preset === 'all') {
-document.getElementById('stockStartDate').value = '';
-document.getElementById('stockEndDate').value = '';
-} else if (preset === '7' || preset === '15' || preset === '30') {
-const days = parseInt(preset);
-const today = new Date();
-const startDate = new Date();
-startDate.setDate(today.getDate() - days);
-
-document.getElementById('stockEndDate').value = today.toISOString().split('T')[0];
-document.getElementById('stockStartDate').value = startDate.toISOString().split('T')[0];
-}
-currentPageStock = 1;
-renderStockView();
-}
-
-function onStockCustomDateChange() {
-document.getElementById('stockDatePreset').value = 'custom';
-currentPageStock = 1;
-renderStockView();
-}
-
 function renderStockView() {
 const tbody = document.getElementById('stockTableBody');
-const thClient = document.getElementById('thStockClient');
 if (!tbody) return;
 tbody.innerHTML = '';
 
@@ -1466,87 +1438,50 @@ const selectedCat = document.getElementById('stockCatFilter') ? document.getElem
 const searchTerm = document.getElementById('stockSearchInput') ? document.getElementById('stockSearchInput').value.trim().toLowerCase() : '';
 const pageSizeVal = document.getElementById('stockPageSize') ? document.getElementById('stockPageSize').value : '30';
 
-if (thClient) thClient.style.display = (selectedClient === 'all') ? 'none' : '';
-
 let filteredData = globalData;
 if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
 if (endDateVal) filteredData = filteredData.filter(row => row.data <= endDateVal);
 if (selectedClient !== 'all') filteredData = filteredData.filter(row => row.cliente === selectedClient);
 if (selectedCat !== 'all') filteredData = filteredData.filter(row => row.categoria === selectedCat);
-if (searchTerm !== '') {
-filteredData = filteredData.filter(row =>
-row.cliente.toLowerCase().includes(searchTerm) ||
-row.produto.toLowerCase().includes(searchTerm) ||
-row.categoria.toLowerCase().includes(searchTerm) ||
-(row.ean && row.ean.toLowerCase().includes(searchTerm))
-);
-}
 
 let daysCount = 30;
 if (startDateVal && endDateVal) {
-const d1 = new Date(startDateVal);
-const d2 = new Date(endDateVal);
-const diff = Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+const diff = Math.ceil((new Date(endDateVal) - new Date(startDateVal)) / (1000 * 60 * 60 * 24)) + 1;
 if (diff > 0) daysCount = diff;
 }
 
 const stockMap = {};
-
-if (selectedClient === 'all') {
-globalData.forEach(row => {
-if (selectedCat !== 'all' && row.categoria !== selectedCat) return;
-const key = row.produto.trim().toUpperCase();
-if (!stockMap[key]) {
-stockMap[key] = { produto: row.produto, ean: row.ean || '', categoria: row.categoria, qtdVendida: 0, estoqueAtual: 0 };
-}
-});
-
-let filteredGlobalForStock = globalData;
-if (startDateVal) filteredGlobalForStock = filteredGlobalForStock.filter(row => row.data >= startDateVal);
-if (endDateVal) filteredGlobalForStock = filteredGlobalForStock.filter(row => row.data <= endDateVal);
-if (selectedCat !== 'all') filteredGlobalForStock = filteredGlobalForStock.filter(row => row.categoria === selectedCat);
-
-let latestStockPerClientProd = {};
-globalData.forEach(row => {
-if (selectedCat !== 'all' && row.categoria !== selectedCat) return;
-latestStockPerClientProd[`${row.cliente}___${row.produto}`] = row.estoque;
-});
-
-let aggregatedStock = {};
-Object.keys(latestStockPerClientProd).forEach(cpKey => {
-const prodName = cpKey.split('___')[1];
-aggregatedStock[prodName] = (aggregatedStock[prodName] || 0) + latestStockPerClientProd[cpKey];
-});
-
-filteredGlobalForStock.forEach(row => {
-const key = row.produto.trim().toUpperCase();
-if (stockMap[key]) {
-stockMap[key].qtdVendida += row.qtd;
-if (row.ean) stockMap[key].ean = row.ean;
-}
-});
-
-Object.keys(stockMap).forEach(key => {
-stockMap[key].estoqueAtual = aggregatedStock[stockMap[key].produto] || 0;
-});
-} else {
-globalData.forEach(row => {
-if (row.cliente !== selectedClient) return;
-if (selectedCat !== 'all' && row.categoria !== selectedCat) return;
-const key = `${row.cliente}___${row.produto}`;
-if (!stockMap[key]) {
-stockMap[key] = { cliente: row.cliente, produto: row.produto, ean: row.ean || '', categoria: row.categoria, qtdVendida: 0, estoqueAtual: row.estoque };
-}
-});
-
 filteredData.forEach(row => {
 const key = `${row.cliente}___${row.produto}`;
-if (stockMap[key]) {
-stockMap[key].qtdVendida += row.qtd;
-stockMap[key].estoqueAtual = row.estoque;
-if (row.ean) stockMap[key].ean = row.ean;
+if (!stockMap[key]) {
+stockMap[key] = {
+cliente: row.cliente,
+produto: row.produto,
+ean: row.ean || '',
+categoria: row.categoria,
+qtdVendida: 0,
+estoqueAtual: getOfficialStock(row.cliente, row.ean, row.produto)
+};
 }
+stockMap[key].qtdVendida += row.qtd;
+if (row.ean) stockMap[key].ean = row.ean;
 });
+
+// Inclui itens do estoque oficial que não tiveram vendas no período
+for (let k in globalOfficialStock) {
+let item = globalOfficialStock[k];
+if (selectedClient !== 'all' && item.cliente !== selectedClient) continue;
+let mapKey = `${item.cliente}___${item.produto}`;
+if (!stockMap[mapKey]) {
+stockMap[mapKey] = {
+cliente: item.cliente,
+produto: item.produto,
+ean: '',
+categoria: 'GERAL',
+qtdVendida: 0,
+estoqueAtual: Number(item.estoque) || 0
+};
+}
 }
 
 let sortedProducts = Object.values(stockMap);
@@ -1554,7 +1489,7 @@ if (selectedClient !== 'all') sortedProducts = sortedProducts.filter(item => ite
 if (selectedCat !== 'all') sortedProducts = sortedProducts.filter(item => item.categoria === selectedCat);
 if (searchTerm !== '') {
 sortedProducts = sortedProducts.filter(item =>
-(item.cliente && item.cliente.toLowerCase().includes(searchTerm)) ||
+item.cliente.toLowerCase().includes(searchTerm) ||
 item.produto.toLowerCase().includes(searchTerm) ||
 item.categoria.toLowerCase().includes(searchTerm) ||
 (item.ean && item.ean.toLowerCase().includes(searchTerm))
@@ -1562,10 +1497,9 @@ item.categoria.toLowerCase().includes(searchTerm) ||
 }
 
 sortedProducts.sort((a, b) => b.qtdVendida - a.qtdVendida);
-const totalCols = (selectedClient === 'all') ? 8 : 9;
 
 if (sortedProducts.length === 0) {
-tbody.innerHTML = `<tr><td colspan="${totalCols}" class="p-4 text-center text-slate-500">Nenhum registro encontrado.</td></tr>`;
+tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">Nenhum registro encontrado.</td></tr>`;
 renderPaginationControls('stockPagination', [], pageSizeVal, currentPageStock, 'changeStockPage');
 return;
 }
@@ -1591,11 +1525,8 @@ statusBadge = `<span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 font-
 
 const tr = document.createElement('tr');
 tr.className = "hover:bg-slate-800/50 transition-colors";
-
-let clientTdHtml = (selectedClient === 'all') ? '' : `<td class="p-3 font-semibold text-slate-100">${item.cliente}</td>`;
-
 tr.innerHTML = `
-${clientTdHtml}
+<td class="p-3 font-semibold text-slate-100">${item.cliente}</td>
 <td class="p-3 font-bold text-amber-400">${item.produto}</td>
 <td class="p-3 text-xs font-mono text-slate-400">${item.ean || '-'}</td>
 <td class="p-3"><span class="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-[11px]">${item.categoria}</span></td>
@@ -1796,11 +1727,7 @@ const tbody = document.getElementById('projectionTableBody');
 if(!tbody) return;
 tbody.innerHTML = '';
 
-const mode = document.getElementById('projMode') ? document.getElementById('projMode').value : 'synthetic';
 const pageSizeVal = document.getElementById('projPageSize') ? document.getElementById('projPageSize').value : '30';
-const thClient = document.getElementById('thProjClient');
-if (thClient) thClient.style.display = (mode === 'analytic') ? '' : 'none';
-
 const startDateVal = document.getElementById('projStartDate') ? document.getElementById('projStartDate').value : '';
 const endDateVal = document.getElementById('projEndDate') ? document.getElementById('projEndDate').value : '';
 const selectedClient = document.getElementById('projClientFilter') ? document.getElementById('projClientFilter').value : 'all';
@@ -1822,12 +1749,20 @@ row.categoria.toLowerCase().includes(projSearchTerm) ||
 
 const productStats = {};
 filteredData.forEach(row => {
-const key = (mode === 'analytic') ? `${row.cliente}___${row.produto}` : row.produto;
+const key = `${row.cliente}___${row.produto}`;
 if(!productStats[key]) {
-productStats[key] = { cliente: row.cliente, produto: row.produto, ean: row.ean || '', categoria: row.categoria, totalQtdVendida: 0, estoqueAtual: row.estoque, custoUnit: row.custoUnit };
+productStats[key] = {
+cliente: row.cliente,
+produto: row.produto,
+ean: row.ean || '',
+categoria: row.categoria,
+totalQtdVendida: 0,
+estoqueAtual: getOfficialStock(row.cliente, row.ean, row.produto),
+custoUnit: row.custoUnit
+};
 }
 productStats[key].totalQtdVendida += row.qtd;
-productStats[key].estoqueAtual = row.estoque;
+productStats[key].estoqueAtual = getOfficialStock(row.cliente, row.ean, row.produto);
 productStats[key].custoUnit = row.custoUnit;
 });
 
@@ -1854,12 +1789,12 @@ let suggestion = Math.max(0, stats.totalQtdVendida - stats.estoqueAtual);
 const tr = document.createElement('tr');
 tr.className = "hover:bg-slate-800/50 transition-colors";
 tr.innerHTML = `
-<td class="p-3 font-semibold text-slate-100" style="display: ${mode === 'analytic' ? '' : 'none'};">${stats.cliente}</td>
+<td class="p-3 font-semibold text-slate-100">${stats.cliente}</td>
 <td class="p-3 font-semibold text-amber-400">${stats.produto}</td>
 <td class="p-3 text-xs font-mono text-slate-400">${stats.ean || '-'}</td>
 <td class="p-3"><span class="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-[11px]">${stats.categoria}</span></td>
-<td class="p-3 text-center font-bold text-slate-100">${stats.estoqueAtual}</td>
-<td class="p-3 text-center font-bold text-white">${stats.totalQtdVendida}</td>
+<td class="p-3 text-center font-bold text-white">${stats.estoqueAtual}</td>
+<td class="p-3 text-center font-bold text-slate-100">${stats.totalQtdVendida}</td>
 <td class="p-3 text-center text-slate-300">${formatCurrency(stats.custoUnit)}</td>
 <td class="p-3 text-center"><span class="px-2.5 py-1 bg-amber-500/10 text-amber-400 font-bold rounded text-xs">${suggestion}</span></td>
 `;
@@ -1895,14 +1830,9 @@ localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
 updateAllViews();
 renderEntries();
 alert("Notas importadas com sucesso!");
-} else {
-alert("Nenhum dado válido.");
+} else { alert("Nenhum dado válido."); }
 }
-}
-} catch(err) {
-console.error(err);
-alert("Erro ao ler arquivo.");
-}
+} catch(err) { alert("Erro ao ler arquivo."); }
 };
 reader.readAsArrayBuffer(file);
 }
@@ -1995,15 +1925,19 @@ const { filteredData, selectedClient, selectedCat } = getFilteredDashboardData()
 let totalFaturamento = 0, totalCustoVendas = 0, totalQtdUnidades = 0;
 filteredData.forEach(row => { totalFaturamento += (row.qtd * row.vlrUnit); totalCustoVendas += (row.qtd * row.custoUnit); totalQtdUnidades += row.qtd; });
 
-let uniqueStockMap = {};
+let totalEstoqueVal = 0;
+let checkedStockKeys = {};
 globalData.forEach(row => {
 if (selectedClient !== 'all' && row.cliente !== selectedClient) return;
 if (selectedCat !== 'all' && row.categoria !== selectedCat) return;
-uniqueStockMap[`${row.cliente}___${row.produto}`] = { estoque: row.estoque, custoUnit: row.custoUnit > 0 ? row.custoUnit : 1 };
+const key = `${row.cliente}___${row.produto}`;
+if (!checkedStockKeys[key]) {
+checkedStockKeys[key] = true;
+const stock = getOfficialStock(row.cliente, row.ean, row.produto);
+const cost = row.custoUnit > 0 ? row.custoUnit : 1;
+totalEstoqueVal += (stock * cost);
+}
 });
-
-let totalEstoqueVal = 0;
-Object.values(uniqueStockMap).forEach(item => { totalEstoqueVal += (item.estoque * item.custoUnit); });
 
 const lucroBruto = totalFaturamento - totalCustoVendas;
 const margem = totalFaturamento > 0 ? (lucroBruto / totalFaturamento) * 100 : 0;
@@ -2011,7 +1945,7 @@ const summaryData = [
 { "Indicador": "Faturamento Total", "Valor": totalFaturamento },
 { "Indicador": "Lucro Bruto", "Valor": lucroBruto },
 { "Indicador": "Margem (%)", "Valor": Number(margem.toFixed(2)) },
-{ "Indicador": "Estoque", "Valor": totalEstoqueVal },
+{ "Indicador": "Valor em Estoque Oficial", "Valor": totalEstoqueVal },
 { "Indicador": "Vendas", "Valor": filteredData.length }
 ];
 exportToExcelFile(summaryData, "indicadores_nexxa", "Resumo");
@@ -2045,14 +1979,22 @@ exportToExcelFile(exportData, "faturamento_4_semanas", "Semanas");
 function exportCustomWeeklyToExcel() { exportFourWeeksToExcel(); }
 function exportTurnoverToExcel() { exportConsolidatedToExcel(); }
 function exportConsolidatedToExcel() {
-const { filteredData } = getFilteredDashboardData();
+const { filteredData, selectedClient } = getFilteredDashboardData();
 const map = {};
 filteredData.forEach(row => {
-if(!map[row.produto]) map[row.produto] = { ean: row.ean, categoria: row.categoria, qtdTotal: 0, faturamentoTotal: 0, estoque: row.estoque };
+if(!map[row.produto]) {
+map[row.produto] = {
+ean: row.ean,
+categoria: row.categoria,
+qtdTotal: 0,
+faturamentoTotal: 0,
+estoque: getOfficialStock(selectedClient !== 'all' ? selectedClient : row.cliente, row.ean, row.produto)
+};
+}
 map[row.produto].qtdTotal += row.qtd;
 map[row.produto].faturamentoTotal += (row.qtd * row.vlrUnit);
 });
-const data = Object.entries(map).map(([p, i]) => ({ "Produto": p, "EAN": i.ean, "Qtd": i.qtdTotal, "Faturamento": i.faturamentoTotal }));
+const data = Object.entries(map).map(([p, i]) => ({ "Produto": p, "EAN": i.ean, "Qtd": i.qtdTotal, "Estoque Oficial": i.estoque, "Faturamento": i.faturamentoTotal }));
 exportToExcelFile(data, "consolidado_produtos", "Produtos");
 }
 function exportAnalyticToExcel() {
@@ -2060,11 +2002,14 @@ const { filteredData } = getFilteredDashboardData();
 exportToExcelFile(filteredData, "analitico_lancamentos", "Analítico");
 }
 function exportProjectionToExcel() { exportConsolidatedToExcel(); }
+
 function exportFullDatabaseJSON() {
-const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ globalData, globalEntries }, null, 2));
+const backupData = { globalData, globalEntries, globalOfficialStock };
+const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
 const a = document.createElement('a'); a.href = dataStr; a.download = `backup_nexxa_${new Date().toISOString().split('T')[0]}.json`;
 document.body.appendChild(a); a.click(); a.remove();
 }
+
 function importFullDatabaseJSON(e) {
 const file = e.target.files[0]; if (!file) return;
 const reader = new FileReader();
@@ -2073,22 +2018,24 @@ try {
 const imp = JSON.parse(evt.target.result);
 if (imp.globalData) { globalData = imp.globalData; localStorage.setItem('nexxa_data', JSON.stringify(globalData)); }
 if (imp.globalEntries) { globalEntries = imp.globalEntries; localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries)); }
-populateFilterDropdowns(); populateProjFilterDropdowns(); populateStockFilterDropdowns(); updateAllViews(); renderEntries();
+if (imp.globalOfficialStock) { globalOfficialStock = imp.globalOfficialStock; localStorage.setItem('nexxa_official_stock', JSON.stringify(globalOfficialStock)); }
+populateFilterDropdowns(); updateAllViews(); renderEntries();
 alert("Backup restaurado!");
 } catch(err) { alert("Erro ao restaurar backup."); }
 };
 reader.readAsText(file);
 }
+
 function populateProjFilterDropdowns() { populateFilterDropdowns(); }
 function applyProjDatePreset() { currentPageProj = 1; renderProjection(); }
 function onProjCustomDateChange() { currentPageProj = 1; renderProjection(); }
+function applyStockDatePreset() { currentPageStock = 1; renderStockView(); }
+function onStockCustomDateChange() { currentPageStock = 1; renderStockView(); }
 
 window.onload = function() {
 initTheme();
 setDefaultCurrentDate();
 populateFilterDropdowns();
-populateProjFilterDropdowns();
-populateStockFilterDropdowns();
 updateAllViews();
 renderEntries();
 };
