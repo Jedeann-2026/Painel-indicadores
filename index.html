@@ -696,6 +696,10 @@ Projeção: R$ 0,00
 <label for="clearTypeAll" class="text-xs font-semibold text-slate-200 cursor-pointer">Apagar TUDO (Vendas, Entradas e Estoque Oficial)</label>
 </div>
 <div class="flex items-center space-x-2">
+<input type="radio" name="clearType" id="clearTypeStock" value="stock" onchange="toggleClearMode()" class="text-amber-400 focus:ring-amber-400">
+<label for="clearTypeStock" class="text-xs font-semibold text-slate-200 cursor-pointer">Apagar APENAS o Estoque Oficial</label>
+</div>
+<div class="flex items-center space-x-2">
 <input type="radio" name="clearType" id="clearTypePeriod" value="period" onchange="toggleClearMode()" class="text-amber-400 focus:ring-amber-400">
 <label for="clearTypePeriod" class="text-xs font-semibold text-slate-200 cursor-pointer">Apagar Vendas por Período</label>
 </div>
@@ -739,9 +743,9 @@ let globalEntries = [
 ];
 
 let globalOfficialStock = {
-  "ANNA BEATRIZ (MARINHA)___78944880": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ALGODAO", estoque: 86 },
-  "ANNA BEATRIZ (MARINHA)___78964338": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ACUCAR", estoque: 128 },
-  "ANNA BEATRIZ (MARINHA)___78910241": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ENXAG", estoque: 19 }
+  "ANNA BEATRIZ (MARINHA)___78944880": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ALGODAO", ean: "78944880", estoque: 86 },
+  "ANNA BEATRIZ (MARINHA)___78964338": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ACUCAR", ean: "78964338", estoque: 128 },
+  "ANNA BEATRIZ (MARINHA)___78910241": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ENXAG", ean: "78910241", estoque: 19 }
 };
 
 let selectedOrderKey = null;
@@ -879,8 +883,8 @@ document.getElementById('clearPeriodContainer').classList.toggle('hidden', !isPe
 }
 
 function executeClearDatabase() {
-const isPeriod = document.getElementById('clearTypePeriod').checked;
-if (!isPeriod) {
+const clearType = document.querySelector('input[name="clearType"]:checked').value;
+if (clearType === 'all') {
 if (confirm("Deseja apagar TODOS os dados (vendas, entradas e estoque oficial)?")) {
 globalData = [];
 globalEntries = [];
@@ -893,6 +897,15 @@ updateAllViews();
 renderEntries();
 closeClearModal();
 alert("Base limpa!");
+}
+} else if (clearType === 'stock') {
+if (confirm("Deseja apagar APENAS a base de estoque oficial?")) {
+globalOfficialStock = {};
+localStorage.removeItem('nexxa_official_stock');
+populateFilterDropdowns();
+updateAllViews();
+closeClearModal();
+alert("Estoque oficial limpo com sucesso!");
 }
 } else {
 const sDate = document.getElementById('clearStartDate').value;
@@ -1051,6 +1064,7 @@ const key = `${cliente.toUpperCase()}___${identifier}`;
 globalOfficialStock[key] = {
 cliente: cliente,
 produto: nome || identifier,
+ean: ean,
 estoque: estoque
 };
 count++;
@@ -1459,7 +1473,6 @@ const selectedCat = document.getElementById('stockCatFilter') ? document.getElem
 const searchTerm = document.getElementById('stockSearchInput') ? document.getElementById('stockSearchInput').value.trim().toLowerCase() : '';
 const pageSizeVal = document.getElementById('stockPageSize') ? document.getElementById('stockPageSize').value : '30';
 
-// Se "Todos os Clientes" estiver selecionado, removemos a coluna Cliente e somamos por produto.
 const isAllClients = (selectedClient === 'all');
 if (thClientCol) {
   thClientCol.style.display = isAllClients ? 'none' : '';
@@ -1480,7 +1493,6 @@ if (diff > 0) daysCount = diff;
 const stockMap = {};
 
 if (isAllClients) {
-  // Somando por produto geral (EAN/Nome) em todas as lojas
   filteredData.forEach(row => {
     const key = (row.ean ? row.ean : row.produto.trim().toUpperCase());
     if (!stockMap[key]) {
@@ -1496,10 +1508,9 @@ if (isAllClients) {
     if (row.ean) stockMap[key].ean = row.ean;
   });
 
-  // Somando o estoque oficial de todas as lojas para cada produto
   for (let k in globalOfficialStock) {
     let item = globalOfficialStock[k];
-    let identifier = item.ean || item.produto.trim().toUpperCase();
+    let identifier = (item.ean ? item.ean : item.produto.trim().toUpperCase());
     if (!stockMap[identifier]) {
       stockMap[identifier] = {
         produto: item.produto,
@@ -1510,9 +1521,9 @@ if (isAllClients) {
       };
     }
     stockMap[identifier].estoqueAtual += Number(item.estoque) || 0;
+    if (item.ean && !stockMap[identifier].ean) stockMap[identifier].ean = item.ean;
   }
 } else {
-  // Mantém separado por cliente específico
   filteredData.forEach(row => {
     const key = `${row.cliente}___${row.produto}`;
     if (!stockMap[key]) {
@@ -1531,17 +1542,19 @@ if (isAllClients) {
 
   for (let k in globalOfficialStock) {
     let item = globalOfficialStock[k];
-    if (item.cliente !== selectedClient) continue;
+    if (item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
     let mapKey = `${item.cliente}___${item.produto}`;
     if (!stockMap[mapKey]) {
       stockMap[mapKey] = {
         cliente: item.cliente,
         produto: item.produto,
-        ean: '',
+        ean: item.ean || '',
         categoria: 'GERAL',
         qtdVendida: 0,
         estoqueAtual: Number(item.estoque) || 0
       };
+    } else {
+      stockMap[mapKey].estoqueAtual = Number(item.estoque) || 0;
     }
   }
 }
@@ -1839,7 +1852,7 @@ if (isAllClients) {
 
   for (let k in globalOfficialStock) {
     let item = globalOfficialStock[k];
-    let identifier = item.ean || item.produto.trim().toUpperCase();
+    let identifier = (item.ean ? item.ean : item.produto.trim().toUpperCase());
     if (!productStats[identifier]) {
       productStats[identifier] = {
         produto: item.produto,
@@ -1851,6 +1864,7 @@ if (isAllClients) {
       };
     }
     productStats[identifier].estoqueAtual += Number(item.estoque) || 0;
+    if (item.ean && !productStats[identifier].ean) productStats[identifier].ean = item.ean;
   }
 } else {
   filteredData.forEach(row => {
@@ -1873,18 +1887,20 @@ if (isAllClients) {
 
   for (let k in globalOfficialStock) {
     let item = globalOfficialStock[k];
-    if (item.cliente !== selectedClient) continue;
+    if (item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
     let mapKey = `${item.cliente}___${item.produto}`;
     if (!productStats[mapKey]) {
       productStats[mapKey] = {
         cliente: item.cliente,
         produto: item.produto,
-        ean: '',
+        ean: item.ean || '',
         categoria: 'GERAL',
         totalQtdVendida: 0,
         estoqueAtual: Number(item.estoque) || 0,
         custoUnit: 1
       };
+    } else {
+      productStats[mapKey].estoqueAtual = Number(item.estoque) || 0;
     }
   }
 }
