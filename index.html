@@ -288,7 +288,7 @@ Projeção: R$ 0,00
 
 <!-- 4º BLOCO: Seção de Gráficos -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-<!-- GRÁFICO NOVO: Faturamento Mensal -->
+<!-- GRÁFICO: Faturamento Mensal -->
 <div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col lg:col-span-2">
 <div class="flex justify-between items-center mb-3">
 <h2 class="font-bold text-white text-sm md:text-base"><i class="fa-solid fa-calendar-days text-emerald-400 mr-2"></i>Faturamento Mensal</h2>
@@ -467,7 +467,7 @@ Projeção: R$ 0,00
 <th class="p-3 font-semibold">EAN</th>
 <th class="p-3 font-semibold">Data</th>
 <th class="p-3 font-semibold text-center">Qtd</th>
-<th class="p-3 font-semibold text-right">Vlr. Unit</th>
+<th class="p-3 font-semibold text-right">Preço Unit.</th>
 <th class="p-3 font-semibold text-right">Vlr. Total</th>
 <th class="p-3 font-semibold text-center">Estoque</th>
 </tr>
@@ -937,7 +937,7 @@ closeClearModal();
 alert("Base limpa com sucesso!");
 }
 } else if (clearType === 'stock') {
-if (confirm("Deseja apagar APENAS a base de estoque oficial?")) {
+if (confirm("Deseja apagar APENAS o Estoque Oficial?")) {
 globalOfficialStock = {};
 localStorage.removeItem('nexxa_official_stock');
 populateFilterDropdowns();
@@ -1532,8 +1532,6 @@ const selectedClient = document.getElementById('stockClientFilter') ? document.g
 const selectedCat = document.getElementById('stockCatFilter') ? document.getElementById('stockCatFilter').value : 'all';
 const searchTerm = document.getElementById('stockSearchInput') ? document.getElementById('stockSearchInput').value.trim().toLowerCase() : '';
 
-const isAllClients = (selectedClient === 'all');
-
 let filteredData = globalData;
 if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
 if (endDateVal) filteredData = filteredData.filter(row => row.data <= endDateVal);
@@ -1550,11 +1548,9 @@ const stockMap = {};
 
 for (let k in globalOfficialStock) {
   let item = globalOfficialStock[k];
-  if (!isAllClients && item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
+  if (selectedClient !== 'all' && item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
   
-  let key = isAllClients 
-    ? (item.ean ? item.ean.trim() : item.produto.trim().toUpperCase()) 
-    : `${item.cliente.trim().toUpperCase()}___${item.produto.trim().toUpperCase()}`;
+  let key = `${item.cliente.trim().toUpperCase()}___${item.produto.trim().toUpperCase()}`;
 
   if (!stockMap[key]) {
     stockMap[key] = {
@@ -1571,9 +1567,7 @@ for (let k in globalOfficialStock) {
 }
 
 filteredData.forEach(row => {
-  let key = isAllClients 
-    ? (row.ean ? row.ean.trim() : row.produto.trim().toUpperCase())
-    : `${row.cliente.trim().toUpperCase()}___${row.produto.trim().toUpperCase()}`;
+  let key = `${row.cliente.trim().toUpperCase()}___${row.produto.trim().toUpperCase()}`;
 
   if (!stockMap[key]) {
     stockMap[key] = {
@@ -1601,9 +1595,14 @@ sortedProducts = sortedProducts.filter(item =>
 );
 }
 
-sortedProducts.sort((a, b) => b.qtdVendida - a.qtdVendida);
+// Ordenação por Produto e depois por Cliente
+sortedProducts.sort((a, b) => {
+  const compProd = a.produto.localeCompare(b.produto);
+  if (compProd !== 0) return compProd;
+  return (a.cliente || '').localeCompare(b.cliente || '');
+});
 
-return { sortedProducts, isAllClients, daysCount };
+return { sortedProducts, daysCount };
 }
 
 function renderStockView() {
@@ -1613,89 +1612,154 @@ if (!tbody) return;
 tbody.innerHTML = '';
 
 const pageSizeVal = document.getElementById('stockPageSize') ? document.getElementById('stockPageSize').value : '30';
-const { sortedProducts, isAllClients, daysCount } = getStockFilteredData();
+const { sortedProducts, daysCount } = getStockFilteredData();
 
 if (thClientCol) {
-  thClientCol.style.display = isAllClients ? 'none' : '';
+  thClientCol.style.display = '';
 }
 
-const colspanVal = isAllClients ? 8 : 9;
 if (sortedProducts.length === 0) {
-tbody.innerHTML = `<tr><td colspan="${colspanVal}" class="p-4 text-center text-slate-500">Nenhum registro encontrado.</td></tr>`;
+tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">Nenhum registro encontrado.</td></tr>`;
 renderPaginationControls('stockPagination', [], pageSizeVal, currentPageStock, 'changeStockPage');
 return;
 }
 
-const { pageItems } = renderPaginationControls('stockPagination', sortedProducts, pageSizeVal, currentPageStock, 'changeStockPage');
+// Calcular os mínimos e máximos individuais
+sortedProducts.forEach(item => {
+  const mediaDiaria = item.qtdVendida / daysCount;
+  let minCalc = Math.max(5, Math.ceil(mediaDiaria * 7));
+  let maxCalc = Math.max(20, Math.ceil(mediaDiaria * 30));
+  if (minCalc >= maxCalc) maxCalc = minCalc + 10;
 
-pageItems.forEach(item => {
-const mediaDiaria = item.qtdVendida / daysCount;
-let minCalc = Math.max(5, Math.ceil(mediaDiaria * 7));
-let maxCalc = Math.max(20, Math.ceil(mediaDiaria * 30));
-if (minCalc >= maxCalc) maxCalc = minCalc + 10;
+  let statusStr = 'Ideal';
+  let statusBadge = '';
+  if (item.estoqueAtual <= 0) {
+    statusStr = 'Zerado';
+    statusBadge = `<span class="px-2 py-0.5 bg-rose-500/10 text-rose-400 font-bold rounded text-xs">Zerado</span>`;
+  } else if (item.estoqueAtual < minCalc) {
+    statusStr = 'Baixo';
+    statusBadge = `<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 font-bold rounded text-xs">Baixo</span>`;
+  } else if (item.estoqueAtual > maxCalc) {
+    statusStr = 'Excesso';
+    statusBadge = `<span class="px-2 py-0.5 bg-purple-500/10 text-purple-400 font-bold rounded text-xs">Excesso</span>`;
+  } else {
+    statusBadge = `<span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 font-bold rounded text-xs">Ideal</span>`;
+  }
 
-let statusStr = 'Ideal';
-let statusBadge = '';
-if (item.estoqueAtual <= 0) {
-statusStr = 'Zerado';
-statusBadge = `<span class="px-2 py-0.5 bg-rose-500/10 text-rose-400 font-bold rounded text-xs">Zerado</span>`;
-} else if (item.estoqueAtual < minCalc) {
-statusStr = 'Baixo';
-statusBadge = `<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 font-bold rounded text-xs">Baixo</span>`;
-} else if (item.estoqueAtual > maxCalc) {
-statusStr = 'Excesso';
-statusBadge = `<span class="px-2 py-0.5 bg-purple-500/10 text-purple-400 font-bold rounded text-xs">Excesso</span>`;
-} else {
-statusBadge = `<span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 font-bold rounded text-xs">Ideal</span>`;
-}
+  item._minCalc = minCalc;
+  item._maxCalc = maxCalc;
+  item._statusStr = statusStr;
+  item._statusBadge = statusBadge;
+});
 
-item._minCalc = minCalc;
-item._maxCalc = maxCalc;
-item._statusStr = statusStr;
+// Agrupamento por produto para inclusão dos totalizadores
+const groupedMap = {};
+sortedProducts.forEach(item => {
+  const prodKey = item.produto.trim().toUpperCase();
+  if (!groupedMap[prodKey]) groupedMap[prodKey] = [];
+  groupedMap[prodKey].push(item);
+});
 
-const tr = document.createElement('tr');
-tr.className = "hover:bg-slate-800/50 transition-colors";
+// Construir lista exibível intercalando itens e totalizadores
+const displayRows = [];
+Object.keys(groupedMap).forEach(prodKey => {
+  const items = groupedMap[prodKey];
+  let totVendida = 0;
+  let totEstoque = 0;
+  let cat = items[0].categoria;
+  let ean = items[0].ean;
 
-let rowHtml = '';
-if (!isAllClients) {
-  rowHtml += `<td class="p-3 font-semibold text-slate-100">${item.cliente || '-'}</td>`;
-}
-rowHtml += `
-<td class="p-3 font-bold text-amber-400">${item.produto}</td>
-<td class="p-3 text-xs font-mono text-slate-400">${item.ean || '-'}</td>
-<td class="p-3"><span class="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-[11px]">${item.categoria}</span></td>
-<td class="p-3 text-center font-semibold text-slate-100">${item.qtdVendida}</td>
-<td class="p-3 text-center font-bold text-white">${item.estoqueAtual}</td>
-<td class="p-3 text-center font-bold text-amber-400">${minCalc}</td>
-<td class="p-3 text-center font-bold text-indigo-400">${maxCalc}</td>
-<td class="p-3 text-center">${statusBadge}</td>
-`;
-tr.innerHTML = rowHtml;
-tbody.appendChild(tr);
+  items.forEach(it => {
+    totVendida += it.qtdVendida;
+    totEstoque += it.estoqueAtual;
+    displayRows.push({ isTotal: false, data: it });
+  });
+
+  const mediaDiariaTot = totVendida / daysCount;
+  let minTot = Math.max(5, Math.ceil(mediaDiariaTot * 7));
+  let maxTot = Math.max(20, Math.ceil(mediaDiariaTot * 30));
+  if (minTot >= maxTot) maxTot = minTot + 10;
+
+  let statusBadgeTot = '';
+  if (totEstoque <= 0) {
+    statusBadgeTot = `<span class="px-2 py-0.5 bg-rose-500/20 text-rose-300 font-bold rounded text-xs border border-rose-500/30">Zerado</span>`;
+  } else if (totEstoque < minTot) {
+    statusBadgeTot = `<span class="px-2 py-0.5 bg-amber-500/20 text-amber-300 font-bold rounded text-xs border border-amber-500/30">Baixo</span>`;
+  } else if (totEstoque > maxTot) {
+    statusBadgeTot = `<span class="px-2 py-0.5 bg-purple-500/20 text-purple-300 font-bold rounded text-xs border border-purple-500/30">Excesso</span>`;
+  } else {
+    statusBadgeTot = `<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 font-bold rounded text-xs border border-emerald-500/30">Ideal</span>`;
+  }
+
+  displayRows.push({
+    isTotal: true,
+    produto: items[0].produto,
+    ean: ean,
+    categoria: cat,
+    qtdVendida: totVendida,
+    estoqueAtual: totEstoque,
+    minCalc: minTot,
+    maxCalc: maxTot,
+    statusBadge: statusBadgeTot
+  });
+});
+
+const { pageItems } = renderPaginationControls('stockPagination', displayRows, pageSizeVal, currentPageStock, 'changeStockPage');
+
+pageItems.forEach(rowObj => {
+  const tr = document.createElement('tr');
+  
+  if (rowObj.isTotal) {
+    tr.className = "bg-slate-950/80 border-t border-b-2 border-amber-500/40 font-bold text-amber-300";
+    tr.innerHTML = `
+      <td class="p-3 font-bold text-amber-400 flex items-center space-x-1"><i class="fa-solid fa-calculator text-xs mr-1"></i>TOTAL (${rowObj.produto})</td>
+      <td class="p-3 font-bold text-amber-300">${rowObj.produto}</td>
+      <td class="p-3 text-xs font-mono text-slate-400">${rowObj.ean || '-'}</td>
+      <td class="p-3"><span class="px-2 py-0.5 bg-amber-500/10 text-amber-300 rounded text-[11px] border border-amber-500/20">${rowObj.categoria}</span></td>
+      <td class="p-3 text-center font-bold text-amber-300">${rowObj.qtdVendida}</td>
+      <td class="p-3 text-center font-bold text-amber-300">${rowObj.estoqueAtual}</td>
+      <td class="p-3 text-center font-bold text-amber-400">${rowObj.minCalc}</td>
+      <td class="p-3 text-center font-bold text-indigo-400">${rowObj.maxCalc}</td>
+      <td class="p-3 text-center">${rowObj.statusBadge}</td>
+    `;
+  } else {
+    const item = rowObj.data;
+    tr.className = "hover:bg-slate-800/50 transition-colors";
+    tr.innerHTML = `
+      <td class="p-3 font-semibold text-slate-100">${item.cliente || '-'}</td>
+      <td class="p-3 font-bold text-amber-400">${item.produto}</td>
+      <td class="p-3 text-xs font-mono text-slate-400">${item.ean || '-'}</td>
+      <td class="p-3"><span class="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-[11px]">${item.categoria}</span></td>
+      <td class="p-3 text-center font-semibold text-slate-100">${item.qtdVendida}</td>
+      <td class="p-3 text-center font-bold text-white">${item.estoqueAtual}</td>
+      <td class="p-3 text-center font-bold text-amber-400">${item._minCalc}</td>
+      <td class="p-3 text-center font-bold text-indigo-400">${item._maxCalc}</td>
+      <td class="p-3 text-center">${item._statusBadge}</td>
+    `;
+  }
+  tbody.appendChild(tr);
 });
 }
 
 function exportStockToExcel() {
-const { sortedProducts, isAllClients } = getStockFilteredData();
+const { sortedProducts } = getStockFilteredData();
 if (!sortedProducts || sortedProducts.length === 0) {
   alert("Nenhum dado de estoque para exportar.");
   return;
 }
 
 const exportData = sortedProducts.map(item => {
-  const baseObj = {};
-  if (!isAllClients) {
-    baseObj["Cliente"] = item.cliente || 'Geral';
-  }
-  baseObj["Produto"] = item.produto;
-  baseObj["EAN"] = item.ean || '';
-  baseObj["Categoria"] = item.categoria;
-  baseObj["Vendida"] = item.qtdVendida;
-  baseObj["Estoque Oficial"] = item.estoqueAtual;
-  baseObj["Mínimo"] = item._minCalc || 0;
-  baseObj["Máximo"] = item._maxCalc || 0;
-  baseObj["Status"] = item._statusStr || 'Ideal';
-  return baseObj;
+  return {
+    "Cliente": item.cliente || 'Geral',
+    "Produto": item.produto,
+    "EAN": item.ean || '',
+    "Categoria": item.categoria,
+    "Vendida": item.qtdVendida,
+    "Estoque Oficial": item.estoqueAtual,
+    "Mínimo": item._minCalc || 0,
+    "Máximo": item._maxCalc || 0,
+    "Status": item._statusStr || 'Ideal'
+  };
 });
 
 exportToExcelFile(exportData, "gestao_estoque_oficial", "Estoque");
