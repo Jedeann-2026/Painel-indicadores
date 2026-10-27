@@ -1712,9 +1712,9 @@ pageItems.forEach(rowObj => {
   if (rowObj.isTotal) {
     tr.className = "bg-slate-950/80 border-t border-b-2 border-amber-500/40 font-bold text-amber-300";
     tr.innerHTML = `
-      <td class="p-3 font-bold text-amber-400 flex items-center space-x-1"><i class="fa-solid fa-calculator text-xs mr-1"></i>TOTAL </td> 
+      <td class="p-3 font-bold text-amber-400">TOTAL</td>
       <td class="p-3 font-bold text-amber-300"></td>
-      <td class="p-3 text-xs font-mono text-slate-400"></td>
+      <td class="p-3 text-xs font-mono text-slate-400">-</td>
       <td class="p-3"><span class="px-2 py-0.5 bg-amber-500/10 text-amber-300 rounded text-[11px] border border-amber-500/20"></span></td>
       <td class="p-3 text-center font-bold text-amber-300">${rowObj.qtdVendida}</td>
       <td class="p-3 text-center font-bold text-amber-300">${rowObj.estoqueAtual}</td>
@@ -1976,21 +1976,12 @@ options: { responsive: true, maintainAspectRatio: false }
 });
 }
 
-function renderProjection() {
-const tbody = document.getElementById('projectionTableBody');
-const thProjClientCol = document.getElementById('thProjClientCol');
-if(!tbody) return;
-tbody.innerHTML = '';
-
-const pageSizeVal = document.getElementById('projPageSize') ? document.getElementById('projPageSize').value : '30';
+function getProjectionFilteredData() {
 const startDateVal = document.getElementById('projStartDate') ? document.getElementById('projStartDate').value : '';
 const endDateVal = document.getElementById('projEndDate') ? document.getElementById('projEndDate').value : '';
 const selectedClient = document.getElementById('projClientFilter') ? document.getElementById('projClientFilter').value : 'all';
 const projSearchTerm = document.getElementById('projSearchInput') ? document.getElementById('projSearchInput').value.toLowerCase() : '';
 const onlySuggestionFilter = document.getElementById('filterOnlySuggestion') ? document.getElementById('filterOnlySuggestion').checked : false;
-
-const isAllClients = (selectedClient === 'all');
-if(thProjClientCol) thProjClientCol.style.display = isAllClients ? 'none' : '';
 
 let filteredData = globalData;
 if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
@@ -2005,117 +1996,158 @@ row.categoria.toLowerCase().includes(projSearchTerm) ||
 );
 }
 
-const productStats = {};
+const productStatsMap = {};
 
-if (isAllClients) {
-  filteredData.forEach(row => {
-    const key = (row.ean ? row.ean : row.produto.trim().toUpperCase());
-    if(!productStats[key]) {
-      productStats[key] = {
-        produto: row.produto,
-        ean: row.ean || '',
-        categoria: row.categoria,
-        totalQtdVendida: 0,
-        estoqueAtual: 0,
-        custoUnit: row.custoUnit
-      };
-    }
-    productStats[key].totalQtdVendida += row.qtd;
-    productStats[key].custoUnit = row.custoUnit;
-  });
-
-  for (let k in globalOfficialStock) {
-    let item = globalOfficialStock[k];
-    let identifier = (item.ean ? item.ean : item.produto.trim().toUpperCase());
-    if (!productStats[identifier]) {
-      productStats[identifier] = {
-        produto: item.produto,
-        ean: item.ean || '',
-        categoria: item.categoria || 'GERAL',
-        totalQtdVendida: 0,
-        estoqueAtual: 0,
-        custoUnit: 1
-      };
-    }
-    productStats[identifier].estoqueAtual += Number(item.estoque) || 0;
-    if (item.categoria && productStats[identifier].categoria === 'GERAL') productStats[identifier].categoria = item.categoria;
-    if (item.ean && !productStats[identifier].ean) productStats[identifier].ean = item.ean;
-  }
-} else {
-  for (let k in globalOfficialStock) {
-    let item = globalOfficialStock[k];
-    if (item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
-    let mapKey = `${item.cliente}___${item.produto}`;
-    productStats[mapKey] = {
+for (let k in globalOfficialStock) {
+  let item = globalOfficialStock[k];
+  if (selectedClient !== 'all' && item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
+  
+  let key = `${item.cliente.trim().toUpperCase()}___${item.produto.trim().toUpperCase()}`;
+  if (!productStatsMap[key]) {
+    productStatsMap[key] = {
       cliente: item.cliente,
       produto: item.produto,
       ean: item.ean || '',
       categoria: item.categoria || 'GERAL',
       totalQtdVendida: 0,
-      estoqueAtual: Number(item.estoque) || 0,
+      estoqueAtual: 0,
       custoUnit: 1
     };
   }
+  productStatsMap[key].estoqueAtual += Number(item.estoque) || 0;
+  if (item.categoria && productStatsMap[key].categoria === 'GERAL') productStatsMap[key].categoria = item.categoria;
+  if (item.ean && !productStatsMap[key].ean) productStatsMap[key].ean = item.ean;
+}
 
-  filteredData.forEach(row => {
-    if (row.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) return;
-    const mapKey = `${row.cliente}___${row.produto}`;
-    if(!productStats[mapKey]) {
-      productStats[mapKey] = {
-        cliente: row.cliente,
-        produto: row.produto,
-        ean: row.ean || '',
-        categoria: row.categoria,
-        totalQtdVendida: 0,
-        estoqueAtual: getOfficialStock(row.cliente, row.ean, row.produto),
-        custoUnit: row.custoUnit
-      };
-    }
-    productStats[mapKey].totalQtdVendida += row.qtd;
-    productStats[mapKey].estoqueAtual = getOfficialStock(row.cliente, row.ean, row.produto);
-    productStats[mapKey].custoUnit = row.custoUnit;
-    if (row.categoria && productStats[mapKey].categoria === 'GERAL') productStats[mapKey].categoria = row.categoria;
+filteredData.forEach(row => {
+  let key = `${row.cliente.trim().toUpperCase()}___${row.produto.trim().toUpperCase()}`;
+  if (!productStatsMap[key]) {
+    productStatsMap[key] = {
+      cliente: row.cliente,
+      produto: row.produto,
+      ean: row.ean || '',
+      categoria: row.categoria,
+      totalQtdVendida: 0,
+      estoqueAtual: getOfficialStock(row.cliente, row.ean, row.produto),
+      custoUnit: row.custoUnit
+    };
+  }
+  productStatsMap[key].totalQtdVendida += row.qtd;
+  productStatsMap[key].custoUnit = row.custoUnit;
+  if (row.categoria && productStatsMap[key].categoria === 'GERAL') productStatsMap[key].categoria = row.categoria;
+  if (row.ean && !productStatsMap[key].ean) productStatsMap[key].ean = row.ean;
+});
+
+let sortedProducts = Object.values(productStatsMap);
+if (projSearchTerm) {
+  sortedProducts = sortedProducts.filter(item =>
+    item.produto.toLowerCase().includes(projSearchTerm) ||
+    item.cliente.toLowerCase().includes(projSearchTerm) ||
+    item.categoria.toLowerCase().includes(projSearchTerm) ||
+    (item.ean && item.ean.toLowerCase().includes(projSearchTerm))
+  );
+}
+
+if (onlySuggestionFilter) {
+  sortedProducts = sortedProducts.filter(item => {
+    let suggestion = Math.max(0, item.totalQtdVendida - item.estoqueAtual);
+    return suggestion > 0;
   });
 }
 
-let sortedKeys = Object.keys(productStats).sort((a, b) => productStats[b].totalQtdVendida - productStats[a].totalQtdVendida);
-if (onlySuggestionFilter) {
-sortedKeys = sortedKeys.filter(key => {
-const stats = productStats[key];
-return Math.max(0, stats.totalQtdVendida - stats.estoqueAtual) > 0;
+// Ordenação por Produto e depois por Cliente
+sortedProducts.sort((a, b) => {
+  const compProd = a.produto.localeCompare(b.produto);
+  if (compProd !== 0) return compProd;
+  return (a.cliente || '').localeCompare(b.cliente || '');
 });
+
+return sortedProducts;
 }
 
-const colspanProj = isAllClients ? 7 : 8;
-if (sortedKeys.length === 0) {
-tbody.innerHTML = `<tr><td colspan="${colspanProj}" class="p-4 text-center text-slate-500">Nenhum produto encontrado.</td></tr>`;
+function renderProjection() {
+const tbody = document.getElementById('projectionTableBody');
+if(!tbody) return;
+tbody.innerHTML = '';
+
+const pageSizeVal = document.getElementById('projPageSize') ? document.getElementById('projPageSize').value : '30';
+const sortedProducts = getProjectionFilteredData();
+
+if (sortedProducts.length === 0) {
+tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Nenhum produto encontrado.</td></tr>`;
 renderPaginationControls('projPagination', [], pageSizeVal, currentPageProj, 'changeProjPage');
 return;
 }
 
-const { pageItems } = renderPaginationControls('projPagination', sortedKeys, pageSizeVal, currentPageProj, 'changeProjPage');
+// Agrupamento por produto para inclusão dos totalizadores
+const groupedMap = {};
+sortedProducts.forEach(item => {
+  const prodKey = item.produto.trim().toUpperCase();
+  if (!groupedMap[prodKey]) groupedMap[prodKey] = [];
+  groupedMap[prodKey].push(item);
+});
 
-pageItems.forEach(key => {
-const stats = productStats[key];
-let suggestion = Math.max(0, stats.totalQtdVendida - stats.estoqueAtual);
+const displayRows = [];
+Object.keys(groupedMap).forEach(prodKey => {
+  const items = groupedMap[prodKey];
+  let totVendida = 0;
+  let totEstoque = 0;
+  let totSugestao = 0;
+  let cat = items[0].categoria;
+  let ean = items[0].ean;
+  let custoUnit = items[0].custoUnit;
 
+  items.forEach(it => {
+    totVendida += it.totalQtdVendida;
+    totEstoque += it.estoqueAtual;
+    totSugestao += Math.max(0, it.totalQtdVendida - it.estoqueAtual);
+    displayRows.push({ isTotal: false, data: it });
+  });
+
+  displayRows.push({
+    isTotal: true,
+    produto: items[0].produto,
+    ean: ean,
+    categoria: cat,
+    estoqueAtual: totEstoque,
+    totalQtdVendida: totVendida,
+    custoUnit: custoUnit,
+    sugestao: totSugestao
+  });
+});
+
+const { pageItems } = renderPaginationControls('projPagination', displayRows, pageSizeVal, currentPageProj, 'changeProjPage');
+
+pageItems.forEach(rowObj => {
 const tr = document.createElement('tr');
-tr.className = "hover:bg-slate-800/50 transition-colors";
 
-let rowHtml = '';
-if (!isAllClients) {
-  rowHtml += `<td class="p-3 font-semibold text-slate-100">${stats.cliente}</td>`;
+if (rowObj.isTotal) {
+  tr.className = "bg-slate-950/80 border-t border-b-2 border-amber-500/40 font-bold text-amber-300";
+  tr.innerHTML = `
+    <td class="p-3 font-bold text-amber-400">TOTAL</td>
+    <td class="p-3 font-bold text-amber-300"></td>
+    <td class="p-3 text-xs font-mono text-slate-400">-</td>
+    <td class="p-3"><span class="px-2 py-0.5 bg-amber-500/10 text-amber-300 rounded text-[11px] border border-amber-500/20"></span></td>
+    <td class="p-3 text-center font-bold text-amber-300">${rowObj.estoqueAtual}</td>
+    <td class="p-3 text-center font-bold text-amber-300">${rowObj.totalQtdVendida}</td>
+    <td class="p-3 text-center text-slate-400">${formatCurrency(rowObj.custoUnit)}</td>
+    <td class="p-3 text-center"><span class="px-2.5 py-1 bg-amber-500/20 text-amber-300 font-bold rounded text-xs border border-amber-500/30">${rowObj.sugestao}</span></td>
+  `;
+} else {
+  const stats = rowObj.data;
+  let suggestion = Math.max(0, stats.totalQtdVendida - stats.estoqueAtual);
+  tr.className = "hover:bg-slate-800/50 transition-colors";
+  tr.innerHTML = `
+    <td class="p-3 font-semibold text-slate-100">${stats.cliente}</td>
+    <td class="p-3 font-semibold text-amber-400">${stats.produto}</td>
+    <td class="p-3 text-xs font-mono text-slate-400">${stats.ean || '-'}</td>
+    <td class="p-3"><span class="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-[11px]">${stats.categoria}</span></td>
+    <td class="p-3 text-center font-bold text-white">${stats.estoqueAtual}</td>
+    <td class="p-3 text-center font-bold text-slate-100">${stats.totalQtdVendida}</td>
+    <td class="p-3 text-center text-slate-300">${formatCurrency(stats.custoUnit)}</td>
+    <td class="p-3 text-center"><span class="px-2.5 py-1 bg-amber-500/10 text-amber-400 font-bold rounded text-xs">${suggestion}</span></td>
+  `;
 }
-rowHtml += `
-<td class="p-3 font-semibold text-amber-400">${stats.produto}</td>
-<td class="p-3 text-xs font-mono text-slate-400">${stats.ean || '-'}</td>
-<td class="p-3"><span class="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-[11px]">${stats.categoria}</span></td>
-<td class="p-3 text-center font-bold text-white">${stats.estoqueAtual}</td>
-<td class="p-3 text-center font-bold text-slate-100">${stats.totalQtdVendida}</td>
-<td class="p-3 text-center text-slate-300">${formatCurrency(stats.custoUnit)}</td>
-<td class="p-3 text-center"><span class="px-2.5 py-1 bg-amber-500/10 text-amber-400 font-bold rounded text-xs">${suggestion}</span></td>
-`;
-tr.innerHTML = rowHtml;
 tbody.appendChild(tr);
 });
 }
@@ -2312,7 +2344,20 @@ function exportAnalyticToExcel() {
 const { filteredData } = getFilteredDashboardData();
 exportToExcelFile(filteredData, "analitico_lancamentos", "Analítico");
 }
-function exportProjectionToExcel() { exportConsolidatedToExcel(); }
+function exportProjectionToExcel() {
+const sortedProducts = getProjectionFilteredData();
+const exportData = sortedProducts.map(stats => ({
+  "Cliente": stats.cliente,
+  "Produto": stats.produto,
+  "EAN": stats.ean || '',
+  "Categoria": stats.categoria,
+  "Estoque Oficial": stats.estoqueAtual,
+  "Vendida": stats.totalQtdVendida,
+  "Custo Unit": stats.custoUnit,
+  "Sugestão Compra": Math.max(0, stats.totalQtdVendida - stats.estoqueAtual)
+}));
+exportToExcelFile(exportData, "projecao_compras", "Projeção");
+}
 
 function exportFullDatabaseJSON() {
 const backupData = { globalData, globalEntries, globalOfficialStock };
