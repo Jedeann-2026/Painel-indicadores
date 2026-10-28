@@ -2365,6 +2365,7 @@ const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.string
 const a = document.createElement('a'); a.href = dataStr; a.download = `backup_nexxa_${new Date().toISOString().split('T')[0]}.json`;
 document.body.appendChild(a); a.click(); a.remove();
 }
+
 function importFullDatabaseJSON(e) {
     const file = e.target.files[0]; 
     if (!file) return;
@@ -2372,21 +2373,30 @@ function importFullDatabaseJSON(e) {
     const reader = new FileReader();
     reader.onload = function(evt) {
         try {
-            const content = evt.target.result;
+            let content = evt.target.result;
             if (!content) {
                 alert("O arquivo selecionado está vazio.");
                 return;
             }
 
+            // Remove o caractere BOM invisível (comum em arquivos salvos no Windows/PC)
+            if (content.charCodeAt(0) === 0xFEFF) {
+                content = content.slice(1);
+            }
+
+            // Normaliza eventuais aspas curvas ou caracteres que o celular possa ter alterado
+            content = content
+                .replace(/[\u201C\u201D]/g, '"')
+                .replace(/[\u2018\u2019]/g, "'");
+
             const imp = JSON.parse(content);
             
-            // Validação básica para garantir que é um backup válido da Nexxa
             if (!imp || typeof imp !== 'object') {
                 alert("Formato de arquivo JSON inválido.");
                 return;
             }
 
-            // Restaura e salva com segurança cada bloco de dados
+            // Restaura os dados com segurança
             if (Array.isArray(imp.globalData)) {
                 globalData = imp.globalData;
                 localStorage.setItem('nexxa_data', JSON.stringify(globalData));
@@ -2411,27 +2421,27 @@ function importFullDatabaseJSON(e) {
                 localStorage.removeItem('nexxa_official_stock');
             }
 
-            // Atualiza todos os elementos visuais, selects e tabelas da aplicação
+            // Atualiza a interface
             populateFilterDropdowns();
             updateAllViews();
             renderEntries();
             
-            // Reseta o input de arquivo para permitir re-importar o mesmo arquivo se necessário
-            e.target.value = '';
+            e.target.value = ''; // Reseta o input
 
-            alert("Backup restaurado com sucesso!");
+            alert("Backup restaurado com sucesso no dispositivo!");
         } catch(err) {
-            console.error("Erro ao processar o arquivo de backup:", err);
-            alert("Erro ao ler o arquivo JSON de backup. Verifique se o arquivo está corrompido.");
+            console.error("Erro detalhado no JSON do celular:", err);
+            alert("Erro ao ler o JSON no celular. Dica: Tente enviar o arquivo para o celular via Google Drive ou E-mail (evitando o WhatsApp, que às vezes altera formatações).");
         }
     };
     
     reader.onerror = function() {
-        alert("Erro na leitura do arquivo.");
+        alert("Erro na leitura do arquivo pelo navegador do celular.");
     };
 
-    reader.readAsText(file);
+    reader.readAsText(file, 'UTF-8');
 }
+
 
 function applyProjDatePreset() { currentPageProj = 1; renderProjection(); }
 function onProjCustomDateChange() { currentPageProj = 1; renderProjection(); }
