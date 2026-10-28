@@ -780,9 +780,9 @@ let globalOfficialStock = {
 
 let selectedOrderKey = null;
 
-// Sincronização automática com Nuvem e LocalStorage
 async function carregarDadosDoPainel() {
     try {
+        // Tenta buscar diretamente do Supabase
         const { data: cloudData, error } = await supabaseClient.from('nexxa_store').select('*');
         
         if (!error && cloudData && cloudData.length > 0) {
@@ -790,10 +790,21 @@ async function carregarDadosDoPainel() {
             const registroEntradas = cloudData.find(d => d.id === 'entradas');
             const registroEstoque = cloudData.find(d => d.id === 'estoque');
 
-            if (registroVendas) globalData = registroVendas.payload;
-            if (registroEntradas) globalEntries = registroEntradas.payload;
-            if (registroEstoque) globalOfficialStock = registroEstoque.payload;
+            if (registroVendas) {
+                globalData = registroVendas.payload;
+                localStorage.setItem('nexxa_data', JSON.stringify(globalData));
+            }
+            if (registroEntradas) {
+                globalEntries = registroEntradas.payload;
+                localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
+            }
+            if (registroEstoque) {
+                globalOfficialStock = registroEstoque.payload;
+                localStorage.setItem('nexxa_official_stock', JSON.stringify(globalOfficialStock));
+            }
+            console.log("Dados carregados com sucesso da nuvem Supabase!");
         } else {
+            console.warn("Nenhum dado encontrado na nuvem, recorrendo ao cache local.");
             const savedData = localStorage.getItem('nexxa_data');
             if (savedData) { try { globalData = JSON.parse(savedData); } catch(e) {} }
 
@@ -804,7 +815,7 @@ async function carregarDadosDoPainel() {
             if (savedStock) { try { globalOfficialStock = JSON.parse(savedStock); } catch(e) {} }
         }
     } catch(err) {
-        console.warn("Modo offline ou erro na nuvem, carregando dados locais.");
+        console.warn("Erro de conexão com a nuvem, carregando dados locais:", err);
     }
 
     populateFilterDropdowns();
@@ -812,6 +823,8 @@ async function carregarDadosDoPainel() {
     renderEntries();
 }
 
+
+// Sincronização automática com Nuvem e LocalStorage
 async function salvarDadosNaNuvem(tipo, payload) {
     if (tipo === 'vendas') localStorage.setItem('nexxa_data', JSON.stringify(payload));
     if (tipo === 'entradas') localStorage.setItem('nexxa_entries', JSON.stringify(payload));
