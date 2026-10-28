@@ -2371,25 +2371,19 @@ function importFullDatabaseJSON(e) {
     if (!file) return;
     
     const reader = new FileReader();
+    
+    // Usamos readAsDataURL para evitar qualquer conflito de encoding no telemóvel
     reader.onload = function(evt) {
         try {
-            let content = evt.target.result;
-            if (!content) {
-                alert("O arquivo selecionado está vazio.");
+            const base64Data = evt.target.result.split(',')[1];
+            if (!base64Data) {
+                alert("O arquivo está vazio ou corrompido.");
                 return;
             }
 
-            // Remove o caractere BOM invisível (comum em arquivos salvos no Windows/PC)
-            if (content.charCodeAt(0) === 0xFEFF) {
-                content = content.slice(1);
-            }
-
-            // Normaliza eventuais aspas curvas ou caracteres que o celular possa ter alterado
-            content = content
-                .replace(/[\u201C\u201D]/g, '"')
-                .replace(/[\u2018\u2019]/g, "'");
-
-            const imp = JSON.parse(content);
+            // Decodifica o Base64 garantindo UTF-8 correto em qualquer dispositivo
+            const jsonString = decodeURIComponent(escape(atob(base64Data)));
+            const imp = JSON.parse(jsonString);
             
             if (!imp || typeof imp !== 'object') {
                 alert("Formato de arquivo JSON inválido.");
@@ -2421,27 +2415,26 @@ function importFullDatabaseJSON(e) {
                 localStorage.removeItem('nexxa_official_stock');
             }
 
-            // Atualiza a interface
+            // Atualiza a interface da aplicação
             populateFilterDropdowns();
             updateAllViews();
             renderEntries();
             
-            e.target.value = ''; // Reseta o input
+            e.target.value = ''; // Reseta o input para permitir nova importação
 
-            alert("Backup restaurado com sucesso no dispositivo!");
+            alert("Backup restaurado com sucesso no telemóvel!");
         } catch(err) {
-            console.error("Erro detalhado no JSON do celular:", err);
-            alert("Erro ao ler o JSON no celular. Dica: Tente enviar o arquivo para o celular via Google Drive ou E-mail (evitando o WhatsApp, que às vezes altera formatações).");
+            console.error("Erro crítico na restauração mobile:", err);
+            alert("Não foi possível processar o arquivo JSON neste telemóvel. Certifique-se de que o arquivo foi gerado pelo botão 'Backup' do próprio painel.");
         }
     };
     
     reader.onerror = function() {
-        alert("Erro na leitura do arquivo pelo navegador do celular.");
+        alert("Erro crítico na leitura do arquivo pelo navegador.");
     };
 
-    reader.readAsText(file, 'UTF-8');
+    reader.readAsDataURL(file);
 }
-
 
 function applyProjDatePreset() { currentPageProj = 1; renderProjection(); }
 function onProjCustomDateChange() { currentPageProj = 1; renderProjection(); }
