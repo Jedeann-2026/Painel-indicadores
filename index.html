@@ -827,13 +827,23 @@ async function salvarDadosNaNuvem(tipo, payload) {
     if (tipo === 'estoque') localStorage.setItem('nexxa_official_stock', JSON.stringify(payload));
 
     try {
-        await supabaseClient.from('nexxa_store').upsert({
-            id: tipo,
-            payload: payload,
-            updated_at: new Date()
-        });
+        const { data, error } = await supabaseClient
+            .from('nexxa_store')
+            .upsert({
+                id: tipo,
+                data: payload,
+                updated_at: new Date().toISOString() // Garantindo formato de texto/timestamp válido
+            }, { 
+                onConflict: 'id' // Informa ao Supabase que a chave de conflito é a coluna 'id'
+            });
+
+        if (error) {
+            console.error("Erro detalhado do Supabase:", error);
+        } else {
+            console.log(`Dados do tipo '${tipo}' salvos com sucesso na nuvem!`);
+        }
     } catch (err) {
-        console.error("Erro ao salvar na nuvem:", err);
+        console.error("Erro crítico ao salvar na nuvem:", err);
     }
 }
 
