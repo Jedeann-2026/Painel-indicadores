@@ -2365,21 +2365,72 @@ const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.string
 const a = document.createElement('a'); a.href = dataStr; a.download = `backup_nexxa_${new Date().toISOString().split('T')[0]}.json`;
 document.body.appendChild(a); a.click(); a.remove();
 }
-
 function importFullDatabaseJSON(e) {
-const file = e.target.files[0]; if (!file) return;
-const reader = new FileReader();
-reader.onload = function(evt) {
-try {
-const imp = JSON.parse(evt.target.result);
-if (imp.globalData) { globalData = imp.globalData; localStorage.setItem('nexxa_data', JSON.stringify(globalData)); }
-if (imp.globalEntries) { globalEntries = imp.globalEntries; localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries)); }
-if (imp.globalOfficialStock) { globalOfficialStock = imp.globalOfficialStock; localStorage.setItem('nexxa_official_stock', JSON.stringify(globalOfficialStock)); }
-populateFilterDropdowns(); updateAllViews(); renderEntries();
-alert("Backup restaurado!");
-} catch(err) { alert("Erro ao restaurar backup."); }
-};
-reader.readAsText(file);
+    const file = e.target.files[0]; 
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        try {
+            const content = evt.target.result;
+            if (!content) {
+                alert("O arquivo selecionado está vazio.");
+                return;
+            }
+
+            const imp = JSON.parse(content);
+            
+            // Validação básica para garantir que é um backup válido da Nexxa
+            if (!imp || typeof imp !== 'object') {
+                alert("Formato de arquivo JSON inválido.");
+                return;
+            }
+
+            // Restaura e salva com segurança cada bloco de dados
+            if (Array.isArray(imp.globalData)) {
+                globalData = imp.globalData;
+                localStorage.setItem('nexxa_data', JSON.stringify(globalData));
+            } else {
+                globalData = [];
+                localStorage.removeItem('nexxa_data');
+            }
+
+            if (Array.isArray(imp.globalEntries)) {
+                globalEntries = imp.globalEntries;
+                localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
+            } else {
+                globalEntries = [];
+                localStorage.removeItem('nexxa_entries');
+            }
+
+            if (imp.globalOfficialStock && typeof imp.globalOfficialStock === 'object') {
+                globalOfficialStock = imp.globalOfficialStock;
+                localStorage.setItem('nexxa_official_stock', JSON.stringify(globalOfficialStock));
+            } else {
+                globalOfficialStock = {};
+                localStorage.removeItem('nexxa_official_stock');
+            }
+
+            // Atualiza todos os elementos visuais, selects e tabelas da aplicação
+            populateFilterDropdowns();
+            updateAllViews();
+            renderEntries();
+            
+            // Reseta o input de arquivo para permitir re-importar o mesmo arquivo se necessário
+            e.target.value = '';
+
+            alert("Backup restaurado com sucesso!");
+        } catch(err) {
+            console.error("Erro ao processar o arquivo de backup:", err);
+            alert("Erro ao ler o arquivo JSON de backup. Verifique se o arquivo está corrompido.");
+        }
+    };
+    
+    reader.onerror = function() {
+        alert("Erro na leitura do arquivo.");
+    };
+
+    reader.readAsText(file);
 }
 
 function applyProjDatePreset() { currentPageProj = 1; renderProjection(); }
