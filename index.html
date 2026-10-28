@@ -757,8 +757,8 @@ Projeção: R$ 0,00
 // ==========================================
 // CONFIGURAÇÃO DO SUPABASE
 // ==========================================
-const SUPABASE_URL = https://mjkqkyuolsqhtxwzivof.supabase.co/rest/v1/;
-const SUPABASE_KEY = sb_publishable_taL59MpBnTvHmpfD8eMSnw_f2QuR6w-;
+const SUPABASE_URL = "https://mjkqkyuolsqhtxwzivof.supabase.co/rest/v1/";
+const SUPABASE_KEY = "sb_publishable_taL59MpBnTvHmpfD8eMSnw_f2QuR6w-";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let globalData = [
@@ -2419,13 +2419,8 @@ function importFullDatabaseJSON(e) {
     
     reader.onload = function(evt) {
         try {
-            const base64Data = evt.target.result.split(',')[1];
-            if (!base64Data) {
-                alert("O arquivo está vazio ou corrompido.");
-                return;
-            }
-
-            const jsonString = decodeURIComponent(escape(atob(base64Data)));
+            // Leitura direta do texto do JSON (Evita falhas de atob no telemóvel)
+            const jsonString = evt.target.result;
             const imp = JSON.parse(jsonString);
             
             if (!imp || typeof imp !== 'object') {
@@ -2465,8 +2460,8 @@ function importFullDatabaseJSON(e) {
 
             alert("Backup restaurado com sucesso e enviado para a nuvem!");
         } catch(err) {
-            console.error("Erro crítico na restauração mobile:", err);
-            alert("Não foi possível processar o arquivo JSON neste telemóvel.");
+            console.error("Erro crítico na restauração:", err);
+            alert("Não foi possível processar o arquivo JSON. Certifique-se de que é um backup válido do Nexxa.");
         }
     };
     
@@ -2474,7 +2469,8 @@ function importFullDatabaseJSON(e) {
         alert("Erro crítico na leitura do arquivo pelo navegador.");
     };
 
-    reader.readAsDataURL(file);
+    // Alterado para ler como texto puro (.readAsText) em vez de Base64
+    reader.readAsText(file);
 }
 
 function applyProjDatePreset() { currentPageProj = 1; renderProjection(); }
