@@ -1927,24 +1927,60 @@ function renderCharts(prodVal, prodQty, catVal, clientVal, filteredData) {
 Chart.defaults.color = '#94a3b8';
 Chart.defaults.borderColor = '#1e293b';
 
-const monthlyMap = {};
-const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+// =========================================================
+// 1. FATURAMENTO MENSAL (SEMPRE ÚLTIMOS 12 MESES)
+// =========================================================
+const selectedClient = document.getElementById('clientFilter') ? document.getElementById('clientFilter').value : 'all';
+const selectedCat = document.getElementById('catFilter') ? document.getElementById('catFilter').value : 'all';
+const selectedProd = document.getElementById('prodFilter') ? document.getElementById('prodFilter').value.trim().toLowerCase() : '';
+const searchTerm = document.getElementById('searchInput') ? document.getElementById('searchInput').value.trim().toLowerCase() : '';
 
-filteredData.forEach(row => {
-if (!row.data) return;
-const parts = row.data.split('-');
-if (parts.length >= 2) {
-const yearMonthKey = `${parts[0]}-${parts[1]}`;
-monthlyMap[yearMonthKey] = (monthlyMap[yearMonthKey] || 0) + (row.qtd * row.vlrUnit);
+let monthlyFilteredData = globalData;
+if (selectedClient !== 'all') monthlyFilteredData = monthlyFilteredData.filter(row => row.cliente === selectedClient);
+if (selectedCat !== 'all') monthlyFilteredData = monthlyFilteredData.filter(row => row.categoria === selectedCat);
+if (selectedProd !== '') monthlyFilteredData = monthlyFilteredData.filter(row => row.produto.toLowerCase().includes(selectedProd));
+if (searchTerm !== '') {
+    monthlyFilteredData = monthlyFilteredData.filter(row =>
+        row.produto.toLowerCase().includes(searchTerm) ||
+        row.cliente.toLowerCase().includes(searchTerm) ||
+        row.categoria.toLowerCase().includes(searchTerm) ||
+        (row.ean && row.ean.toLowerCase().includes(searchTerm))
+    );
 }
+
+let maxDateStr = '';
+monthlyFilteredData.forEach(r => { if (!maxDateStr || r.data > maxDateStr) maxDateStr = r.data; });
+const baseDate = maxDateStr ? new Date(maxDateStr + 'T00:00:00') : new Date();
+
+const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+const monthlyMap = {};
+const monthlyKeysOrder = [];
+
+for (let i = 11; i >= 0; i--) {
+    const d = new Date(baseDate.getFullYear(), baseDate.getMonth() - i, 1);
+    const yr = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, '0');
+    const key = `${yr}-${mo}`;
+    monthlyKeysOrder.push(key);
+    monthlyMap[key] = 0;
+}
+
+monthlyFilteredData.forEach(row => {
+    if (!row.data) return;
+    const parts = row.data.split('-');
+    if (parts.length >= 2) {
+        const yearMonthKey = `${parts[0]}-${parts[1]}`;
+        if (monthlyMap[yearMonthKey] !== undefined) {
+            monthlyMap[yearMonthKey] += (row.qtd * row.vlrUnit);
+        }
+    }
 });
 
-const sortedMonthKeys = Object.keys(monthlyMap).sort();
-const monthlyLabels = sortedMonthKeys.map(key => {
-const [yr, mo] = key.split('-');
-return `${monthNames[parseInt(mo, 10) - 1]}/${yr}`;
+const monthlyLabels = monthlyKeysOrder.map(key => {
+    const [yr, mo] = key.split('-');
+    return `${monthNames[parseInt(mo, 10) - 1]}/${yr.substring(2)}`;
 });
-const monthlyValues = sortedMonthKeys.map(key => monthlyMap[key]);
+const monthlyValues = monthlyKeysOrder.map(key => monthlyMap[key]);
 
 const ctxMonthly = document.getElementById('chartMonthlyRevenue').getContext('2d');
 if (chartMonthlyRevenueInst) chartMonthlyRevenueInst.destroy();
@@ -1954,26 +1990,47 @@ data: { labels: monthlyLabels, datasets: [{ label: 'Faturamento Mensal (R$)', da
 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#1e293b' } } } }
 });
 
-const dailyMap = {};
-let maxDateStr = '';
-filteredData.forEach(r => { if (!maxDateStr || r.data > maxDateStr) maxDateStr = r.data; });
-const baseDate = maxDateStr ? new Date(maxDateStr + 'T00:00:00') : new Date();
-
-const last30DaysLabels = [];
-const last30DaysValues = [];
-for (let i = 29; i >= 0; i--) {
-const d = new Date(baseDate);
-d.setDate(baseDate.getDate() - i);
-const dateStr = d.toISOString().split('T')[0];
-last30DaysLabels.push(dateStr.split('-').reverse().join('/'));
-dailyMap[dateStr] = 0;
+// =========================================================
+// 2. FATURAMENTO DIÁRIO (SEMPRE ÚLTIMOS 30 DIAS)
+// =========================================================
+let dailyFilteredData = globalData;
+if (selectedClient !== 'all') dailyFilteredData = dailyFilteredData.filter(row => row.cliente === selectedClient);
+if (selectedCat !== 'all') dailyFilteredData = dailyFilteredData.filter(row => row.categoria === selectedCat);
+if (selectedProd !== '') dailyFilteredData = dailyFilteredData.filter(row => row.produto.toLowerCase().includes(selectedProd));
+if (searchTerm !== '') {
+    dailyFilteredData = dailyFilteredData.filter(row =>
+        row.produto.toLowerCase().includes(searchTerm) ||
+        row.cliente.toLowerCase().includes(searchTerm) ||
+        row.categoria.toLowerCase().includes(searchTerm) ||
+        (row.ean && row.ean.toLowerCase().includes(searchTerm))
+    );
 }
 
-filteredData.forEach(row => {
-if (dailyMap[row.data] !== undefined) dailyMap[row.data] += (row.qtd * row.vlrUnit);
+let maxDailyDateStr = '';
+dailyFilteredData.forEach(r => { if (!maxDailyDateStr || r.data > maxDailyDateStr) maxDailyDateStr = r.data; });
+const baseDailyDate = maxDailyDateStr ? new Date(maxDailyDateStr + 'T00:00:00') : new Date();
+
+const dailyMap = {};
+const last30DaysLabels = [];
+const last30DaysValues = [];
+
+for (let i = 29; i >= 0; i--) {
+    const d = new Date(baseDailyDate);
+    d.setDate(baseDailyDate.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    last30DaysLabels.push(dateStr.split('-').reverse().join('/'));
+    dailyMap[dateStr] = 0;
+}
+
+dailyFilteredData.forEach(row => {
+    if (dailyMap[row.data] !== undefined) {
+        dailyMap[row.data] += (row.qtd * row.vlrUnit);
+    }
 });
 
-Object.keys(dailyMap).sort().forEach(dateStr => { last30DaysValues.push(dailyMap[dateStr]); });
+Object.keys(dailyMap).sort().forEach(dateStr => { 
+    last30DaysValues.push(dailyMap[dateStr]); 
+});
 
 const ctx30Days = document.getElementById('chartLast30Days').getContext('2d');
 if(chartLast30DaysInst) chartLast30DaysInst.destroy();
@@ -1983,6 +2040,9 @@ data: { labels: last30DaysLabels, datasets: [{ label: 'Faturamento (R$)', data: 
 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#1e293b' } } } }
 });
 
+// =========================================================
+// 3. DEMAIS GRÁFICOS
+// =========================================================
 const topVal = Object.entries(prodVal).sort((a,b) => b[1] - a[1]).slice(0, 10);
 const ctxVal = document.getElementById('chartTopValue').getContext('2d');
 if(chartTopValueInst) chartTopValueInst.destroy();
