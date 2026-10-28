@@ -585,7 +585,7 @@ Projeção: R$ 0,00
 <option value="all">Todos os Clientes</option>
 </select>
 
-<input type="text" id="projSearchInput" placeholder="Pesquisar produto..." onkeyup="currentPageProj=1; renderProjection()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 text-slate-200 w-full lg:w-40">
+<input type="text" id="projSearchInput" placeholder="Pesquisar produto/EAN..." onkeyup="currentPageProj=1; renderProjection()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 text-slate-200 w-full lg:w-40">
 </div>
 
 <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-between">
@@ -1595,10 +1595,12 @@ sortedProducts = sortedProducts.filter(item =>
 );
 }
 
-// Ordenação por Produto e depois por Cliente
+// Ordenação por EAN e depois por Cliente
 sortedProducts.sort((a, b) => {
-  const compProd = a.produto.localeCompare(b.produto);
-  if (compProd !== 0) return compProd;
+  const eanA = (a.ean || '').trim();
+  const eanB = (b.ean || '').trim();
+  const compEan = eanA.localeCompare(eanB);
+  if (compEan !== 0) return compEan;
   return (a.cliente || '').localeCompare(b.cliente || '');
 });
 
@@ -1652,22 +1654,22 @@ sortedProducts.forEach(item => {
   item._statusBadge = statusBadge;
 });
 
-// Agrupamento por produto para inclusão dos totalizadores
+// Agrupamento por EAN (e depois Cliente) para inclusão dos totalizadores por EAN
 const groupedMap = {};
 sortedProducts.forEach(item => {
-  const prodKey = item.produto.trim().toUpperCase();
-  if (!groupedMap[prodKey]) groupedMap[prodKey] = [];
-  groupedMap[prodKey].push(item);
+  const eanKey = (item.ean || 'SEM_EAN').trim().toUpperCase();
+  if (!groupedMap[eanKey]) groupedMap[eanKey] = [];
+  groupedMap[eanKey].push(item);
 });
 
 // Construir lista exibível intercalando itens e totalizadores
 const displayRows = [];
-Object.keys(groupedMap).forEach(prodKey => {
-  const items = groupedMap[prodKey];
+Object.keys(groupedMap).forEach(eanKey => {
+  const items = groupedMap[eanKey];
   let totVendida = 0;
   let totEstoque = 0;
   let cat = items[0].categoria;
-  let ean = items[0].ean;
+  let prodNome = items[0].produto;
 
   items.forEach(it => {
     totVendida += it.qtdVendida;
@@ -1693,8 +1695,8 @@ Object.keys(groupedMap).forEach(prodKey => {
 
   displayRows.push({
     isTotal: true,
-    produto: items[0].produto,
-    ean: ean,
+    produto: prodNome,
+    ean: items[0].ean || '-',
     categoria: cat,
     qtdVendida: totVendida,
     estoqueAtual: totEstoque,
@@ -1712,9 +1714,9 @@ pageItems.forEach(rowObj => {
   if (rowObj.isTotal) {
     tr.className = "bg-slate-950/80 border-t border-b-2 border-amber-500/40 font-bold text-amber-300";
     tr.innerHTML = `
-      <td class="p-3 font-bold text-amber-400">TOTAL</td>
+      <td class="p-3 font-bold text-amber-400">TOTAL EAN</td>
       <td class="p-3 font-bold text-amber-300"></td>
-      <td class="p-3 text-xs font-mono text-slate-400">-</td>
+      <td class="p-3 text-xs font-mono font-bold text-amber-400">${rowObj.ean}</td>
       <td class="p-3"><span class="px-2 py-0.5 bg-amber-500/10 text-amber-300 rounded text-[11px] border border-amber-500/20"></span></td>
       <td class="p-3 text-center font-bold text-amber-300">${rowObj.qtdVendida}</td>
       <td class="p-3 text-center font-bold text-amber-300">${rowObj.estoqueAtual}</td>
@@ -1751,8 +1753,8 @@ if (!sortedProducts || sortedProducts.length === 0) {
 const exportData = sortedProducts.map(item => {
   return {
     "Cliente": item.cliente || 'Geral',
-    "Produto": item.produto,
     "EAN": item.ean || '',
+    "Produto": item.produto,
     "Categoria": item.categoria,
     "Vendida": item.qtdVendida,
     "Estoque Oficial": item.estoqueAtual,
@@ -2055,10 +2057,12 @@ if (onlySuggestionFilter) {
   });
 }
 
-// Ordenação por Produto e depois por Cliente
+// Ordenação por EAN e depois por Cliente
 sortedProducts.sort((a, b) => {
-  const compProd = a.produto.localeCompare(b.produto);
-  if (compProd !== 0) return compProd;
+  const eanA = (a.ean || '').trim();
+  const eanB = (b.ean || '').trim();
+  const compEan = eanA.localeCompare(eanB);
+  if (compEan !== 0) return compEan;
   return (a.cliente || '').localeCompare(b.cliente || '');
 });
 
@@ -2079,22 +2083,23 @@ renderPaginationControls('projPagination', [], pageSizeVal, currentPageProj, 'ch
 return;
 }
 
-// Agrupamento por produto para inclusão dos totalizadores
+// Agrupamento por EAN para inclusão dos totalizadores por EAN
 const groupedMap = {};
 sortedProducts.forEach(item => {
-  const prodKey = item.produto.trim().toUpperCase();
-  if (!groupedMap[prodKey]) groupedMap[prodKey] = [];
-  groupedMap[prodKey].push(item);
+  const eanKey = (item.ean || 'SEM_EAN').trim().toUpperCase();
+  if (!groupedMap[eanKey]) groupedMap[eanKey] = [];
+  groupedMap[eanKey].push(item);
 });
 
 const displayRows = [];
-Object.keys(groupedMap).forEach(prodKey => {
-  const items = groupedMap[prodKey];
+Object.keys(groupedMap).forEach(eanKey => {
+  const items = groupedMap[eanKey];
   let totVendida = 0;
   let totEstoque = 0;
   let totSugestao = 0;
   let cat = items[0].categoria;
-  let ean = items[0].ean;
+  let prodNome = items[0].produto;
+  let ean = items[0].ean || '-';
   let custoUnit = items[0].custoUnit;
 
   items.forEach(it => {
@@ -2106,7 +2111,7 @@ Object.keys(groupedMap).forEach(prodKey => {
 
   displayRows.push({
     isTotal: true,
-    produto: items[0].produto,
+    produto: prodNome,
     ean: ean,
     categoria: cat,
     estoqueAtual: totEstoque,
@@ -2124,9 +2129,9 @@ const tr = document.createElement('tr');
 if (rowObj.isTotal) {
   tr.className = "bg-slate-950/80 border-t border-b-2 border-amber-500/40 font-bold text-amber-300";
   tr.innerHTML = `
-    <td class="p-3 font-bold text-amber-400">TOTAL</td>
+    <td class="p-3 font-bold text-amber-400">TOTAL EAN</td>
     <td class="p-3 font-bold text-amber-300"></td>
-    <td class="p-3 text-xs font-mono text-slate-400">-</td>
+    <td class="p-3 text-xs font-mono font-bold text-amber-400">${rowObj.ean}</td>
     <td class="p-3"><span class="px-2 py-0.5 bg-amber-500/10 text-amber-300 rounded text-[11px] border border-amber-500/20"></span></td>
     <td class="p-3 text-center font-bold text-amber-300">${rowObj.estoqueAtual}</td>
     <td class="p-3 text-center font-bold text-amber-300">${rowObj.totalQtdVendida}</td>
@@ -2348,8 +2353,8 @@ function exportProjectionToExcel() {
 const sortedProducts = getProjectionFilteredData();
 const exportData = sortedProducts.map(stats => ({
   "Cliente": stats.cliente,
-  "Produto": stats.produto,
   "EAN": stats.ean || '',
+  "Produto": stats.produto,
   "Categoria": stats.categoria,
   "Estoque Oficial": stats.estoqueAtual,
   "Vendida": stats.totalQtdVendida,
@@ -2449,5 +2454,3 @@ updateAllViews();
 renderEntries();
 };
 </script>
-</body>
-</html>
