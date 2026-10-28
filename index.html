@@ -752,8 +752,136 @@ Projeção: R$ 0,00
 </div>
 </footer>
 
+<!-- Modal de Login / Restrição de Acesso -->
+<div id="loginModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+  <div style="background: #1e1e1e; padding: 30px; border-radius: 12px; width: 320px; text-align: center; border: 1px solid #333; color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
+    <h2 style="margin-top: 0; margin-bottom: 20px; font-family: sans-serif;">NEXXA Login</h2>
+    
+    <div style="margin-bottom: 15px; text-align: left;">
+      <label style="font-size: 12px; color: #aaa; font-family: sans-serif;">Usuário</label>
+      <input type="text" id="loginUser" placeholder="Ex: jedeann" style="width: 100%; padding: 10px; margin-top: 5px; border-radius: 6px; border: 1px solid #444; background: #2a2a2a; color: #fff; box-sizing: border-box; outline: none;">
+    </div>
+    
+    <div style="margin-bottom: 20px; text-align: left;">
+      <label style="font-size: 12px; color: #aaa; font-family: sans-serif;">Senha</label>
+      <input type="password" id="loginPass" placeholder="••••••••" style="width: 100%; padding: 10px; margin-top: 5px; border-radius: 6px; border: 1px solid #444; background: #2a2a2a; color: #fff; box-sizing: border-box; outline: none;">
+    </div>
+    
+    <div id="loginError" style="color: #ff5555; font-size: 13px; margin-bottom: 15px; display: none; font-family: sans-serif;">
+      Usuário ou senha inválidos!
+    </div>
+    
+    <button onclick="autenticarUsuario()" style="width: 100%; padding: 12px; border-radius: 6px; border: none; background: #007bff; color: #fff; font-weight: bold; cursor: pointer; font-size: 14px; transition: background 0.2s;">
+      Entrar no Painel
+    </button>
+  </div>
+</div>
+
 <!-- Lógica JavaScript Integrada com Supabase -->
 <script>
+
+// Dicionário de usuários e senhas (você pode alterar as senhas aqui!)
+const USUARIOS_AUTORIZADOS = {
+    'jedeann': { senha: '123', perfil: 'admin' },
+    'cristiane': { senha: '123', perfil: 'admin' },
+    'convidado': { senha: '123456', perfil: 'convidado' }
+};
+
+let usuarioLogado = null;
+
+// Executa ao carregar a página para verificar se já existe sessão salva
+window.addEventListener('DOMContentLoaded', () => {
+    const usuarioSalvo = localStorage.getItem('nexxa_user');
+    if (usuarioSalvo && USUARIOS_AUTORIZADOS[usuarioSalvo]) {
+        usuarioLogado = USUARIOS_AUTORIZADOS[usuarioSalvo];
+        usuarioLogado.nome = usuarioSalvo;
+        document.getElementById('loginModal').style.display = 'none';
+        aplicarRestricoesPerfil();
+    } else {
+        document.getElementById('loginModal').style.display = 'flex';
+    }
+});
+
+// Função de autenticação
+function autenticarUsuario() {
+    const userInput = document.getElementById('loginUser').value.trim().toLowerCase();
+    const passInput = document.getElementById('loginPass').value.trim();
+    const errorDiv = document.getElementById('loginError');
+
+    if (USUARIOS_AUTORIZADOS[userInput] && USUARIOS_AUTORIZADOS[userInput].senha === passInput) {
+        usuarioLogado = USUARIOS_AUTORIZADOS[userInput];
+        usuarioLogado.nome = userInput;
+        
+        // Salva a sessão no navegador
+        localStorage.setItem('nexxa_user', userInput);
+        
+        errorDiv.style.display = 'none';
+        document.getElementById('loginModal').style.display = 'none';
+        
+        aplicarRestricoesPerfil();
+        
+        // Atualiza os dados/gráficos
+        if (typeof updateAllViews === 'function') updateAllViews();
+    } else {
+        errorDiv.style.display = 'block';
+    }
+}
+
+// Aplica as restrições de perfil (Convidado vs Admin)
+function aplicarRestricoesPerfil() {
+    if (!usuarioLogado) return;
+
+    if (usuarioLogado.perfil === 'convidado') {
+        // Se for convidado, fixa os filtros de data apenas para HOJE
+        const hoje = new Date().toISOString().split('T')[0];
+        
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        
+        if (startDateInput) {
+            startDateInput.value = hoje;
+            startDateInput.disabled = true; // Bloqueia a alteração da data inicial
+        }
+        if (endDateInput) {
+            endDateInput.value = hoje;
+            endDateInput.disabled = true; // Bloqueia a alteração da data final
+        }
+
+        // Desabilita botões de edição, importação ou backup (se existirem)
+        const btnImportar = document.getElementById('btnImportar');
+        const btnBackup = document.getElementById('btnBackup');
+        const btnRestaurar = document.getElementById('btnRestaurar');
+        
+        if (btnImportar) btnImportar.style.display = 'none';
+        if (btnBackup) btnBackup.style.display = 'none';
+        if (btnRestaurar) btnRestaurar.style.display = 'none';
+
+        console.log("Perfil 'convidado' ativo: restrição para dados de hoje aplicada.");
+    } else {
+        // Perfil Admin: libera os campos de data e ações do sistema
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        
+        if (startDateInput) startDateInput.disabled = false;
+        if (endDateInput) endDateInput.disabled = false;
+
+        const btnImportar = document.getElementById('btnImportar');
+        const btnBackup = document.getElementById('btnBackup');
+        const btnRestaurar = document.getElementById('btnRestaurar');
+        
+        if (btnImportar) btnImportar.style.display = 'inline-block';
+        if (btnBackup) btnBackup.style.display = 'inline-block';
+        if (btnRestaurar) btnRestaurar.style.display = 'inline-block';
+    }
+}
+
+// Função utilitária para Logout
+function logout() {
+    localStorage.removeItem('nexxa_user');
+    location.reload();
+}
+
+
 // ==========================================
 // CONFIGURAÇÃO DO SUPABASE
 // ==========================================
