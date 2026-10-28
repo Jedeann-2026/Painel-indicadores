@@ -18,6 +18,8 @@ extend: {}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Supabase JS Client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- FontAwesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
@@ -750,8 +752,15 @@ Projeção: R$ 0,00
 </div>
 </footer>
 
-<!-- Lógica JavaScript -->
+<!-- Lógica JavaScript Integrada com Supabase -->
 <script>
+// ==========================================
+// CONFIGURAÇÃO DO SUPABASE
+// ==========================================
+const SUPABASE_URL = https://mjkqkyuolsqhtxwzivof.supabase.co/rest/v1/;
+const SUPABASE_KEY = sb_publishable_taL59MpBnTvHmpfD8eMSnw_f2QuR6w-;
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 let globalData = [
 { cliente: "ANNA BEATRIZ (MARINHA)", categoria: "PERFUM", produto: "ALGODAO", ean: "78944880", data: "2026-10-01", qtd: 18, vlrUnit: 1.29, custoUnit: 0.80 },
 { cliente: "ANNA BEATRIZ (MARINHA)", categoria: "MERCADO", produto: "ACUCAR", ean: "78964338", data: "2026-10-10", qtd: 12, vlrUnit: 2.99, custoUnit: 1.90 },
@@ -771,14 +780,53 @@ let globalOfficialStock = {
 
 let selectedOrderKey = null;
 
-const savedData = localStorage.getItem('nexxa_data');
-if (savedData) { try { globalData = JSON.parse(savedData); } catch(e) {} }
+// Sincronização automática com Nuvem e LocalStorage
+async function carregarDadosDoPainel() {
+    try {
+        const { data: cloudData, error } = await supabaseClient.from('nexxa_store').select('*');
+        
+        if (!error && cloudData && cloudData.length > 0) {
+            const registroVendas = cloudData.find(d => d.id === 'vendas');
+            const registroEntradas = cloudData.find(d => d.id === 'entradas');
+            const registroEstoque = cloudData.find(d => d.id === 'estoque');
 
-const savedEntries = localStorage.getItem('nexxa_entries');
-if (savedEntries) { try { globalEntries = JSON.parse(savedEntries); } catch(e) {} }
+            if (registroVendas) globalData = registroVendas.payload;
+            if (registroEntradas) globalEntries = registroEntradas.payload;
+            if (registroEstoque) globalOfficialStock = registroEstoque.payload;
+        } else {
+            const savedData = localStorage.getItem('nexxa_data');
+            if (savedData) { try { globalData = JSON.parse(savedData); } catch(e) {} }
 
-const savedStock = localStorage.getItem('nexxa_official_stock');
-if (savedStock) { try { globalOfficialStock = JSON.parse(savedStock); } catch(e) {} }
+            const savedEntries = localStorage.getItem('nexxa_entries');
+            if (savedEntries) { try { globalEntries = JSON.parse(savedEntries); } catch(e) {} }
+
+            const savedStock = localStorage.getItem('nexxa_official_stock');
+            if (savedStock) { try { globalOfficialStock = JSON.parse(savedStock); } catch(e) {} }
+        }
+    } catch(err) {
+        console.warn("Modo offline ou erro na nuvem, carregando dados locais.");
+    }
+
+    populateFilterDropdowns();
+    updateAllViews();
+    renderEntries();
+}
+
+async function salvarDadosNaNuvem(tipo, payload) {
+    if (tipo === 'vendas') localStorage.setItem('nexxa_data', JSON.stringify(payload));
+    if (tipo === 'entradas') localStorage.setItem('nexxa_entries', JSON.stringify(payload));
+    if (tipo === 'estoque') localStorage.setItem('nexxa_official_stock', JSON.stringify(payload));
+
+    try {
+        await supabaseClient.from('nexxa_store').upsert({
+            id: tipo,
+            payload: payload,
+            updated_at: new Date()
+        });
+    } catch (err) {
+        console.error("Erro ao salvar na nuvem:", err);
+    }
+}
 
 function getOfficialStock(clientName, ean, productName) {
   const cleanClient = clientName ? clientName.trim().toUpperCase() : 'GERAL';
@@ -927,9 +975,9 @@ if (confirm("Deseja apagar TODOS os dados (vendas, entradas e estoque oficial)?"
 globalData = [];
 globalEntries = [];
 globalOfficialStock = {};
-localStorage.removeItem('nexxa_data');
-localStorage.removeItem('nexxa_entries');
-localStorage.removeItem('nexxa_official_stock');
+salvarDadosNaNuvem('vendas', globalData);
+salvarDadosNaNuvem('entradas', globalEntries);
+salvarDadosNaNuvem('estoque', globalOfficialStock);
 populateFilterDropdowns();
 updateAllViews();
 renderEntries();
@@ -939,7 +987,7 @@ alert("Base limpa com sucesso!");
 } else if (clearType === 'stock') {
 if (confirm("Deseja apagar APENAS o Estoque Oficial?")) {
 globalOfficialStock = {};
-localStorage.removeItem('nexxa_official_stock');
+salvarDadosNaNuvem('estoque', globalOfficialStock);
 populateFilterDropdowns();
 updateAllViews();
 closeClearModal();
@@ -961,7 +1009,7 @@ globalData = globalData.filter(row => {
   const matchDate = (row.data >= sDate && row.data <= eDate);
   return !(matchClient && matchDate);
 });
-localStorage.setItem('nexxa_data', JSON.stringify(globalData));
+salvarDadosNaNuvem('vendas', globalData);
 populateFilterDropdowns();
 updateAllViews();
 closeClearModal();
@@ -1076,7 +1124,7 @@ custoUnit: parseDecimal(item['Preço de Custo'] || item['preco_custo'] || 0)
 if(importedRows.length > 0) {
 const importedKeys = new Set(importedRows.map(r => `${r.cliente}___${r.data}`));
 globalData = [...globalData.filter(r => !importedKeys.has(`${r.cliente}___${r.data}`)), ...importedRows];
-localStorage.setItem('nexxa_data', JSON.stringify(globalData));
+salvarDadosNaNuvem('vendas', globalData);
 populateFilterDropdowns();
 updateAllViews();
 alert("Planilha de vendas importada com sucesso!");
@@ -1140,7 +1188,7 @@ count++;
 });
 
 if(count > 0) {
-localStorage.setItem('nexxa_official_stock', JSON.stringify(globalOfficialStock));
+salvarDadosNaNuvem('estoque', globalOfficialStock);
 populateFilterDropdowns();
 updateAllViews();
 alert(`Estoque por cliente importado com sucesso! ${count} registros processados.`);
@@ -1595,7 +1643,6 @@ sortedProducts = sortedProducts.filter(item =>
 );
 }
 
-// Ordenação por EAN e depois por Cliente
 sortedProducts.sort((a, b) => {
   const eanA = (a.ean || '').trim();
   const eanB = (b.ean || '').trim();
@@ -1626,7 +1673,6 @@ renderPaginationControls('stockPagination', [], pageSizeVal, currentPageStock, '
 return;
 }
 
-// Calcular os mínimos e máximos individuais
 sortedProducts.forEach(item => {
   const mediaDiaria = item.qtdVendida / daysCount;
   let minCalc = Math.max(5, Math.ceil(mediaDiaria * 7));
@@ -1654,7 +1700,6 @@ sortedProducts.forEach(item => {
   item._statusBadge = statusBadge;
 });
 
-// Agrupamento por EAN (e depois Cliente) para inclusão dos totalizadores por EAN
 const groupedMap = {};
 sortedProducts.forEach(item => {
   const eanKey = (item.ean || 'SEM_EAN').trim().toUpperCase();
@@ -1662,7 +1707,6 @@ sortedProducts.forEach(item => {
   groupedMap[eanKey].push(item);
 });
 
-// Construir lista exibível intercalando itens e totalizadores
 const displayRows = [];
 Object.keys(groupedMap).forEach(eanKey => {
   const items = groupedMap[eanKey];
@@ -1883,7 +1927,6 @@ function renderCharts(prodVal, prodQty, catVal, clientVal, filteredData) {
 Chart.defaults.color = '#94a3b8';
 Chart.defaults.borderColor = '#1e293b';
 
-// 1. Gráfico de Faturamento Mensal
 const monthlyMap = {};
 const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
@@ -1911,7 +1954,6 @@ data: { labels: monthlyLabels, datasets: [{ label: 'Faturamento Mensal (R$)', da
 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#1e293b' } } } }
 });
 
-// 2. Gráfico Diário (30 Dias)
 const dailyMap = {};
 let maxDateStr = '';
 filteredData.forEach(r => { if (!maxDateStr || r.data > maxDateStr) maxDateStr = r.data; });
@@ -2057,7 +2099,6 @@ if (onlySuggestionFilter) {
   });
 }
 
-// Ordenação por EAN e depois por Cliente
 sortedProducts.sort((a, b) => {
   const eanA = (a.ean || '').trim();
   const eanB = (b.ean || '').trim();
@@ -2083,7 +2124,6 @@ renderPaginationControls('projPagination', [], pageSizeVal, currentPageProj, 'ch
 return;
 }
 
-// Agrupamento por EAN para inclusão dos totalizadores por EAN
 const groupedMap = {};
 sortedProducts.forEach(item => {
   const eanKey = (item.ean || 'SEM_EAN').trim().toUpperCase();
@@ -2181,7 +2221,7 @@ precoUnit: parseDecimal(item['Preço unitário'] || item['Preço Unitário'] || 
 
 if(importedEntries.length > 0) {
 globalEntries = importedEntries;
-localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
+salvarDadosNaNuvem('entradas', globalEntries);
 updateAllViews();
 renderEntries();
 alert("Notas importadas com sucesso!");
@@ -2377,7 +2417,6 @@ function importFullDatabaseJSON(e) {
     
     const reader = new FileReader();
     
-    // Usamos readAsDataURL para evitar qualquer conflito de encoding no telemóvel
     reader.onload = function(evt) {
         try {
             const base64Data = evt.target.result.split(',')[1];
@@ -2386,7 +2425,6 @@ function importFullDatabaseJSON(e) {
                 return;
             }
 
-            // Decodifica o Base64 garantindo UTF-8 correto em qualquer dispositivo
             const jsonString = decodeURIComponent(escape(atob(base64Data)));
             const imp = JSON.parse(jsonString);
             
@@ -2395,42 +2433,40 @@ function importFullDatabaseJSON(e) {
                 return;
             }
 
-            // Restaura os dados com segurança
             if (Array.isArray(imp.globalData)) {
                 globalData = imp.globalData;
-                localStorage.setItem('nexxa_data', JSON.stringify(globalData));
+                salvarDadosNaNuvem('vendas', globalData);
             } else {
                 globalData = [];
-                localStorage.removeItem('nexxa_data');
+                salvarDadosNaNuvem('vendas', globalData);
             }
 
             if (Array.isArray(imp.globalEntries)) {
                 globalEntries = imp.globalEntries;
-                localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
+                salvarDadosNaNuvem('entradas', globalEntries);
             } else {
                 globalEntries = [];
-                localStorage.removeItem('nexxa_entries');
+                salvarDadosNaNuvem('entradas', globalEntries);
             }
 
             if (imp.globalOfficialStock && typeof imp.globalOfficialStock === 'object') {
                 globalOfficialStock = imp.globalOfficialStock;
-                localStorage.setItem('nexxa_official_stock', JSON.stringify(globalOfficialStock));
+                salvarDadosNaNuvem('estoque', globalOfficialStock);
             } else {
                 globalOfficialStock = {};
-                localStorage.removeItem('nexxa_official_stock');
+                salvarDadosNaNuvem('estoque', globalOfficialStock);
             }
 
-            // Atualiza a interface da aplicação
             populateFilterDropdowns();
             updateAllViews();
             renderEntries();
             
-            e.target.value = ''; // Reseta o input para permitir nova importação
+            e.target.value = '';
 
-            alert("Backup restaurado com sucesso no telemóvel!");
+            alert("Backup restaurado com sucesso e enviado para a nuvem!");
         } catch(err) {
             console.error("Erro crítico na restauração mobile:", err);
-            alert("Não foi possível processar o arquivo JSON neste telemóvel. Certifique-se de que o arquivo foi gerado pelo botão 'Backup' do próprio painel.");
+            alert("Não foi possível processar o arquivo JSON neste telemóvel.");
         }
     };
     
@@ -2446,11 +2482,11 @@ function onProjCustomDateChange() { currentPageProj = 1; renderProjection(); }
 function applyStockDatePreset() { currentPageStock = 1; renderStockView(); }
 function onStockCustomDateChange() { currentPageStock = 1; renderStockView(); }
 
-window.onload = function() {
+window.onload = async function() {
 initTheme();
 setDefaultCurrentDate();
-populateFilterDropdowns();
-updateAllViews();
-renderEntries();
+await carregarDadosDoPainel();
 };
 </script>
+</body>
+</html>
