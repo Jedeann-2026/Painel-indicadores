@@ -884,12 +884,17 @@ let selectedOrderKey = null;
 
 async function carregarDadosDoPainel() {
     try {
+        console.log("A sincronizar dados com o Supabase...");
         const { data: cloudData, error } = await supabaseClient.from('nexxa_store').select('*');
         
+        if (error) {
+            console.error("Erro ao buscar dados na nuvem:", error);
+        }
+
         if (!error && cloudData && cloudData.length > 0) {
             const registroVendas = cloudData.find(d => d.id === 'vendas');
             const registroEntradas = cloudData.find(d => d.id === 'entradas');
-            const registroEstoque = cloudData.find(d => d.id === 'estoque');
+            const registroEstoque = cloudData.find(d => d.id === 'estoque' || d.id === 'ESTOQUE');
 
             if (registroVendas && registroVendas.data) {
                 globalData = registroVendas.data;
@@ -902,8 +907,12 @@ async function carregarDadosDoPainel() {
             if (registroEstoque && registroEstoque.data) {
                 globalOfficialStock = registroEstoque.data;
                 localStorage.setItem('nexxa_official_stock', JSON.stringify(globalOfficialStock));
+                console.log("Estoque oficial carregado com sucesso na nuvem:", Object.keys(globalOfficialStock).length, "itens.");
+            } else {
+                console.warn("Registo de estoque na nuvem veio vazio ou não encontrado.");
             }
         } else {
+            console.log("A carregar dados do armazenamento local (Fallback)...");
             const savedData = localStorage.getItem('nexxa_data');
             if (savedData) { try { globalData = JSON.parse(savedData); } catch(e) {} }
 
@@ -914,13 +923,18 @@ async function carregarDadosDoPainel() {
             if (savedStock) { try { globalOfficialStock = JSON.parse(savedStock); } catch(e) {} }
         }
     } catch(err) {
-        console.warn("Modo offline ou erro na nuvem, carregando dados locais.");
+        console.warn("Modo offline ou erro crítico de conexão:", err);
     }
 
     populateFilterDropdowns();
     updateAllViews();
     renderEntries();
+    
+    // Força a atualização visual imediata no telemóvel
+    if (typeof renderStockView === 'function') renderStockView();
+    if (typeof renderProjection === 'function') renderProjection();
 }
+
 
 async function salvarDadosNaNuvem(tipo, payload) {
     if (tipo === 'vendas') localStorage.setItem('nexxa_data', JSON.stringify(payload));
