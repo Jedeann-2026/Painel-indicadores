@@ -290,7 +290,6 @@ Projeção: R$ 0,00
 
 <!-- 4º BLOCO: Seção de Gráficos -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-<!-- GRÁFICO: Faturamento Mensal -->
 <div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col lg:col-span-2">
 <div class="flex justify-between items-center mb-3">
 <h2 class="font-bold text-white text-sm md:text-base"><i class="fa-solid fa-calendar-days text-emerald-400 mr-2"></i>Faturamento Mensal</h2>
@@ -777,9 +776,7 @@ Projeção: R$ 0,00
   </div>
 </div>
 
-<!-- Lógica JavaScript Integrada com Supabase -->
 <script>
-
 // Dicionário de usuários e senhas
 const USUARIOS_AUTORIZADOS = {
     'jedeann': { senha: '123', perfil: 'admin' },
@@ -789,7 +786,6 @@ const USUARIOS_AUTORIZADOS = {
 
 let usuarioLogado = null;
 
-// Executa ao carregar a página para verificar se já existe sessão salva
 window.addEventListener('DOMContentLoaded', () => {
     const usuarioSalvo = localStorage.getItem('nexxa_user');
     if (usuarioSalvo && USUARIOS_AUTORIZADOS[usuarioSalvo]) {
@@ -802,7 +798,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Função de autenticação
 function autenticarUsuario() {
     const userInput = document.getElementById('loginUser').value.trim().toLowerCase();
     const passInput = document.getElementById('loginPass').value.trim();
@@ -813,19 +808,16 @@ function autenticarUsuario() {
         usuarioLogado.nome = userInput;
         
         localStorage.setItem('nexxa_user', userInput);
-        
         errorDiv.style.display = 'none';
         document.getElementById('loginModal').style.display = 'none';
         
         aplicarRestricoesPerfil();
-        
         if (typeof updateAllViews === 'function') updateAllViews();
     } else {
         errorDiv.style.display = 'block';
     }
 }
 
-// Aplica as restrições de perfil (Convidado vs Admin)
 function aplicarRestricoesPerfil() {
     if (!usuarioLogado) return;
 
@@ -835,14 +827,8 @@ function aplicarRestricoesPerfil() {
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
         
-        if (startDateInput) {
-            startDateInput.value = hoje;
-            startDateInput.disabled = true;
-        }
-        if (endDateInput) {
-            endDateInput.value = hoje;
-            endDateInput.disabled = true;
-        }
+        if (startDateInput) { startDateInput.value = hoje; startDateInput.disabled = true; }
+        if (endDateInput) { endDateInput.value = hoje; endDateInput.disabled = true; }
 
         const stockStartDateInput = document.getElementById('stockStartDate');
         const stockEndDateInput = document.getElementById('stockEndDate');
@@ -853,12 +839,9 @@ function aplicarRestricoesPerfil() {
         const projEndDateInput = document.getElementById('projEndDate');
         if (projStartDateInput) { projStartDateInput.value = hoje; projStartDateInput.disabled = true; }
         if (projEndDateInput) { projEndDateInput.value = hoje; projEndDateInput.disabled = true; }
-
-        console.log("Perfil 'convidado' ativo: restrição para dados de hoje aplicada.");
     } else {
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
-        
         if (startDateInput) startDateInput.disabled = false;
         if (endDateInput) endDateInput.disabled = false;
     }
@@ -900,7 +883,7 @@ async function carregarDadosDoPainel() {
                 localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
             }
             if (registroEstoque && registroEstoque.data) {
-                globalOfficialStock = registroEstoque.data;
+                globalOfficialStock = typeof registroEstoque.data === 'string' ? JSON.parse(registroEstoque.data) : registroEstoque.data;
                 localStorage.setItem('nexxa_official_stock', JSON.stringify(globalOfficialStock));
             }
         } else {
@@ -1273,6 +1256,7 @@ return obj[keyMatch];
 return null;
 }
 
+// CORREÇÃO ROBUSTA PARA ESTOQUE NO TELEMÓVEL / NUVEM
 function handleStockFile(e) {
 const file = e.target.files[0];
 if (!file) return;
@@ -1314,13 +1298,21 @@ count++;
 });
 
 if(count > 0) {
+// Salva imediatamente na nuvem e atualiza a view
 salvarDadosNaNuvem('estoque', globalOfficialStock);
 populateFilterDropdowns();
 updateAllViews();
-alert(`Estoque por cliente importado com sucesso! ${count} registros processados.`);
+alert(`Estoque por cliente importado e gravado nas nuvens com sucesso! ${count} registros processados.`);
+e.target.value = '';
 } else { alert("Nenhuma coluna válida (cliente, ean/nome, estoque) encontrada."); }
 } else { alert("Planilha de estoque vazia."); }
-} catch(err) { alert("Erro ao ler arquivo de estoque."); }
+} catch(err) { 
+    console.error("Erro ao processar estoque:", err);
+    alert("Erro ao ler arquivo de estoque. Certifique-se de que é um Excel ou CSV válido."); 
+}
+};
+reader.onerror = function() {
+    alert("Erro crítico na leitura do arquivo pelo navegador móvel.");
 };
 reader.readAsArrayBuffer(file);
 }
@@ -1392,19 +1384,6 @@ if(stockCatSelect) stockCatSelect.value = categories.includes(currentStockCat) ?
 const prodList = document.getElementById('prodList');
 prodList.innerHTML = '';
 products.forEach(p => { prodList.innerHTML += `<option value="${p}">`; });
-}
-
-function downloadTemplateCSV() {
-const csvContent = "data:text/csv;charset=utf-8,\uFEFF" +
-"Cliente;Categoria;Produto;EAN;Quantidade;Preço Unitário;Data\n" +
-"ANNA BEATRIZ (MARINHA);PERFUM;ALGODAO;78944880;18;1,29;2026-10-01";
-const encodedUri = encodeURI(csvContent);
-const link = document.createElement("a");
-link.setAttribute("href", encodedUri);
-link.setAttribute("download", "modelo_vendas_nexxa.csv");
-document.body.appendChild(link);
-link.click();
-link.remove();
 }
 
 function formatCurrency(val) {
@@ -1789,9 +1768,7 @@ tbody.innerHTML = '';
 const pageSizeVal = document.getElementById('stockPageSize') ? document.getElementById('stockPageSize').value : '30';
 const { sortedProducts, daysCount } = getStockFilteredData();
 
-if (thClientCol) {
-  thClientCol.style.display = '';
-}
+if (thClientCol) { thClientCol.style.display = ''; }
 
 if (sortedProducts.length === 0) {
 tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">Nenhum registro encontrado.</td></tr>`;
@@ -1920,8 +1897,7 @@ if (!sortedProducts || sortedProducts.length === 0) {
   return;
 }
 
-const exportData = sortedProducts.map(item => {
-  return {
+const exportData = sortedProducts.map(item => ({
     "Cliente": item.cliente || 'Geral',
     "EAN": item.ean || '',
     "Produto": item.produto,
@@ -1931,8 +1907,7 @@ const exportData = sortedProducts.map(item => {
     "Mínimo": item._minCalc || 0,
     "Máximo": item._maxCalc || 0,
     "Status": item._statusStr || 'Ideal'
-  };
-});
+}));
 
 exportToExcelFile(exportData, "gestao_estoque_oficial", "Estoque");
 }
@@ -2053,9 +2028,6 @@ function renderCharts(prodVal, prodQty, catVal, clientVal, filteredData) {
 Chart.defaults.color = '#94a3b8';
 Chart.defaults.borderColor = '#1e293b';
 
-// =========================================================
-// 1. FATURAMENTO MENSAL (SEMPRE ÚLTIMOS 12 MESES)
-// =========================================================
 const selectedClient = document.getElementById('clientFilter') ? document.getElementById('clientFilter').value : 'all';
 const selectedCat = document.getElementById('catFilter') ? document.getElementById('catFilter').value : 'all';
 const selectedProd = document.getElementById('prodFilter') ? document.getElementById('prodFilter').value.trim().toLowerCase() : '';
@@ -2116,9 +2088,6 @@ data: { labels: monthlyLabels, datasets: [{ label: 'Faturamento Mensal (R$)', da
 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#1e293b' } } } }
 });
 
-// =========================================================
-// 2. FATURAMENTO DIÁRIO (SEMPRE ÚLTIMOS 30 DIAS)
-// =========================================================
 let dailyFilteredData = globalData;
 if (selectedClient !== 'all') dailyFilteredData = dailyFilteredData.filter(row => row.cliente === selectedClient);
 if (selectedCat !== 'all') dailyFilteredData = dailyFilteredData.filter(row => row.categoria === selectedCat);
@@ -2166,9 +2135,6 @@ data: { labels: last30DaysLabels, datasets: [{ label: 'Faturamento (R$)', data: 
 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#1e293b' } } } }
 });
 
-// =========================================================
-// 3. DEMAIS GRÁFICOS
-// =========================================================
 const topVal = Object.entries(prodVal).sort((a,b) => b[1] - a[1]).slice(0, 10);
 const ctxVal = document.getElementById('chartTopValue').getContext('2d');
 if(chartTopValueInst) chartTopValueInst.destroy();
@@ -2600,12 +2566,10 @@ document.body.appendChild(a); a.click(); a.remove();
 function importFullDatabaseJSON(e) {
     const file = e.target.files[0]; 
     if (!file) return;
-    
     const reader = new FileReader();
     
     reader.onload = function(evt) {
         try {
-            // Leitura direta do texto do JSON (Evita falhas de atob no telemóvel)
             const jsonString = evt.target.result;
             const imp = JSON.parse(jsonString);
             
@@ -2641,21 +2605,19 @@ function importFullDatabaseJSON(e) {
             populateFilterDropdowns();
             updateAllViews();
             renderEntries();
-            
             e.target.value = '';
 
             alert("Backup restaurado com sucesso e enviado para a nuvem!");
         } catch(err) {
             console.error("Erro crítico na restauração:", err);
-            alert("Não foi possível processar o arquivo JSON. Certifique-se de que é um backup válido do Nexxa.");
+            alert("Não foi possível processar o arquivo JSON.");
         }
     };
     
     reader.onerror = function() {
-        alert("Erro crítico na leitura do arquivo pelo navegador.");
+        alert("Erro crítico na leitura do arquivo.");
     };
 
-    // Alterado para ler como texto puro (.readAsText) em vez de Base64
     reader.readAsText(file);
 }
 
