@@ -2252,7 +2252,7 @@ const productStatsMap = {};
 
 for (let k in globalOfficialStock) {
   let item = globalOfficialStock[k];
-  if (selectedClient !== 'all' && (item.cliente || '').trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
+  if (selectedClient !== 'all' && (item.cliente || '').trim().toUpperCase() !== (selectedClient || '').trim().toUpperCase()) continue;
   
   let key = `${item.cliente.trim().toUpperCase()}___${(item.produtoo || '').trim().toUpperCase()}`;
   if (!productStatsMap[key]) {
