@@ -896,23 +896,35 @@ async function carregarDadosDoPainel() {
             const registroEntradas = cloudData.find(d => d.id === 'entradas');
             const registroEstoque = cloudData.find(d => d.id === 'estoque' || d.id === 'ESTOQUE');
 
-            if (registroVendas && registroVendas.data) {
+            // 1. Verificar Vendas
+            if (registroVendas && registroVendas.data && registroVendas.data.length > 0) {
                 globalData = registroVendas.data;
                 localStorage.setItem('nexxa_data', JSON.stringify(globalData));
+                console.log(`✅ Vendas carregadas da nuvem: ${globalData.length} registos.`);
+            } else {
+                console.warn("⚠️ Aviso: O registo de 'vendas' na nuvem está vazio ou nulo.");
             }
-            if (registroEntradas && registroEntradas.data) {
+
+            // 2. Verificar Entradas
+            if (registroEntradas && registroEntradas.data && registroEntradas.data.length > 0) {
                 globalEntries = registroEntradas.data;
                 localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
+                console.log(`✅ Entradas carregadas da nuvem: ${globalEntries.length} registos.`);
+            } else {
+                console.warn("⚠️ Aviso: O registo de 'entradas' na nuvem está vazio ou nulo.");
             }
-            if (registroEstoque && registroEstoque.data) {
+
+            // 3. Verificar Estoque
+            if (registroEstoque && registroEstoque.data && Object.keys(registroEstoque.data).length > 0) {
                 globalOfficialStock = registroEstoque.data;
                 localStorage.setItem('nexxa_official_stock', JSON.stringify(globalOfficialStock));
-                console.log("Estoque oficial carregado com sucesso na nuvem:", Object.keys(globalOfficialStock).length, "itens.");
+                console.log(`✅ Estoque oficial carregado da nuvem: ${Object.keys(globalOfficialStock).length} itens.`);
             } else {
-                console.warn("Registo de estoque na nuvem veio vazio ou não encontrado.");
+                console.warn("⚠️ Aviso: O registo de 'estoque' na nuvem está vazio ou nulo.");
             }
+
         } else {
-            console.log("A carregar dados do armazenamento local (Fallback)...");
+            console.log("Modo offline ou nuvem vazia. A carregar dados do armazenamento local (Fallback)...");
             const savedData = localStorage.getItem('nexxa_data');
             if (savedData) { try { globalData = JSON.parse(savedData); } catch(e) {} }
 
@@ -930,12 +942,50 @@ async function carregarDadosDoPainel() {
     updateAllViews();
     renderEntries();
     
-    // Força a atualização visual imediata no telemóvel
+    // Garante a renderização imediata de todas as abas
     if (typeof renderStockView === 'function') renderStockView();
     if (typeof renderProjection === 'function') renderProjection();
+    
+    console.log("Painel totalmente inicializado e verificado.");
 }
 
 
+
+async function salvarDadosNaNuvem(tipo, payload) {
+    if (tipo === 'vendas') {
+        if (!payload || payload.length === 0) {
+            console.warn("Tentativa de salvar vendas vazias bloqueada.");
+            return;
+        }
+        localStorage.setItem('nexxa_data', JSON.stringify(payload));
+    }
+    if (tipo === 'entradas') localStorage.setItem('nexxa_entries', JSON.stringify(payload));
+    if (tipo === 'estoque') localStorage.setItem('nexxa_official_stock', JSON.stringify(payload));
+
+    try {
+        console.log(`A enviar dados de '${tipo}' para a nuvem. Total de registos:`, payload.length || Object.keys(payload).length);
+        
+        const { data, error } = await supabaseClient
+            .from('nexxa_store')
+            .upsert({
+                id: tipo,
+                data: payload,
+                updated_at: new Date().toISOString()
+            }, { 
+                onConflict: 'id'
+            });
+
+        if (error) {
+            console.error(`Erro do Supabase ao salvar '${tipo}':`, error.message, error.details);
+            alert(`Erro ao salvar ${tipo} na nuvem: ${error.message}`);
+        } else {
+            console.log(`Dados de '${tipo}' salvos com sucesso na nuvem!`);
+        }
+    } catch (err) {
+        console.error(`Erro crítico ao salvar '${tipo}' na nuvem:`, err);
+    }
+}
+/*
 async function salvarDadosNaNuvem(tipo, payload) {
     if (tipo === 'vendas') localStorage.setItem('nexxa_data', JSON.stringify(payload));
     if (tipo === 'entradas') localStorage.setItem('nexxa_entries', JSON.stringify(payload));
@@ -961,6 +1011,7 @@ async function salvarDadosNaNuvem(tipo, payload) {
         console.error("Erro crítico ao salvar na nuvem:", err);
     }
 }
+*/
 
 function getOfficialStock(clientName, ean, productName) {
   const cleanClient = (clientName || '').trim().toUpperCase();
