@@ -907,6 +907,8 @@ let globalOfficialStock = {
 };
 
 let selectedOrderKey = null;
+
+/*
 async function carregarDadosDoPainel() {
     try {
         const { data: cloudData, error } = await supabaseClient.from('nexxa_store').select('*');
@@ -947,7 +949,44 @@ async function carregarDadosDoPainel() {
     updateAllViews();
     renderEntries();
 }
+*/
 
+async function carregarDadosDoPainel() {
+    try {
+        const { data: registros, error } = await supabaseClient
+            .from('nexxa_store')
+            .select('*');
+
+        if (error) {
+            console.error("Erro ao carregar dados do Supabase:", error);
+            return;
+        }
+
+        if (registros && registros.length > 0) {
+            registros.forEach(registro => {
+                // Sincroniza Vendas
+                if (registro.id === 'vendas') {
+                    localStorage.setItem('nexxa_data', JSON.stringify(registro.data));
+                }
+                // Sincroniza Gestão de Estoque
+                if (registro.id === 'estoque') {
+                    localStorage.setItem('nexxa_official_stock', JSON.stringify(registro.data));
+                }
+                // Sincroniza Entradas de Mercadoria
+                if (registro.id === 'entradas') {
+                    localStorage.setItem('nexxa_entries', JSON.stringify(registro.data));
+                }
+            });
+
+            console.log("Dados de Vendas, Estoque e Entradas sincronizados com sucesso!");
+
+            // Atualiza todas as tabelas e gráficos da tela
+            if (typeof updateAllViews === 'function') updateAllViews();
+        }
+    } catch (err) {
+        console.error("Erro na sincronização inicial do painel:", err);
+    }
+}
 // Sincronização automática com Nuvem e LocalStorage
 async function salvarDadosNaNuvem(tipo, payload) {
     if (tipo === 'vendas') localStorage.setItem('nexxa_data', JSON.stringify(payload));
