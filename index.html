@@ -780,7 +780,7 @@ Projeção: R$ 0,00
 <!-- Lógica JavaScript Integrada com Supabase -->
 <script>
 
-// Dicionário de usuários e senhas (você pode alterar as senhas aqui!)
+// Dicionário de usuários e senhas
 const USUARIOS_AUTORIZADOS = {
     'jedeann': { senha: '123', perfil: 'admin' },
     'cristiane': { senha: '123', perfil: 'admin' },
@@ -812,7 +812,6 @@ function autenticarUsuario() {
         usuarioLogado = USUARIOS_AUTORIZADOS[userInput];
         usuarioLogado.nome = userInput;
         
-        // Salva a sessão no navegador
         localStorage.setItem('nexxa_user', userInput);
         
         errorDiv.style.display = 'none';
@@ -820,7 +819,6 @@ function autenticarUsuario() {
         
         aplicarRestricoesPerfil();
         
-        // Atualiza os dados/gráficos
         if (typeof updateAllViews === 'function') updateAllViews();
     } else {
         errorDiv.style.display = 'block';
@@ -832,7 +830,6 @@ function aplicarRestricoesPerfil() {
     if (!usuarioLogado) return;
 
     if (usuarioLogado.perfil === 'convidado') {
-        // Se for convidado, fixa os filtros de data apenas para HOJE
         const hoje = new Date().toISOString().split('T')[0];
         
         const startDateInput = document.getElementById('startDate');
@@ -840,47 +837,37 @@ function aplicarRestricoesPerfil() {
         
         if (startDateInput) {
             startDateInput.value = hoje;
-            startDateInput.disabled = true; // Bloqueia a alteração da data inicial
+            startDateInput.disabled = true;
         }
         if (endDateInput) {
             endDateInput.value = hoje;
-            endDateInput.disabled = true; // Bloqueia a alteração da data final
+            endDateInput.disabled = true;
         }
 
-        // Desabilita botões de edição, importação ou backup (se existirem)
-        const btnImportar = document.getElementById('btnImportar');
-        const btnBackup = document.getElementById('btnBackup');
-        const btnRestaurar = document.getElementById('btnRestaurar');
-        
-        if (btnImportar) btnImportar.style.display = 'none';
-        if (btnBackup) btnBackup.style.display = 'none';
-        if (btnRestaurar) btnRestaurar.style.display = 'none';
+        const stockStartDateInput = document.getElementById('stockStartDate');
+        const stockEndDateInput = document.getElementById('stockEndDate');
+        if (stockStartDateInput) { stockStartDateInput.value = hoje; stockStartDateInput.disabled = true; }
+        if (stockEndDateInput) { stockEndDateInput.value = hoje; stockEndDateInput.disabled = true; }
+
+        const projStartDateInput = document.getElementById('projStartDate');
+        const projEndDateInput = document.getElementById('projEndDate');
+        if (projStartDateInput) { projStartDateInput.value = hoje; projStartDateInput.disabled = true; }
+        if (projEndDateInput) { projEndDateInput.value = hoje; projEndDateInput.disabled = true; }
 
         console.log("Perfil 'convidado' ativo: restrição para dados de hoje aplicada.");
     } else {
-        // Perfil Admin: libera os campos de data e ações do sistema
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
         
         if (startDateInput) startDateInput.disabled = false;
         if (endDateInput) endDateInput.disabled = false;
-
-        const btnImportar = document.getElementById('btnImportar');
-        const btnBackup = document.getElementById('btnBackup');
-        const btnRestaurar = document.getElementById('btnRestaurar');
-        
-        if (btnImportar) btnImportar.style.display = 'inline-block';
-        if (btnBackup) btnBackup.style.display = 'inline-block';
-        if (btnRestaurar) btnRestaurar.style.display = 'inline-block';
     }
 }
 
-// Função utilitária para Logout
 function logout() {
     localStorage.removeItem('nexxa_user');
     location.reload();
 }
-
 
 // ==========================================
 // CONFIGURAÇÃO DO SUPABASE
@@ -889,22 +876,9 @@ const SUPABASE_URL = "https://mjkqkyuolsqhtxwzivof.supabase.co";
 const SUPABASE_KEY = "sb_publishable_taL59MpBnTvHmpfD8eMSnw_f2QuR6w-";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let globalData = [
-{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "PERFUM", produto: "ALGODAO", ean: "78944880", data: "2026-10-01", qtd: 18, vlrUnit: 1.29, custoUnit: 0.80 },
-{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "MERCADO", produto: "ACUCAR", ean: "78964338", data: "2026-10-10", qtd: 12, vlrUnit: 2.99, custoUnit: 1.90 },
-{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "HIGIENE", produto: "ENXAG", ean: "78910241", data: "2026-10-21", qtd: 3, vlrUnit: 12.89, custoUnit: 8.50 }
-];
-
-let globalEntries = [
-{ pedido: "PED-001", fornecedor: "Fornecedor Central SP", produto: "ALGODAO", ean: "78944880", data: "2026-10-15", qtd: 100, precoUnit: 0.80 },
-{ pedido: "PED-001", fornecedor: "Fornecedor Central SP", produto: "ACUCAR", ean: "78964338", data: "2026-10-15", qtd: 200, precoUnit: 1.90 }
-];
-
-let globalOfficialStock = {
-  "ANNA BEATRIZ (MARINHA)___78944880": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ALGODAO", ean: "78944880", categoria: "PERFUM", estoque: 86 },
-  "ANNA BEATRIZ (MARINHA)___78964338": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ACUCAR", ean: "78964338", categoria: "MERCADO", estoque: 128 },
-  "ANNA BEATRIZ (MARINHA)___78910241": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ENXAG", ean: "78910241", categoria: "HIGIENE", estoque: 19 }
-};
+let globalData = [];
+let globalEntries = [];
+let globalOfficialStock = {};
 
 let selectedOrderKey = null;
 
@@ -913,21 +887,20 @@ async function carregarDadosDoPainel() {
         const { data: cloudData, error } = await supabaseClient.from('nexxa_store').select('*');
         
         if (!error && cloudData && cloudData.length > 0) {
-            // Buscando da coluna 'data' do Supabase
             const registroVendas = cloudData.find(d => d.id === 'vendas');
             const registroEntradas = cloudData.find(d => d.id === 'entradas');
             const registroEstoque = cloudData.find(d => d.id === 'estoque');
 
-            if (registroVendas) {
-                globalData = registroVendas.data; // Note que aqui usamos .data em vez de .payload
+            if (registroVendas && registroVendas.data) {
+                globalData = registroVendas.data;
                 localStorage.setItem('nexxa_data', JSON.stringify(globalData));
             }
-            if (registroEntradas) {
+            if (registroEntradas && registroEntradas.data) {
                 globalEntries = registroEntradas.data;
                 localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
             }
-            if (registroEstoque) {
-                globalOfficialStock = registroEntradas.data || registroEstoque.data;
+            if (registroEstoque && registroEstoque.data) {
+                globalOfficialStock = registroEstoque.data;
                 localStorage.setItem('nexxa_official_stock', JSON.stringify(globalOfficialStock));
             }
         } else {
@@ -949,7 +922,6 @@ async function carregarDadosDoPainel() {
     renderEntries();
 }
 
-// Sincronização automática com Nuvem e LocalStorage
 async function salvarDadosNaNuvem(tipo, payload) {
     if (tipo === 'vendas') localStorage.setItem('nexxa_data', JSON.stringify(payload));
     if (tipo === 'entradas') localStorage.setItem('nexxa_entries', JSON.stringify(payload));
@@ -961,9 +933,9 @@ async function salvarDadosNaNuvem(tipo, payload) {
             .upsert({
                 id: tipo,
                 data: payload,
-                updated_at: new Date().toISOString() // Garantindo formato de texto/timestamp válido
+                updated_at: new Date().toISOString()
             }, { 
-                onConflict: 'id' // Informa ao Supabase que a chave de conflito é a coluna 'id'
+                onConflict: 'id'
             });
 
         if (error) {
@@ -977,9 +949,9 @@ async function salvarDadosNaNuvem(tipo, payload) {
 }
 
 function getOfficialStock(clientName, ean, productName) {
-  const cleanClient = clientName ? clientName.trim().toUpperCase() : 'GERAL';
+  const cleanClient = (clientName || '').trim().toUpperCase();
   const cleanEan = ean ? String(ean).trim() : '';
-  const cleanName = productName ? productName.trim().toUpperCase() : '';
+  const cleanName = (productName || '').trim().toUpperCase();
 
   if (cleanEan) {
     const keyEan = `${cleanClient}___${cleanEan}`;
@@ -992,8 +964,8 @@ function getOfficialStock(clientName, ean, productName) {
 
   for (let k in globalOfficialStock) {
     let item = globalOfficialStock[k];
-    if (item.cliente && item.cliente.trim().toUpperCase() === cleanClient) {
-      if (item.produto && item.produto.trim().toUpperCase() === cleanName) {
+    if (item && item.cliente && (item.cliente || '').trim().toUpperCase() === cleanClient) {
+      if (item.produto && (item.produto || '').trim().toUpperCase() === cleanName) {
         return Number(item.estoque) || 0;
       }
     }
@@ -1007,12 +979,12 @@ const costMapByName = {};
 
 globalEntries.forEach(entry => {
 if (entry.ean) costMapByEan[String(entry.ean).trim()] = entry.precoUnit;
-if (entry.produto) costMapByName[entry.produto.trim().toUpperCase()] = entry.precoUnit;
+if (entry.produto) costMapByName[(entry.produto || '').trim().toUpperCase()] = entry.precoUnit;
 });
 
 globalData.forEach(item => {
 const cleanEan = item.ean ? String(item.ean).trim() : '';
-const cleanName = item.produto ? item.produto.trim().toUpperCase() : '';
+const cleanName = (item.produto || '').trim().toUpperCase();
 
 if (cleanEan && costMapByEan[cleanEan] !== undefined) {
 item.custoUnit = costMapByEan[cleanEan];
@@ -1038,7 +1010,13 @@ let chartClientsInst = null;
 function setDefaultCurrentDate() {
 const todayStr = new Date().toISOString().split('T')[0];
 const startDateInput = document.getElementById('startDate');
-if (startDateInput && !startDateInput.value) startDateInput.value = todayStr;
+if (startDateInput && !startDateInput.value) {
+    if (usuarioLogado && usuarioLogado.perfil === 'convidado') {
+        startDateInput.value = todayStr;
+    } else {
+        startDateInput.value = '';
+    }
+}
 const compStartInput = document.getElementById('compStartDate');
 if (compStartInput && !compStartInput.value) compStartInput.value = todayStr;
 }
@@ -1097,7 +1075,7 @@ document.getElementById('clearEndDate').value = today;
 const clientsSet = new Set();
 globalData.forEach(i => clientsSet.add(i.cliente));
 for(let k in globalOfficialStock) {
-  if(globalOfficialStock[k].cliente) clientsSet.add(globalOfficialStock[k].cliente);
+  if(globalOfficialStock[k] && globalOfficialStock[k].cliente) clientsSet.add(globalOfficialStock[k].cliente);
 }
 const clients = [...clientsSet].sort();
 const clearClientSelect = document.getElementById('clearClientSelect');
@@ -1153,7 +1131,7 @@ const msg = clearClient === 'all'
 
 if (confirm(msg)) {
 globalData = globalData.filter(row => {
-  const matchClient = (clearClient === 'all' || row.cliente.trim().toUpperCase() === clearClient.trim().toUpperCase());
+  const matchClient = (clearClient === 'all' || (row.cliente || '').trim().toUpperCase() === clearClient.trim().toUpperCase());
   const matchDate = (row.data >= sDate && row.data <= eDate);
   return !(matchClient && matchDate);
 });
