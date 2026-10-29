@@ -1,304 +1,2456 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="h-full bg-slate-900">
+<html lang="pt-PT" class="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXXA Conveniências - Painel de Indicadores</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- SheetJS (Excel Parsing) -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- Supabase JS Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXXA conveniências - Painel de Indicadores</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+darkMode: 'class',
+theme: {
+extend: {}
+}
+}
+</script>
+<!-- SheetJS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- FontAwesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+@media print {
+body * {
+visibility: hidden;
+}
+#tab-projection, #tab-projection *, #tab-stock, #tab-stock * {
+visibility: visible;
+}
+#tab-projection, #tab-stock {
+position: absolute;
+left: 0;
+top: 0;
+width: 100%;
+margin: 0;
+padding: 0;
+background: white !important;
+color: black !important;
+}
+.no-print {
+display: none !important;
+}
+}
+</style>
 </head>
-<body class="h-full text-slate-100 flex flex-col antialiased">
+<body class="bg-slate-950 text-slate-100 dark:bg-slate-950 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col transition-colors duration-200 text-sm md:text-base" id="mainBody">
 
-    <!-- Header Navigation -->
-    <header class="bg-slate-800/80 backdrop-blur border-b border-slate-700/60 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <!-- Brand & Logo -->
-                <div class="flex items-center gap-3">
-                    <div class="bg-gradient-to-tr from-amber-500 to-orange-600 p-2.5 rounded-xl shadow-lg shadow-orange-500/20">
-                        <i class="fa-solid me-0 fa-store text-white text-xl"></i>
-                    </div>
-                    <div>
-                        <h1 class="font-bold text-lg text-white tracking-wide leading-none">NEXXA</h1>
-                        <span class="text-xs font-medium text-amber-400">Gestão de Conveniências</span>
-                    </div>
-                </div>
+<!-- Cabeçalho -->
+<header class="bg-slate-900 text-white shadow-md border-b border-slate-800 no-print sticky top-0 z-40">
+<div class="max-w-7xl mx-auto px-3 py-3 flex flex-col md:flex-row justify-between items-center gap-3">
+<div class="flex items-center justify-between w-full md:w-auto">
+<div class="flex items-center space-x-2.5">
+<div class="bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
+<i class="fa-solid fa-chart-line text-xl text-amber-400"></i>
+</div>
+<div>
+<h1 class="text-base md:text-xl font-bold tracking-tight text-amber-400">NEXXA conveniências</h1>
+<p class="text-[10px] md:text-xs text-slate-400">Gestão inteligente de estoque e vendas</p>
+</div>
+</div>
+<button onclick="toggleTheme()" class="md:hidden bg-slate-800 hover:bg-slate-700 text-amber-400 p-2 rounded-xl border border-slate-700 transition-all shadow-sm" title="Alternar Tema">
+<i id="themeIconMobile" class="fa-solid fa-sun text-sm"></i>
+</button>
+</div>
 
-                <!-- Sync Status Indicator -->
-                <div class="flex items-center gap-3">
-                    <div id="syncStatus" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-700/50 border border-slate-600 text-slate-300">
-                        <span id="syncDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span id="syncText">Pronto</span>
-                    </div>
+<div class="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
+<div class="flex overflow-x-auto w-full md:w-auto bg-slate-950 p-1 rounded-xl border border-slate-800 gap-1 no-scrollbar">
+<button onclick="switchTab('dashboard')" id="btn-tab-dashboard" class="px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all bg-amber-400 text-slate-950 font-bold shadow-sm whitespace-nowrap">
+<i class="fa-solid fa-chart-pie mr-1"></i>Dashboard
+</button>
+<button onclick="switchTab('stock')" id="btn-tab-stock" class="px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap">
+<i class="fa-solid fa-boxes-stacked mr-1"></i>Estoque
+</button>
+<button onclick="switchTab('projection')" id="btn-tab-projection" class="px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap">
+<i class="fa-solid fa-cart-shopping mr-1"></i>Projeção
+</button>
+<button onclick="switchTab('entries')" id="btn-tab-entries" class="px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap">
+<i class="fa-solid fa-file-invoice-dollar mr-1"></i>Notas
+</button>
+</div>
 
-                    <!-- Cloud Save/Load Quick Action -->
-                    <button id="btnForceSync" onclick="salvarDadosNaNuvem()" class="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-medium transition flex items-center gap-1.5">
-                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                        <span class="hidden md:inline">Sincronizar Cloud</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </header>
+<button onclick="toggleTheme()" class="hidden md:block bg-slate-800 hover:bg-slate-700 text-amber-400 p-2.5 rounded-xl border border-slate-700 transition-all shadow-sm" title="Alternar Tema">
+<i id="themeIcon" class="fa-solid fa-sun text-sm"></i>
+</button>
+</div>
+</div>
+</header>
 
-    <!-- Navigation Tabs -->
-    <nav class="bg-slate-800/40 border-b border-slate-800 px-4 sm:px-6">
-        <div class="max-w-7xl mx-auto flex gap-1 sm:gap-2 overflow-x-auto py-2 custom-scrollbar">
-            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn active px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 whitespace-nowrap bg-amber-500 text-slate-900 font-semibold shadow-md shadow-amber-500/10">
-                <i class="fa-solid fa-chart-pie"></i>
-                Dashboard
-            </button>
-            <button onclick="switchTab('estoque')" id="tab-estoque" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800">
-                <i class="fa-solid fa-boxes-stacked"></i>
-                Estoque Oficial
-            </button>
-            <button onclick="switchTab('vendas')" id="tab-vendas" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800">
-                <i class="fa-solid fa-cart-shopping"></i>
-                Vendas & Importação
-            </button>
-            <button onclick="switchTab('config')" id="tab-config" class="tab-btn px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-800">
-                <i class="fa-solid fa-gear"></i>
-                Configurações Supabase
-            </button>
-        </div>
-    </nav>
+<!-- Conteúdo Principal -->
+<main class="max-w-7xl mx-auto px-3 md:px-4 py-4 md:py-6 flex-grow w-full space-y-4 md:space-y-6">
 
-    <!-- Main Content Area -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+<!-- Barra de Ações / Importação -->
+<div class="bg-slate-900 p-3 md:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3 no-print">
+<div class="flex flex-wrap items-center gap-2 w-full">
+<label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-medium shadow-sm transition-all flex items-center justify-center space-x-1.5 flex-1 sm:flex-none">
+<i class="fa-solid fa-file-excel"></i>
+<span>Imp. Vendas</span>
+<input type="file" id="excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFile(event)">
+</label>
 
-        <!-- Notification Banner -->
-        <div id="toastMessage" class="hidden p-4 rounded-xl border transition-all duration-300 flex items-center justify-between shadow-lg">
-            <div class="flex items-center gap-3">
-                <i id="toastIcon" class="fa-solid text-xl"></i>
-                <span id="toastText" class="text-sm font-medium"></span>
-            </div>
-            <button onclick="closeToast()" class="text-slate-400 hover:text-white p-1">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
+<label class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-xl text-xs font-medium shadow-sm transition-all flex items-center justify-center space-x-1.5 flex-1 sm:flex-none" title="Colunas: cliente, ean, nome, categoria, estoque">
+<i class="fa-solid fa-boxes-stacked"></i>
+<span>Imp. Estoque por Cliente</span>
+<input type="file" id="stock-excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleStockFile(event)">
+</label>
 
-        <!-- TAB 1: DASHBOARD -->
-        <div id="content-dashboard" class="tab-content space-y-6">
-            <!-- Summary KPI Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5 shadow-sm">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Faturamento Total</p>
-                            <h3 id="kpiTotalVendas" class="text-2xl font-bold text-white mt-1">R$ 0,00</h3>
-                        </div>
-                        <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl">
-                            <i class="fa-solid fa-sack-dollar text-lg"></i>
-                        </div>
-                    </div>
-                </div>
+<button onclick="downloadStockTemplateCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl text-xs font-medium transition-all flex items-center justify-center space-x-1.5 border border-slate-700">
+<i class="fa-solid fa-download"></i>
+<span>Mod. Estoque</span>
+</button>
 
-                <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5 shadow-sm">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Itens Vendidos</p>
-                            <h3 id="kpiItensVendidos" class="text-2xl font-bold text-white mt-1">0</h3>
-                        </div>
-                        <div class="p-3 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl">
-                            <i class="fa-solid fa-cubes text-lg"></i>
-                        </div>
-                    </div>
-                </div>
+<button onclick="exportFullDatabaseJSON()" class="bg-slate-950 hover:bg-black text-amber-400 px-3 py-2 rounded-xl text-xs font-medium shadow-sm transition-all flex items-center justify-center space-x-1.5 border border-amber-500/30">
+<i class="fa-solid fa-floppy-disk"></i>
+<span>Backup</span>
+</button>
 
-                <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5 shadow-sm">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Produtos Cadastrados</p>
-                            <h3 id="kpiTotalProdutos" class="text-2xl font-bold text-white mt-1">0</h3>
-                        </div>
-                        <div class="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl">
-                            <i class="fa-solid fa-barcode text-lg"></i>
-                        </div>
-                    </div>
-                </div>
+<label class="cursor-pointer bg-amber-500 hover:bg-amber-600 text-slate-950 px-3 py-2 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center justify-center space-x-1.5">
+<i class="fa-solid fa-upload"></i>
+<span>Restaurar</span>
+<input type="file" id="backup-file" accept=".json" class="hidden" onchange="importFullDatabaseJSON(event)">
+</label>
 
-                <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5 shadow-sm">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Alertas de Estoque</p>
-                            <h3 id="kpiAlertasEstoque" class="text-2xl font-bold text-rose-400 mt-1">0</h3>
-                        </div>
-                        <div class="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl">
-                            <i class="fa-solid fa-triangle-exclamation text-lg"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<button onclick="openClearModal()" class="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/40 px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 shadow-sm w-full sm:w-auto">
+<i class="fa-solid fa-trash-can text-xs"></i>
+<span>Limpar Base</span>
+</button>
+</div>
+</div>
 
-            <!-- Visual Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Top Selling Chart -->
-                <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5">
-                    <h2 class="text-base font-semibold text-slate-200 mb-4 flex items-center gap-2">
-                        <i class="fa-solid fa-chart-column text-amber-400"></i>
-                        Mais Vendidos (Faturamento)
-                    </h2>
-                    <div class="h-64 relative">
-                        <canvas id="chartMaisVendidos"></canvas>
-                    </div>
-                </div>
+<!-- ABA 1: DASHBOARD -->
+<div id="tab-dashboard" class="space-y-4 md:space-y-6">
 
-                <!-- Stock Levels Chart -->
-                <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-5">
-                    <h2 class="text-base font-semibold text-slate-200 mb-4 flex items-center gap-2">
-                        <i class="fa-solid fa-chart-pie text-amber-400"></i>
-                        Distribuição do Estoque Atual
-                    </h2>
-                    <div class="h-64 relative">
-                        <canvas id="chartEstoque"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!-- 1º BLOCO: Filtros Gerais do Dashboard -->
+<div class="bg-slate-900 p-3 md:p-4 rounded-2xl shadow-sm border border-slate-800 flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center space-x-2">
+<i class="fa-solid fa-filter text-amber-400"></i>
+<h2 class="font-bold text-white text-sm">Filtros Gerais:</h2>
+</div>
+<button onclick="exportSummaryCardsToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1">
+<i class="fa-solid fa-file-excel"></i>
+<span>Exportar Cards</span>
+</button>
+</div>
 
-        <!-- TAB 2: ESTOQUE OFICIAL -->
-        <div id="content-estoque" class="tab-content hidden space-y-6">
-            <!-- Stock File Upload Card -->
-            <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6">
-                <h2 class="text-base font-semibold text-slate-200 mb-2">Importar Cadastro de Estoque Oficial</h2>
-                <p class="text-xs text-slate-400 mb-4">Envie uma planilha Excel (.xlsx, .xls) ou CSV contendo as colunas: <strong>Código, Produto, Quantidade, Valor Unitário</strong>.</p>
-                
-                <div class="flex flex-col sm:flex-row items-center gap-4">
-                    <label class="w-full sm:w-auto cursor-pointer bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-file-excel text-emerald-400"></i>
-                        <span>Selecionar Planilha</span>
-                        <input type="file" id="inputStockFile" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleStockFile(event)">
-                    </label>
-                    <span id="stockFileName" class="text-xs text-slate-400 truncate max-w-xs">Nenhum ficheiro selecionado</span>
-                </div>
-            </div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap items-center gap-2">
+<div class="flex items-center space-x-1 bg-slate-950 border border-slate-800 rounded-xl px-2 py-1.5 shadow-sm col-span-full">
+<select id="dateRangePreset" onchange="applyDatePreset()" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer">
+<option value="all">Todo o Período</option>
+<option value="7">Últimos 7 dias</option>
+<option value="15">Últimos 15 dias</option>
+<option value="30">Últimos 30 dias</option>
+<option value="custom" selected>Personalizado</option>
+</select>
+<div class="flex items-center space-x-1 border-l border-slate-800 pl-2 overflow-x-auto">
+<span class="text-[11px] text-slate-400 font-medium">De:</span>
+<input type="date" id="startDate" onchange="onCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+<span class="text-[11px] text-slate-400 font-medium ml-1">Até:</span>
+<input type="date" id="endDate" onchange="onCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+</div>
+</div>
+<select id="clientFilter" onchange="updateAllViews()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 font-medium text-slate-200 w-full lg:w-auto">
+<option value="all">Todos os Clientes</option>
+</select>
+<select id="catFilter" onchange="updateAllViews()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 font-medium text-slate-200 w-full lg:w-auto">
+<option value="all">Todas as Categorias</option>
+</select>
+<div class="relative w-full lg:w-auto">
+<input type="text" id="prodFilter" list="prodList" placeholder="Filtrar produto..." oninput="updateAllViews()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 font-medium text-slate-200 w-full lg:w-40">
+<datalist id="prodList"></datalist>
+</div>
+<input type="text" id="searchInput" placeholder="Pesquisar..." onkeyup="updateAllViews()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 text-slate-200 w-full lg:w-36">
+</div>
+</div>
 
-            <!-- Stock Table -->
-            <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl overflow-hidden">
-                <div class="p-4 border-b border-slate-700/60 flex justify-between items-center">
-                    <h3 class="font-semibold text-slate-200">Inventário de Produtos</h3>
-                    <input type="text" id="searchStock" oninput="filterStockTable()" placeholder="Pesquisar produto..." class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-amber-500 w-48 sm:w-64">
-                </div>
-                <div class="overflow-x-auto custom-scrollbar">
-                    <table class="w-full text-left text-sm text-slate-300">
-                        <thead class="bg-slate-900/60 text-xs uppercase text-slate-400 border-b border-slate-700/60">
-                            <tr>
-                                <th class="p-3.5">Código</th>
-                                <th class="p-3.5">Produto</th>
-                                <th class="p-3.5 text-right">Qtd. Estoque</th>
-                                <th class="p-3.5 text-right">Preço Unit.</th>
-                                <th class="p-3.5 text-right">Valor Total</th>
-                            </tr>
-                        </thead>
-                        <tbody id="stockTableBody" class="divide-y divide-slate-700/40">
-                            <tr>
-                                <td colspan="5" class="p-6 text-center text-slate-500 italic">Nenhum produto cadastrado no estoque oficial.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+<!-- 2º BLOCO: Cards de Indicadores -->
+<div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
+<div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-amber-400">
+<p class="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-slate-400">Faturamento Total</p>
+<h3 id="card-faturamento" class="text-base md:text-xl font-bold text-white mt-1">R$ 0,00</h3>
+<span class="text-[10px] md:text-xs text-emerald-400 font-medium mt-1 md:mt-2 inline-flex items-center"><i class="fa-solid fa-arrow-trend-up mr-1"></i> Receita</span>
+</div>
+<div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-emerald-500">
+<p class="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-slate-400">Lucro Bruto</p>
+<h3 id="card-lucro" class="text-base md:text-xl font-bold text-white mt-1">R$ 0,00</h3>
+<span id="card-margem" class="text-[10px] md:text-xs text-emerald-400 font-medium mt-1 md:mt-2 inline-flex items-center">Margem: 0%</span>
+</div>
+<div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-blue-500">
+<p class="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-slate-400">Valor Estoque</p>
+<h3 id="card-estoque-val" class="text-base md:text-xl font-bold text-white mt-1">R$ 0,00</h3>
+<span class="text-[10px] md:text-xs text-blue-400 font-medium mt-1 md:mt-2 inline-flex items-center"><i class="fa-solid fa-boxes-stacked mr-1"></i> Estoque Oficial</span>
+</div>
+<div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-amber-500">
+<p class="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-slate-400">Total Vendas</p>
+<h3 id="card-vendas" class="text-base md:text-xl font-bold text-white mt-1">0</h3>
+<span class="text-[10px] md:text-xs text-amber-400 font-medium mt-1 md:mt-2 inline-flex items-center"><i class="fa-solid fa-receipt mr-1"></i> Registros</span>
+</div>
+<div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-purple-500 col-span-2 sm:col-span-1">
+<p class="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-slate-400">Preço Médio / Un</p>
+<h3 id="card-preco-medio" class="text-base md:text-xl font-bold text-white mt-1">R$ 0,00</h3>
+<span class="text-[10px] md:text-xs text-purple-400 font-medium mt-1 md:mt-2 inline-flex items-center"><i class="fa-solid fa-tag mr-1"></i> Praticado</span>
+</div>
+</div>
 
-        <!-- TAB 3: VENDAS & IMPORTAÇÃO -->
-        <div id="content-vendas" class="tab-content hidden space-y-6">
-            <!-- Sales File Upload Card -->
-            <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6">
-                <h2 class="text-base font-semibold text-slate-200 mb-2">Importar Registos de Vendas</h2>
-                <p class="text-xs text-slate-400 mb-4">Envie o ficheiro de vendas diárias ou mensais contendo as colunas: <strong>Código, Quantidade Vendida, Valor Total</strong>.</p>
-                
-                <div class="flex flex-col sm:flex-row items-center gap-4">
-                    <label class="w-full sm:w-auto cursor-pointer bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-200 px-4 py-2.5 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-file-invoice-dollar text-amber-400"></i>
-                        <span>Carregar Ficheiro de Vendas</span>
-                        <input type="file" id="inputSalesFile" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleSalesFile(event)">
-                    </label>
-                    <span id="salesFileName" class="text-xs text-slate-400 truncate max-w-xs">Nenhum ficheiro selecionado</span>
-                </div>
-            </div>
+<!-- 3º BLOCO: Tabela de Desempenho por Loja / Cliente -->
+<div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
+<div class="p-3.5 md:p-5 border-b border-slate-800 flex justify-between items-center gap-2">
+<div>
+<h2 class="font-bold text-white text-sm md:text-base"><i class="fa-solid fa-store text-amber-400 mr-2"></i>Desempenho por Loja</h2>
+<p class="text-[11px] md:text-xs text-slate-400 mt-0.5">Indicadores de faturamento e ticket médio.</p>
+</div>
+<button onclick="exportStorePerfToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center space-x-1 shrink-0">
+<i class="fa-solid fa-file-excel"></i>
+<span>Excel</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
+<thead>
+<tr class="bg-slate-950 text-slate-400 uppercase text-[10px] md:text-xs tracking-wider border-b border-slate-800">
+<th class="p-3 font-semibold">Loja / Cliente</th>
+<th class="p-3 font-semibold text-center">Vendas</th>
+<th class="p-3 font-semibold text-right">Faturamento</th>
+<th class="p-3 font-semibold text-right">Ticket Médio</th>
+<th class="p-3 font-semibold text-center">Part. (%)</th>
+</tr>
+</thead>
+<tbody id="storePerfTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
+</table>
+</div>
+</div>
 
-            <!-- Sales Table -->
-            <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl overflow-hidden">
-                <div class="p-4 border-b border-slate-700/60">
-                    <h3 class="font-semibold text-slate-200">Resumo de Vendas Processadas</h3>
-                </div>
-                <div class="overflow-x-auto custom-scrollbar">
-                    <table class="w-full text-left text-sm text-slate-300">
-                        <thead class="bg-slate-900/60 text-xs uppercase text-slate-400 border-b border-slate-700/60">
-                            <tr>
-                                <th class="p-3.5">Código</th>
-                                <th class="p-3.5">Produto</th>
-                                <th class="p-3.5 text-right">Qtd. Vendida</th>
-                                <th class="p-3.5 text-right">Faturamento Total</th>
-                            </tr>
-                        </thead>
-                        <tbody id="salesTableBody" class="divide-y divide-slate-700/40">
-                            <tr>
-                                <td colspan="4" class="p-6 text-center text-slate-500 italic">Nenhum ficheiro de vendas importado ainda.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+<!-- Faturamento Mensal - 4 Últimas Semanas -->
+<div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
+<div class="p-3.5 md:p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+<div>
+<h2 class="font-bold text-white text-sm md:text-base">
+<i class="fa-solid fa-calendar-weeks text-amber-400 mr-2"></i>Faturamento das 4 Semanas
+</h2>
+<p class="text-[11px] md:text-xs text-slate-400 mt-0.5">Distribuição do faturamento pelas semanas do filtro.</p>
+</div>
+<div class="flex items-center justify-between w-full sm:w-auto gap-2">
+<button onclick="exportFourWeeksToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center space-x-1">
+<i class="fa-solid fa-file-excel"></i>
+<span>Excel</span>
+</button>
+<span id="projecaoBadge" class="text-[11px] md:text-xs font-bold bg-indigo-500/10 text-indigo-400 px-2.5 py-1.5 rounded-lg border border-indigo-500/20">
+Projeção: R$ 0,00
+</span>
+</div>
+</div>
+<div class="p-3.5 md:p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3" id="weeklyCardsContainer"></div>
+</div>
 
-        <!-- TAB 4: CONFIGURAÇÕES SUPABASE -->
-        <div id="content-config" class="tab-content hidden space-y-6">
-            <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6 max-w-2xl mx-auto space-y-4">
-                <h2 class="text-base font-semibold text-slate-200 flex items-center gap-2">
-                    <i class="fa-solid fa-cloud text-amber-400"></i>
-                    Conexão com Banco de Dados Supabase
-                </h2>
-                <p class="text-xs text-slate-400">Insira as credenciais do seu projeto Supabase para ativar a sincronização automática em nuvem entre dispositivos móveis e desktop.</p>
+<!-- COMPARATIVO SEMANAL COM FILTRO PRÓPRIO -->
+<div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
+<div class="p-3.5 md:p-5 border-b border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+<div>
+<h2 class="font-bold text-white text-sm md:text-base">
+<i class="fa-solid fa-code-compare text-indigo-400 mr-2"></i>Comparativo Semanal Personalizado
+</h2>
+<p class="text-[11px] md:text-xs text-slate-400 mt-0.5">Analise o comportamento semanal em intervalo específico.</p>
+</div>
 
-                <div class="space-y-3 pt-2">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Supabase URL</label>
-                        <input type="text" id="cfgSupabaseUrl" placeholder="https://xyzcompany.supabase.co" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-amber-500">
-                    </div>
+<div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-between">
+<div class="flex items-center space-x-1 bg-slate-950 border border-slate-800 rounded-xl px-2 py-1.5 shadow-sm overflow-x-auto">
+<i class="fa-solid fa-calendar-days text-indigo-400 text-xs"></i>
+<span class="text-[11px] text-slate-400 font-medium">De:</span>
+<input type="date" id="compStartDate" onchange="renderCustomWeeklyComparison()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+<span class="text-[11px] text-slate-400 font-medium ml-1">Até:</span>
+<input type="date" id="compEndDate" onchange="renderCustomWeeklyComparison()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+</div>
+<button onclick="exportCustomWeeklyToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1">
+<i class="fa-solid fa-file-excel"></i>
+<span>Excel</span>
+</button>
+</div>
+</div>
 
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1">Supabase Anon Key</label>
-                        <input type="password" id="cfgSupabaseKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-amber-500">
-                    </div>
+<div class="p-3.5 md:p-5 space-y-3">
+<div class="flex justify-between items-center text-xs text-slate-400">
+<span id="compTotalText" class="font-semibold text-slate-200">Faturamento Período: R$ 0,00</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3" id="customWeeklyCardsContainer"></div>
+</div>
+</div>
 
-                    <div class="pt-4 flex items-center gap-3">
-                        <button onclick="salvarConfiguracoesSupabase()" class="bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold px-5 py-2.5 rounded-xl text-sm transition shadow-lg shadow-amber-500/10 flex items-center gap-2">
-                            <i class="fa-solid fa-floppy-disk"></i>
-                            Guardar Credenciais
-                        </button>
-                        <button onclick="carregarDadosDoPainel()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2.5 rounded-xl text-sm transition">
-                            Testar Conexão
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!-- 4º BLOCO: Seção de Gráficos -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+<!-- GRÁFICO: Faturamento Mensal -->
+<div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col lg:col-span-2">
+<div class="flex justify-between items-center mb-3">
+<h2 class="font-bold text-white text-sm md:text-base"><i class="fa-solid fa-calendar-days text-emerald-400 mr-2"></i>Faturamento Mensal</h2>
+<span class="text-[10px] md:text-xs text-emerald-400 font-medium bg-emerald-400/10 px-2 py-0.5 rounded border border-emerald-400/20">Evolução Mensal</span>
+</div>
+<div class="relative flex-grow h-60 md:h-72"><canvas id="chartMonthlyRevenue"></canvas></div>
+</div>
 
-    </main>
+<div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col lg:col-span-2">
+<div class="flex justify-between items-center mb-3">
+<h2 class="font-bold text-white text-sm md:text-base"><i class="fa-solid fa-chart-column text-amber-400 mr-2"></i>Faturamento Diário (30 Dias)</h2>
+<span class="text-[10px] md:text-xs text-amber-400 font-medium bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">Recente</span>
+</div>
+<div class="relative flex-grow h-60 md:h-72"><canvas id="chartLast30Days"></canvas></div>
+</div>
 
-    <!-- Footer -->
-    <footer class="bg-slate-900 border-t border-slate-800 text-center py-4 text-xs text-slate-500">
-        NEXXA Conveniências &copy; 2026 - Painel de Controle de Estoque & Vendas
-    </footer>
+<div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col">
+<div class="flex justify-between items-center mb-3">
+<h2 class="font-bold text-white text-sm md:text-base"><i class="fa-solid fa-ranking-star text-amber-400 mr-2"></i>Top 10 Produtos (R$)</h2>
+<span class="text-xs text-slate-400">Faturamento</span>
+</div>
+<div class="relative flex-grow h-72 md:h-80"><canvas id="chartTopValue"></canvas></div>
+</div>
 
-    <!-- Main JS File Reference -->
-    <script src="app.js"></script>
-</body>
-</html>
+<div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col">
+<div class="flex justify-between items-center mb-3">
+<h2 class="font-bold text-white text-sm md:text-base"><i class="fa-solid fa-boxes-packing text-indigo-400 mr-2"></i>Top 10 Produtos (Qtd)</h2>
+<span class="text-xs text-slate-400">Unidades</span>
+</div>
+<div class="relative flex-grow h-72 md:h-80"><canvas id="chartTopQty"></canvas></div>
+</div>
+
+<div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col">
+<div class="flex justify-between items-center mb-3">
+<h2 class="font-bold text-white text-sm md:text-base"><i class="fa-solid fa-layer-group text-emerald-400 mr-2"></i>Faturamento por Categoria</h2>
+<span class="text-xs text-slate-400">Participação</span>
+</div>
+<div class="relative flex-grow h-72 md:h-80"><canvas id="chartCategory"></canvas></div>
+</div>
+
+<div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col">
+<div class="flex justify-between items-center mb-3">
+<h2 class="font-bold text-white text-sm md:text-base"><i class="fa-solid fa-users text-blue-400 mr-2"></i>Top Clientes</h2>
+<span class="text-xs text-slate-400">Faturamento</span>
+</div>
+<div class="relative flex-grow h-72 md:h-80"><canvas id="chartClients"></canvas></div>
+</div>
+</div>
+
+<!-- 5º BLOCO: CARD - Giro de Produto -->
+<div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
+<div class="p-3.5 md:p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+<div>
+<h2 class="font-bold text-white text-sm md:text-base"><i class="fa-solid fa-rotate text-amber-400 mr-2"></i>Indicador de Giro de Produto</h2>
+<p class="text-[11px] md:text-xs text-slate-400 mt-0.5">Velocidade de saída e volume.</p>
+</div>
+<div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between">
+<button onclick="exportTurnoverToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1">
+<i class="fa-solid fa-file-excel"></i>
+<span>Excel</span>
+</button>
+
+<label class="flex items-center space-x-1.5 bg-slate-950 px-2.5 py-1.5 rounded-xl border border-slate-800 text-xs font-semibold text-slate-300 cursor-pointer select-none">
+<input type="checkbox" id="filterStockLowTurnover" onchange="currentPageTurnover=1; renderDashboard()" class="rounded text-amber-400 focus:ring-amber-400 w-3.5 h-3.5 bg-slate-900 border-slate-700">
+<span class="text-amber-400 text-[11px] md:text-xs">Baixo/Sem Giro</span>
+</label>
+
+<div class="flex items-center space-x-1 bg-slate-950 px-2 py-1.5 rounded-xl border border-slate-800">
+<span class="text-[11px] font-medium text-slate-400">Exibir:</span>
+<select id="turnoverPageSize" onchange="currentPageTurnover=1; renderDashboard()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
+<option value="10">10</option>
+<option value="30" selected>30</option>
+<option value="50">50</option>
+<option value="all">Todos</option>
+</select>
+</div>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
+<thead>
+<tr class="bg-slate-950 text-slate-400 uppercase text-[10px] md:text-xs tracking-wider border-b border-slate-800">
+<th class="p-3 font-semibold">Produto</th>
+<th class="p-3 font-semibold">EAN</th>
+<th class="p-3 font-semibold">Categoria</th>
+<th class="p-3 font-semibold text-center">Estoque Oficial</th>
+<th class="p-3 font-semibold text-center">Vendida</th>
+<th class="p-3 font-semibold text-right">Faturamento</th>
+<th class="p-3 font-semibold text-center">Giro</th>
+</tr>
+</thead>
+<tbody id="turnoverTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
+</table>
+</div>
+<div id="turnoverPagination" class="p-3 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-400"></div>
+</div>
+
+<!-- 6º BLOCO: Detalhamento Consolidado -->
+<div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
+<div class="p-3.5 md:p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+<div>
+<h2 class="font-bold text-white text-sm md:text-base"><i class="fa-solid fa-arrow-down-wide-short text-amber-400 mr-2"></i>Detalhamento Consolidado</h2>
+<p class="text-[11px] md:text-xs text-slate-400 mt-0.5">Resumo por produto com ordenação dinâmica.</p>
+</div>
+<div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between">
+<button onclick="exportConsolidatedToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1">
+<i class="fa-solid fa-file-excel"></i>
+<span>Excel</span>
+</button>
+
+<div class="flex items-center space-x-1 bg-slate-950 px-2 py-1.5 rounded-xl border border-slate-800">
+<span class="text-[11px] font-medium text-slate-400">Exibir:</span>
+<select id="consolidatedPageSize" onchange="currentPageConsolidated=1; renderDashboard()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
+<option value="10">10</option>
+<option value="30" selected>30</option>
+<option value="50">50</option>
+<option value="all">Todos</option>
+</select>
+</div>
+<div class="flex items-center space-x-1 bg-slate-950 px-2 py-1.5 rounded-xl border border-slate-800">
+<span class="text-[11px] font-medium text-slate-400">Ord:</span>
+<select id="consolidatedSortBy" onchange="currentPageConsolidated=1; renderDashboard()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
+<option value="faturamento">R$ Valor</option>
+<option value="quantidade">Qtd</option>
+</select>
+</div>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
+<thead>
+<tr class="bg-slate-950 text-slate-400 uppercase text-[10px] md:text-xs tracking-wider border-b border-slate-800">
+<th class="p-3 font-semibold">Produto</th>
+<th class="p-3 font-semibold">EAN</th>
+<th class="p-3 font-semibold text-center">Qtd Total</th>
+<th class="p-3 font-semibold text-center">Estoque Oficial</th>
+<th class="p-3 font-semibold text-right">Faturamento</th>
+</tr>
+</thead>
+<tbody id="consolidatedProdTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
+</table>
+</div>
+<div id="consolidatedPagination" class="p-3 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-400"></div>
+</div>
+
+<!-- 7º BLOCO: Tabela Detalhada Analítica -->
+<div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
+<div class="p-3.5 md:p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+<div>
+<h2 class="font-bold text-white text-sm md:text-base">Detalhamento Analítico</h2>
+<p class="text-[11px] md:text-xs text-slate-400 mt-0.5">Lançamentos individuais filtrados.</p>
+</div>
+<div class="flex items-center justify-between w-full sm:w-auto gap-2">
+<button onclick="exportAnalyticToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1">
+<i class="fa-solid fa-file-excel"></i>
+<span>Excel</span>
+</button>
+<div class="flex items-center space-x-1 bg-slate-950 px-2 py-1.5 rounded-xl border border-slate-800">
+<span class="text-[11px] font-medium text-slate-400">Exibir:</span>
+<select id="analyticPageSize" onchange="currentPageAnalytic=1; renderDashboard()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
+<option value="10">10</option>
+<option value="30" selected>30</option>
+<option value="50">50</option>
+<option value="all">Todos</option>
+</select>
+</div>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
+<thead>
+<tr class="bg-slate-950 text-slate-400 uppercase text-[10px] md:text-xs tracking-wider border-b border-slate-800">
+<th class="p-3 font-semibold">Cliente</th>
+<th class="p-3 font-semibold">Categoria</th>
+<th class="p-3 font-semibold">Produto</th>
+<th class="p-3 font-semibold">EAN</th>
+<th class="p-3 font-semibold">Data</th>
+<th class="p-3 font-semibold text-center">Qtd</th>
+<th class="p-3 font-semibold text-right">Preço Unit.</th>
+<th class="p-3 font-semibold text-right">Vlr. Total</th>
+<th class="p-3 font-semibold text-center">Estoque</th>
+</tr>
+</thead>
+<tbody id="dataTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
+</table>
+</div>
+<div id="analyticPagination" class="p-3 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-400"></div>
+</div>
+</div>
+
+<!-- ABA DE ESTOQUE -->
+<div id="tab-stock" class="space-y-4 md:space-y-6 hidden">
+<div class="bg-slate-900 p-4 md:p-6 rounded-2xl shadow-sm border border-slate-800 space-y-4 md:space-y-6">
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+<div>
+<h2 class="text-base md:text-lg font-bold text-white"><i class="fa-solid fa-boxes-stacked text-amber-400 mr-2"></i>Gestão de Estoque - Mínimo e Máximo</h2>
+<p class="text-[11px] md:text-xs text-slate-400 mt-1">Visão baseada na tabela oficial de estoque por cliente.</p>
+</div>
+<button onclick="exportStockToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1 shrink-0">
+<i class="fa-solid fa-file-excel"></i>
+<span>Exportar Estoque</span>
+</button>
+</div>
+
+<div class="bg-slate-950 p-3 md:p-4 rounded-xl border border-slate-800 flex flex-col lg:flex-row items-center justify-between gap-3 no-print">
+<div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+<div class="flex items-center space-x-1 bg-slate-900 border border-slate-800 rounded-xl px-2 py-1.5 shadow-sm col-span-full">
+<select id="stockDatePreset" onchange="applyStockDatePreset()" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer">
+<option value="all">Todo o Período</option>
+<option value="7">Últimos 7 dias</option>
+<option value="15">Últimos 15 dias</option>
+<option value="30">Últimos 30 dias</option>
+<option value="custom" selected>Personalizado</option>
+</select>
+<div class="flex items-center space-x-1 border-l border-slate-800 pl-2 overflow-x-auto">
+<span class="text-[11px] text-slate-400 font-medium">De:</span>
+<input type="date" id="stockStartDate" onchange="onStockCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+<span class="text-[11px] text-slate-400 font-medium ml-1">Até:</span>
+<input type="date" id="stockEndDate" onchange="onStockCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+</div>
+</div>
+
+<select id="stockClientFilter" onchange="currentPageStock=1; renderStockView()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 font-medium text-slate-200 w-full lg:w-auto">
+<option value="all">Todos os Clientes</option>
+</select>
+
+<select id="stockCatFilter" onchange="currentPageStock=1; renderStockView()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 font-medium text-slate-200 w-full lg:w-auto">
+<option value="all">Todas as Categorias</option>
+</select>
+
+<input type="text" id="stockSearchInput" placeholder="Pesquisar produto/EAN..." onkeyup="currentPageStock=1; renderStockView()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 text-slate-200 w-full lg:w-48">
+</div>
+
+<div class="flex items-center space-x-1 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 w-full lg:w-auto justify-between">
+<span class="text-xs font-medium text-slate-400">Exibir:</span>
+<select id="stockPageSize" onchange="currentPageStock=1; renderStockView()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
+<option value="10">10</option>
+<option value="30" selected>30</option>
+<option value="50">50</option>
+<option value="all">Todos</option>
+</select>
+</div>
+</div>
+
+<div class="overflow-x-auto rounded-xl border border-slate-800">
+<table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
+<thead>
+<tr class="bg-slate-950 text-slate-400 uppercase text-[10px] md:text-xs tracking-wider border-b border-slate-800">
+<th id="thStockClientCol" class="p-3 font-semibold">Cliente</th>
+<th class="p-3 font-semibold">Produto</th>
+<th class="p-3 font-semibold">EAN</th>
+<th class="p-3 font-semibold">Categoria</th>
+<th class="p-3 font-semibold text-center">Vendida</th>
+<th class="p-3 font-semibold text-center">Estoque Oficial</th>
+<th class="p-3 font-semibold text-center">Mínimo</th>
+<th class="p-3 font-semibold text-center">Máximo</th>
+<th class="p-3 font-semibold text-center">Status</th>
+</tr>
+</thead>
+<tbody id="stockTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
+</table>
+</div>
+<div id="stockPagination" class="p-3 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-400"></div>
+</div>
+</div>
+
+<!-- ABA 2: PROJEÇÃO DE COMPRAS -->
+<div id="tab-projection" class="space-y-4 md:space-y-6 hidden">
+<div class="bg-slate-900 p-4 md:p-6 rounded-2xl shadow-sm border border-slate-800">
+<div class="mb-4">
+<h2 class="text-base md:text-lg font-bold text-white">Sugestão e Projeção de Compras</h2>
+<p class="text-[11px] md:text-xs text-slate-400 mt-1">Cálculo de reposição baseado no estoque oficial por cliente.</p>
+</div>
+
+<div class="bg-slate-950 p-3 md:p-4 rounded-xl border border-slate-800 mb-4 flex flex-col lg:flex-row items-center justify-between gap-3 no-print">
+<div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+<div class="flex items-center space-x-1 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 shadow-sm">
+<select id="projDatePreset" onchange="applyProjDatePreset()" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer">
+<option value="all">Todo o Período</option>
+<option value="7">Últimos 7 dias</option>
+<option value="15">Últimos 15 dias</option>
+<option value="30">Últimos 30 dias</option>
+<option value="custom" selected>Personalizado</option>
+</select>
+<div class="flex items-center space-x-1 border-l border-slate-800 pl-2 overflow-x-auto">
+<span class="text-[11px] text-slate-400 font-medium">De:</span>
+<input type="date" id="projStartDate" onchange="onProjCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+<span class="text-[11px] text-slate-400 font-medium ml-1">Até:</span>
+<input type="date" id="projEndDate" onchange="onProjCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+</div>
+</div>
+
+<select id="projClientFilter" onchange="currentPageProj=1; renderProjection()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 font-medium text-slate-200 w-full lg:w-auto">
+<option value="all">Todos os Clientes</option>
+</select>
+
+<input type="text" id="projSearchInput" placeholder="Pesquisar produto/EAN..." onkeyup="currentPageProj=1; renderProjection()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 text-slate-200 w-full lg:w-40">
+</div>
+
+<div class="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-between">
+<label class="flex items-center space-x-1.5 text-xs font-semibold text-slate-300 cursor-pointer select-none">
+<input type="checkbox" id="filterOnlySuggestion" onchange="currentPageProj=1; renderProjection()" class="rounded text-amber-400 focus:ring-amber-400 w-3.5 h-3.5 bg-slate-900 border-slate-700">
+<span>Sugestão > 0</span>
+</label>
+<div class="flex items-center gap-2">
+<button onclick="exportProjectionToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1">
+<i class="fa-solid fa-file-excel"></i>
+<span>Excel</span>
+</button>
+<button onclick="window.print()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 py-2 rounded-xl text-xs shadow-sm transition-all flex items-center space-x-1">
+<i class="fa-solid fa-print"></i>
+<span>Imprimir</span>
+</button>
+</div>
+</div>
+</div>
+
+<div class="overflow-x-auto rounded-xl border border-slate-800">
+<table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
+<thead>
+<tr class="bg-slate-950 text-slate-300 uppercase text-[10px] md:text-xs tracking-wider border-b border-slate-800">
+<th id="thProjClientCol" class="p-3 font-semibold">Cliente</th>
+<th class="p-3 font-semibold">Produto</th>
+<th class="p-3 font-semibold">EAN</th>
+<th class="p-3 font-semibold">Categoria</th>
+<th class="p-3 font-semibold text-center">Estoque Oficial</th>
+<th class="p-3 font-semibold text-center">Vendida</th>
+<th class="p-3 font-semibold text-center">Custo Unit</th>
+<th class="p-3 font-semibold text-center">Sugestão Compra</th>
+</tr>
+</thead>
+<tbody id="projectionTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
+</table>
+</div>
+<div id="projPagination" class="p-3 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-400"></div>
+</div>
+</div>
+
+<!-- ABA 3: NOTAS DE ENTRADA -->
+<div id="tab-entries" class="space-y-4 md:space-y-6 hidden">
+<div class="bg-slate-900 p-4 md:p-6 rounded-2xl shadow-sm border border-slate-800 space-y-4 md:space-y-6">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+<div>
+<h2 class="text-base md:text-lg font-bold text-white"><i class="fa-solid fa-file-invoice-dollar text-amber-400 mr-2"></i>Notas de Entrada / Pedidos</h2>
+<p class="text-[11px] md:text-xs text-slate-400 mt-1">Colunas: Pedido, Fornecedor, Produto, Ean, Data, Quantidade, Preço unitário.</p>
+</div>
+
+<div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+<label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs md:text-sm font-medium shadow-sm transition-all flex items-center justify-center space-x-1.5 flex-1 sm:flex-none">
+<i class="fa-solid fa-file-excel"></i>
+<span>Importar Notas</span>
+<input type="file" id="entry-excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleEntryFile(event)">
+</label>
+<button onclick="downloadEntryTemplateCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl text-xs md:text-sm font-medium transition-all flex items-center justify-center space-x-1.5 border border-slate-700 flex-1 sm:flex-none">
+<i class="fa-solid fa-download"></i>
+<span>Modelo</span>
+</button>
+</div>
+</div>
+
+<div class="space-y-2">
+<h3 class="text-xs md:text-sm font-bold text-amber-400 flex items-center"><i class="fa-solid fa-list mr-2"></i>Pedidos Registrados</h3>
+<div class="overflow-x-auto rounded-xl border border-slate-800 max-h-72 overflow-y-auto">
+<table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
+<thead>
+<tr class="bg-slate-950 text-slate-400 uppercase text-[10px] md:text-xs tracking-wider border-b border-slate-800 sticky top-0">
+<th class="p-3 font-semibold">Nº Pedido</th>
+<th class="p-3 font-semibold">Fornecedor</th>
+<th class="p-3 font-semibold">Data</th>
+<th class="p-3 font-semibold text-center">Itens</th>
+<th class="p-3 font-semibold text-right">Valor Total</th>
+<th class="p-3 font-semibold text-center">Ação</th>
+</tr>
+</thead>
+<tbody id="entryMasterTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
+</table>
+</div>
+</div>
+
+<div class="space-y-2 pt-3 border-t border-slate-800">
+<div class="flex justify-between items-center">
+<h3 id="selectedOrderTitle" class="text-xs md:text-sm font-bold text-amber-400 flex items-center truncate">
+<i class="fa-solid fa-boxes-stacked mr-2"></i>Itens do Pedido: <span class="text-slate-400 ml-1 font-normal">(Nenhum selecionado)</span>
+</h3>
+</div>
+<div class="overflow-x-auto rounded-xl border border-slate-800">
+<table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
+<thead>
+<tr class="bg-slate-950 text-slate-400 uppercase text-[10px] md:text-xs tracking-wider border-b border-slate-800">
+<th class="p-3 font-semibold">Produto</th>
+<th class="p-3 font-semibold">EAN</th>
+<th class="p-3 font-semibold text-center">Quantidade</th>
+<th class="p-3 font-semibold text-right">Preço Unitário</th>
+<th class="p-3 font-semibold text-right">Valor Total</th>
+</tr>
+</thead>
+<tbody id="entryDetailTableBody" class="divide-y divide-slate-800 text-slate-200">
+<tr><td colspan="5" class="p-4 text-center text-slate-500">Selecione uma nota/pedido.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+
+</main>
+
+<!-- MODAL DE LIMPEZA -->
+<div id="clearModal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-3 hidden">
+<div class="bg-slate-900 border border-slate-800 p-5 md:p-6 rounded-2xl w-full max-w-md space-y-4 shadow-xl">
+<div class="flex justify-between items-center">
+<h3 class="font-bold text-white text-sm md:text-base flex items-center"><i class="fa-solid fa-triangle-exclamation text-amber-400 mr-2"></i>Limpeza de Base</h3>
+<button onclick="closeClearModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+</div>
+<p class="text-xs text-slate-400">Escolha o que deseja limpar na base de dados.</p>
+
+<div class="space-y-3 pt-1">
+<div class="flex items-center space-x-2">
+<input type="radio" name="clearType" id="clearTypeAll" value="all" checked onchange="toggleClearMode()" class="text-amber-400 focus:ring-amber-400">
+<label for="clearTypeAll" class="text-xs font-semibold text-slate-200 cursor-pointer">Apagar TUDO (Vendas, Entradas e Estoque Oficial)</label>
+</div>
+<div class="flex items-center space-x-2">
+<input type="radio" name="clearType" id="clearTypeStock" value="stock" onchange="toggleClearMode()" class="text-amber-400 focus:ring-amber-400">
+<label for="clearTypeStock" class="text-xs font-semibold text-slate-200 cursor-pointer">Apagar APENAS o Estoque Oficial</label>
+</div>
+<div class="flex items-center space-x-2">
+<input type="radio" name="clearType" id="clearTypePeriod" value="period" onchange="toggleClearMode()" class="text-amber-400 focus:ring-amber-400">
+<label for="clearTypePeriod" class="text-xs font-semibold text-slate-200 cursor-pointer">Apagar Vendas por Período / Cliente</label>
+</div>
+
+<div id="clearPeriodContainer" class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2 hidden">
+<div class="flex items-center justify-between text-xs text-slate-400">
+<span>Cliente:</span>
+<select id="clearClientSelect" class="bg-slate-900 border border-slate-800 text-slate-200 px-2 py-1 rounded text-xs w-48">
+<option value="all">Todos os Clientes</option>
+</select>
+</div>
+<div class="flex items-center justify-between text-xs text-slate-400">
+<span>De:</span>
+<input type="date" id="clearStartDate" class="bg-slate-900 border border-slate-800 text-slate-200 px-2 py-1 rounded text-xs">
+</div>
+<div class="flex items-center justify-between text-xs text-slate-400">
+<span>Até:</span>
+<input type="date" id="clearEndDate" class="bg-slate-900 border border-slate-800 text-slate-200 px-2 py-1 rounded text-xs">
+</div>
+</div>
+</div>
+
+<div class="flex justify-end space-x-2 pt-2">
+<button onclick="closeClearModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold">Cancelar</button>
+<button onclick="executeClearDatabase()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold">Confirmar</button>
+</div>
+</div>
+</div>
+
+<footer class="bg-slate-900 border-t border-slate-800 py-3 mt-auto no-print">
+<div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
+<span class="text-amber-400 font-bold">NEXXA conveniências</span> &copy; 2026 — Painel Mobile.
+</div>
+</footer>
+
+<!-- Lógica JavaScript -->
+<script>
+let globalData = [
+{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "PERFUM", produto: "ALGODAO", ean: "78944880", data: "2026-10-01", qtd: 18, vlrUnit: 1.29, custoUnit: 0.80 },
+{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "MERCADO", produto: "ACUCAR", ean: "78964338", data: "2026-10-10", qtd: 12, vlrUnit: 2.99, custoUnit: 1.90 },
+{ cliente: "ANNA BEATRIZ (MARINHA)", categoria: "HIGIENE", produto: "ENXAG", ean: "78910241", data: "2026-10-21", qtd: 3, vlrUnit: 12.89, custoUnit: 8.50 }
+];
+
+let globalEntries = [
+{ pedido: "PED-001", fornecedor: "Fornecedor Central SP", produto: "ALGODAO", ean: "78944880", data: "2026-10-15", qtd: 100, precoUnit: 0.80 },
+{ pedido: "PED-001", fornecedor: "Fornecedor Central SP", produto: "ACUCAR", ean: "78964338", data: "2026-10-15", qtd: 200, precoUnit: 1.90 }
+];
+
+let globalOfficialStock = {
+  "ANNA BEATRIZ (MARINHA)___78944880": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ALGODAO", ean: "78944880", categoria: "PERFUM", estoque: 86 },
+  "ANNA BEATRIZ (MARINHA)___78964338": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ACUCAR", ean: "78964338", categoria: "MERCADO", estoque: 128 },
+  "ANNA BEATRIZ (MARINHA)___78910241": { cliente: "ANNA BEATRIZ (MARINHA)", produto: "ENXAG", ean: "78910241", categoria: "HIGIENE", estoque: 19 }
+};
+
+let selectedOrderKey = null;
+
+const savedData = localStorage.getItem('nexxa_data');
+if (savedData) { try { globalData = JSON.parse(savedData); } catch(e) {} }
+
+const savedEntries = localStorage.getItem('nexxa_entries');
+if (savedEntries) { try { globalEntries = JSON.parse(savedEntries); } catch(e) {} }
+
+const savedStock = localStorage.getItem('nexxa_official_stock');
+if (savedStock) { try { globalOfficialStock = JSON.parse(savedStock); } catch(e) {} }
+
+function getOfficialStock(clientName, ean, productName) {
+  const cleanClient = clientName ? clientName.trim().toUpperCase() : 'GERAL';
+  const cleanEan = ean ? String(ean).trim() : '';
+  const cleanName = productName ? productName.trim().toUpperCase() : '';
+
+  if (cleanEan) {
+    const keyEan = `${cleanClient}___${cleanEan}`;
+    if (globalOfficialStock[keyEan] !== undefined) return Number(globalOfficialStock[keyEan].estoque) || 0;
+  }
+  if (cleanName) {
+    const keyName = `${cleanClient}___${cleanName}`;
+    if (globalOfficialStock[keyName] !== undefined) return Number(globalOfficialStock[keyName].estoque) || 0;
+  }
+
+  for (let k in globalOfficialStock) {
+    let item = globalOfficialStock[k];
+    if (item.cliente && item.cliente.trim().toUpperCase() === cleanClient) {
+      if (item.produto && item.produto.trim().toUpperCase() === cleanName) {
+        return Number(item.estoque) || 0;
+      }
+    }
+  }
+  return 0;
+}
+
+function syncCostsWithEntries() {
+const costMapByEan = {};
+const costMapByName = {};
+
+globalEntries.forEach(entry => {
+if (entry.ean) costMapByEan[String(entry.ean).trim()] = entry.precoUnit;
+if (entry.produto) costMapByName[entry.produto.trim().toUpperCase()] = entry.precoUnit;
+});
+
+globalData.forEach(item => {
+const cleanEan = item.ean ? String(item.ean).trim() : '';
+const cleanName = item.produto ? item.produto.trim().toUpperCase() : '';
+
+if (cleanEan && costMapByEan[cleanEan] !== undefined) {
+item.custoUnit = costMapByEan[cleanEan];
+} else if (cleanName && costMapByName[cleanName] !== undefined) {
+item.custoUnit = costMapByName[cleanName];
+}
+});
+}
+
+let currentPageTurnover = 1;
+let currentPageConsolidated = 1;
+let currentPageAnalytic = 1;
+let currentPageProj = 1;
+let currentPageStock = 1;
+
+let chartMonthlyRevenueInst = null;
+let chartLast30DaysInst = null;
+let chartTopValueInst = null;
+let chartTopQtyInst = null;
+let chartCategoryInst = null;
+let chartClientsInst = null;
+
+function setDefaultCurrentDate() {
+const todayStr = new Date().toISOString().split('T')[0];
+const startDateInput = document.getElementById('startDate');
+if (startDateInput && !startDateInput.value) startDateInput.value = todayStr;
+const compStartInput = document.getElementById('compStartDate');
+if (compStartInput && !compStartInput.value) compStartInput.value = todayStr;
+}
+
+function updateAllViews() {
+syncCostsWithEntries();
+currentPageTurnover = 1;
+currentPageConsolidated = 1;
+currentPageAnalytic = 1;
+currentPageProj = 1;
+currentPageStock = 1;
+renderDashboard();
+renderStockView();
+renderProjection();
+}
+
+function toggleTheme() {
+const htmlEl = document.documentElement;
+const iconEl = document.getElementById('themeIcon');
+const iconMobileEl = document.getElementById('themeIconMobile');
+if (htmlEl.classList.contains('dark')) {
+htmlEl.classList.remove('dark');
+if(iconEl) iconEl.className = "fa-solid fa-moon text-sm";
+if(iconMobileEl) iconMobileEl.className = "fa-solid fa-moon text-sm";
+localStorage.setItem('nexxa_theme', 'light');
+} else {
+htmlEl.classList.add('dark');
+if(iconEl) iconEl.className = "fa-solid fa-sun text-sm";
+if(iconMobileEl) iconMobileEl.className = "fa-solid fa-sun text-sm";
+localStorage.setItem('nexxa_theme', 'dark');
+}
+}
+
+function initTheme() {
+const savedTheme = localStorage.getItem('nexxa_theme');
+const htmlEl = document.documentElement;
+const iconEl = document.getElementById('themeIcon');
+const iconMobileEl = document.getElementById('themeIconMobile');
+if (savedTheme === 'light') {
+htmlEl.classList.remove('dark');
+if(iconEl) iconEl.className = "fa-solid fa-moon text-sm";
+if(iconMobileEl) iconMobileEl.className = "fa-solid fa-moon text-sm";
+} else {
+htmlEl.classList.add('dark');
+if(iconEl) iconEl.className = "fa-solid fa-sun text-sm";
+if(iconMobileEl) iconMobileEl.className = "fa-solid fa-sun text-sm";
+}
+}
+
+function openClearModal() {
+document.getElementById('clearModal').classList.remove('hidden');
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('clearStartDate').value = today;
+document.getElementById('clearEndDate').value = today;
+
+const clientsSet = new Set();
+globalData.forEach(i => clientsSet.add(i.cliente));
+for(let k in globalOfficialStock) {
+  if(globalOfficialStock[k].cliente) clientsSet.add(globalOfficialStock[k].cliente);
+}
+const clients = [...clientsSet].sort();
+const clearClientSelect = document.getElementById('clearClientSelect');
+if (clearClientSelect) {
+  clearClientSelect.innerHTML = '<option value="all">Todos os Clientes</option>';
+  clients.forEach(c => {
+    clearClientSelect.innerHTML += `<option value="${c}">${c}</option>`;
+  });
+}
+}
+
+function closeClearModal() { document.getElementById('clearModal').classList.add('hidden'); }
+
+function toggleClearMode() {
+const isPeriod = document.getElementById('clearTypePeriod').checked;
+document.getElementById('clearPeriodContainer').classList.toggle('hidden', !isPeriod);
+}
+
+function executeClearDatabase() {
+const clearType = document.querySelector('input[name="clearType"]:checked').value;
+if (clearType === 'all') {
+if (confirm("Deseja apagar TODOS os dados (vendas, entradas e estoque oficial)?")) {
+globalData = [];
+globalEntries = [];
+globalOfficialStock = {};
+localStorage.removeItem('nexxa_data');
+localStorage.removeItem('nexxa_entries');
+localStorage.removeItem('nexxa_official_stock');
+populateFilterDropdowns();
+updateAllViews();
+renderEntries();
+closeClearModal();
+alert("Base limpa com sucesso!");
+}
+} else if (clearType === 'stock') {
+if (confirm("Deseja apagar APENAS o Estoque Oficial?")) {
+globalOfficialStock = {};
+localStorage.removeItem('nexxa_official_stock');
+populateFilterDropdowns();
+updateAllViews();
+closeClearModal();
+alert("Estoque oficial limpo com sucesso!");
+}
+} else {
+const clearClient = document.getElementById('clearClientSelect').value;
+const sDate = document.getElementById('clearStartDate').value;
+const eDate = document.getElementById('clearEndDate').value;
+if (!sDate || !eDate) { alert("Selecione as datas de início e fim."); return; }
+
+const msg = clearClient === 'all' 
+  ? `Apagar vendas de todos os clientes de ${sDate} até ${eDate}?` 
+  : `Apagar vendas do cliente "${clearClient}" de ${sDate} até ${eDate}?`;
+
+if (confirm(msg)) {
+globalData = globalData.filter(row => {
+  const matchClient = (clearClient === 'all' || row.cliente.trim().toUpperCase() === clearClient.trim().toUpperCase());
+  const matchDate = (row.data >= sDate && row.data <= eDate);
+  return !(matchClient && matchDate);
+});
+localStorage.setItem('nexxa_data', JSON.stringify(globalData));
+populateFilterDropdowns();
+updateAllViews();
+closeClearModal();
+alert("Registros de vendas removidos com sucesso!");
+}
+}
+}
+
+function switchTab(tabName) {
+const dashTab = document.getElementById('tab-dashboard');
+const stockTab = document.getElementById('tab-stock');
+const projTab = document.getElementById('tab-projection');
+const entryTab = document.getElementById('tab-entries');
+
+dashTab.classList.add('hidden');
+stockTab.classList.add('hidden');
+projTab.classList.add('hidden');
+entryTab.classList.add('hidden');
+
+document.getElementById('btn-tab-dashboard').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap";
+document.getElementById('btn-tab-stock').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap";
+document.getElementById('btn-tab-projection').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap";
+document.getElementById('btn-tab-entries').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap";
+
+if(tabName === 'dashboard') {
+dashTab.classList.remove('hidden');
+document.getElementById('btn-tab-dashboard').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap";
+renderDashboard();
+} else if(tabName === 'stock') {
+stockTab.classList.remove('hidden');
+document.getElementById('btn-tab-stock').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap";
+renderStockView();
+} else if(tabName === 'projection') {
+projTab.classList.remove('hidden');
+document.getElementById('btn-tab-projection').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap";
+renderProjection();
+} else if(tabName === 'entries') {
+entryTab.classList.remove('hidden');
+document.getElementById('btn-tab-entries').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap";
+renderEntries();
+}
+}
+
+function applyDatePreset() {
+const preset = document.getElementById('dateRangePreset').value;
+if (preset === 'all') {
+document.getElementById('startDate').value = '';
+document.getElementById('endDate').value = '';
+} else if (preset === '7' || preset === '15' || preset === '30') {
+const days = parseInt(preset);
+const today = new Date();
+const startDate = new Date();
+startDate.setDate(today.getDate() - days);
+document.getElementById('endDate').value = today.toISOString().split('T')[0];
+document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+}
+updateAllViews();
+}
+
+function onCustomDateChange() {
+document.getElementById('dateRangePreset').value = 'custom';
+updateAllViews();
+}
+
+function parseExcelDate(val) {
+if (!val || val === 0 || val === '0') return new Date().toISOString().split('T')[0];
+if (typeof val === 'number') {
+const excelDate = new Date((val - (25567 + 2)) * 86400 * 1000);
+return `${excelDate.getUTCFullYear()}-${String(excelDate.getUTCMonth() + 1).padStart(2, '0')}-${String(excelDate.getUTCDate()).padStart(2, '0')}`;
+}
+let str = String(val).trim();
+if (str.includes('/')) {
+const parts = str.split('/');
+if (parts.length === 3) {
+return `${parts[2].length === 2 ? '20' + parts[2] : parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+}
+}
+if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.substring(0, 10);
+return new Date().toISOString().split('T')[0];
+}
+
+function parseDecimal(val) {
+if (val === undefined || val === null || val === '') return 0;
+if (typeof val === 'number') return val;
+let num = parseFloat(String(val).trim().replace(',', '.'));
+return isNaN(num) ? 0 : num;
+}
+
+function handleFile(e) {
+const file = e.target.files[0];
+if (!file) return;
+const reader = new FileReader();
+reader.onload = function(evt) {
+try {
+const data = new Uint8Array(evt.target.result);
+const workbook = XLSX.read(data, {type: 'array', cellDates: false});
+const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
+
+if(json.length > 0) {
+const importedRows = json.map(item => ({
+cliente: item['Cliente'] || item['cliente'] || item['Filial'] || item['filial'] || 'Geral',
+categoria: item['Categoria'] || item['categoria'] || 'Geral',
+produto: item['Nome do Produto'] || item['produto'] || item['Produto'] || 'Não informado',
+ean: String(item['EAN'] || item['ean'] || '').trim(),
+data: parseExcelDate(item['Data'] || item['data']),
+qtd: parseDecimal(item['Quantidade'] || item['quantidade'] || item['Qtd'] || 0),
+vlrUnit: parseDecimal(item['Preço filial'] || item['Valor Unitário'] || item['Valor Unitario'] || 0),
+custoUnit: parseDecimal(item['Preço de Custo'] || item['preco_custo'] || 0)
+})).filter(row => row.produto !== 'Não informado' && row.produto !== '');
+
+if(importedRows.length > 0) {
+const importedKeys = new Set(importedRows.map(r => `${r.cliente}___${r.data}`));
+globalData = [...globalData.filter(r => !importedKeys.has(`${r.cliente}___${r.data}`)), ...importedRows];
+localStorage.setItem('nexxa_data', JSON.stringify(globalData));
+populateFilterDropdowns();
+updateAllViews();
+alert("Planilha de vendas importada com sucesso!");
+} else { alert("Nenhum dado válido."); }
+} else { alert("Planilha vazia."); }
+} catch(err) { alert("Erro ao ler o arquivo de vendas."); }
+};
+reader.readAsArrayBuffer(file);
+}
+
+function getObjectValueIgnoreCase(obj, candidates) {
+if (!obj) return null;
+const keys = Object.keys(obj);
+for (let c of candidates) {
+const keyMatch = keys.find(k => k.trim().toLowerCase() === c.toLowerCase());
+if (keyMatch && obj[keyMatch] !== undefined && obj[keyMatch] !== null) {
+return obj[keyMatch];
+}
+}
+return null;
+}
+
+function handleStockFile(e) {
+const file = e.target.files[0];
+if (!file) return;
+const reader = new FileReader();
+reader.onload = function(evt) {
+try {
+const data = new Uint8Array(evt.target.result);
+const workbook = XLSX.read(data, {type: 'array', cellDates: false});
+const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
+
+if(json.length > 0) {
+let count = 0;
+json.forEach(item => {
+const rawClient = getObjectValueIgnoreCase(item, ['cliente', 'loja', 'filial']) || 'Geral';
+const rawEan = getObjectValueIgnoreCase(item, ['ean', 'codigo', 'cod']);
+const rawNome = getObjectValueIgnoreCase(item, ['nome', 'produto', 'nome do produto', 'descricao']);
+const rawCategoria = getObjectValueIgnoreCase(item, ['categoria', 'cat', 'grupo']) || 'GERAL';
+const rawEstoque = getObjectValueIgnoreCase(item, ['estoque', 'quantidade', 'qtd', 'saldo']);
+
+const cliente = String(rawClient).trim();
+const ean = rawEan ? String(rawEan).trim() : '';
+const nome = rawNome ? String(rawNome).trim() : '';
+const categoria = String(rawCategoria).trim();
+const estoque = parseDecimal(rawEstoque);
+
+if (cliente && (ean || nome)) {
+const identifier = ean ? ean : nome.toUpperCase();
+const key = `${cliente.toUpperCase()}___${identifier}`;
+globalOfficialStock[key] = {
+cliente: cliente,
+produto: nome || identifier,
+ean: ean,
+categoria: categoria,
+estoque: estoque
+};
+count++;
+}
+});
+
+if(count > 0) {
+localStorage.setItem('nexxa_official_stock', JSON.stringify(globalOfficialStock));
+populateFilterDropdowns();
+updateAllViews();
+alert(`Estoque por cliente importado com sucesso! ${count} registros processados.`);
+} else { alert("Nenhuma coluna válida (cliente, ean/nome, estoque) encontrada."); }
+} else { alert("Planilha de estoque vazia."); }
+} catch(err) { alert("Erro ao ler arquivo de estoque."); }
+};
+reader.readAsArrayBuffer(file);
+}
+
+function downloadStockTemplateCSV() {
+const csvContent = "data:text/csv;charset=utf-8,\uFEFF" +
+"cliente;ean;nome;categoria;estoque\n" +
+"ANNA BEATRIZ (MARINHA);78944880;ALGODAO;PERFUM;86\n" +
+"ANNA BEATRIZ (MARINHA);78964338;ACUCAR;MERCADO;128";
+const encodedUri = encodeURI(csvContent);
+const link = document.createElement("a");
+link.setAttribute("href", encodedUri);
+link.setAttribute("download", "modelo_estoque_por_cliente.csv");
+document.body.appendChild(link);
+link.click();
+link.remove();
+}
+
+function populateFilterDropdowns() {
+const clientsSet = new Set();
+const categoriesSet = new Set();
+globalData.forEach(i => {
+  clientsSet.add(i.cliente);
+  categoriesSet.add(i.categoria);
+});
+for(let k in globalOfficialStock) {
+  if(globalOfficialStock[k].cliente) clientsSet.add(globalOfficialStock[k].cliente);
+  if(globalOfficialStock[k].categoria) categoriesSet.add(globalOfficialStock[k].categoria);
+}
+const clients = [...clientsSet].sort();
+const categories = [...categoriesSet].sort();
+const products = [...new Set(globalData.map(i => i.produto))].sort();
+
+const clientSelect = document.getElementById('clientFilter');
+const catSelect = document.getElementById('catFilter');
+const stockClientSelect = document.getElementById('stockClientFilter');
+const stockCatSelect = document.getElementById('stockCatFilter');
+const projClientSelect = document.getElementById('projClientFilter');
+
+const currentClient = clientSelect.value;
+const currentCat = catSelect.value;
+const currentStockClient = stockClientSelect ? stockClientSelect.value : 'all';
+const currentStockCat = stockCatSelect ? stockCatSelect.value : 'all';
+const currentProjClient = projClientSelect ? projClientSelect.value : 'all';
+
+clientSelect.innerHTML = '<option value="all">Todos os Clientes</option>';
+if(stockClientSelect) stockClientSelect.innerHTML = '<option value="all">Todos os Clientes</option>';
+if(projClientSelect) projClientSelect.innerHTML = '<option value="all">Todos os Clientes</option>';
+
+clients.forEach(c => { 
+  clientSelect.innerHTML += `<option value="${c}">${c}</option>`; 
+  if(stockClientSelect) stockClientSelect.innerHTML += `<option value="${c}">${c}</option>`;
+  if(projClientSelect) projClientSelect.innerHTML += `<option value="${c}">${c}</option>`;
+});
+
+clientSelect.value = clients.includes(currentClient) ? currentClient : 'all';
+if(stockClientSelect) stockClientSelect.value = clients.includes(currentStockClient) ? currentStockClient : 'all';
+if(projClientSelect) projClientSelect.value = clients.includes(currentProjClient) ? currentProjClient : 'all';
+
+catSelect.innerHTML = '<option value="all">Todas as Categorias</option>';
+if(stockCatSelect) stockCatSelect.innerHTML = '<option value="all">Todas as Categorias</option>';
+categories.forEach(cat => { 
+  catSelect.innerHTML += `<option value="${cat}">${cat}</option>`; 
+  if(stockCatSelect) stockCatSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+});
+catSelect.value = categories.includes(currentCat) ? currentCat : 'all';
+if(stockCatSelect) stockCatSelect.value = categories.includes(currentStockCat) ? currentStockCat : 'all';
+
+const prodList = document.getElementById('prodList');
+prodList.innerHTML = '';
+products.forEach(p => { prodList.innerHTML += `<option value="${p}">`; });
+}
+
+function downloadTemplateCSV() {
+const csvContent = "data:text/csv;charset=utf-8,\uFEFF" +
+"Cliente;Categoria;Produto;EAN;Quantidade;Preço Unitário;Data\n" +
+"ANNA BEATRIZ (MARINHA);PERFUM;ALGODAO;78944880;18;1,29;2026-10-01";
+const encodedUri = encodeURI(csvContent);
+const link = document.createElement("a");
+link.setAttribute("href", encodedUri);
+link.setAttribute("download", "modelo_vendas_nexxa.csv");
+document.body.appendChild(link);
+link.click();
+link.remove();
+}
+
+function formatCurrency(val) {
+return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function renderPaginationControls(containerId, totalItems, pageSizeVal, currentPage, onPageChangeFnName) {
+const container = document.getElementById(containerId);
+if (!container) return { pageItems: totalItems, startIdx: 0, endIdx: totalItems.length };
+
+if (pageSizeVal === 'all') {
+container.innerHTML = `<span>Total: <b>${totalItems.length}</b></span><span>Página 1/1</span>`;
+return { pageItems: totalItems, startIdx: 0, endIdx: totalItems.length };
+}
+
+const pageSize = parseInt(pageSizeVal) || 30;
+const totalPages = Math.ceil(totalItems.length / pageSize) || 1;
+const validPage = Math.min(Math.max(1, currentPage), totalPages);
+
+const startIdx = (validPage - 1) * pageSize;
+const endIdx = Math.min(startIdx + pageSize, totalItems.length);
+const pageItems = totalItems.slice(startIdx, endIdx);
+
+let controlsHtml = `
+<div><b>${totalItems.length > 0 ? startIdx + 1 : 0}-${endIdx}</b> de <b>${totalItems.length}</b></div>
+<div class="flex items-center space-x-1.5">
+<button onclick="${onPageChangeFnName}(${validPage - 1})" ${validPage === 1 ? 'disabled class="px-2 py-1 bg-slate-900 text-slate-600 rounded cursor-not-allowed border border-slate-800"' : 'class="px-2.5 py-1 bg-slate-800 text-amber-400 hover:bg-slate-700 rounded border border-slate-700"'}>
+<i class="fa-solid fa-chevron-left text-xs"></i>
+</button>
+<span class="font-bold text-slate-200">${validPage}/${totalPages}</span>
+<button onclick="${onPageChangeFnName}(${validPage + 1})" ${validPage === totalPages ? 'disabled class="px-2 py-1 bg-slate-900 text-slate-600 rounded cursor-not-allowed border border-slate-800"' : 'class="px-2.5 py-1 bg-slate-800 text-amber-400 hover:bg-slate-700 rounded border border-slate-700"'}>
+<i class="fa-solid fa-chevron-right text-xs"></i>
+</button>
+</div>
+`;
+container.innerHTML = controlsHtml;
+return { pageItems, startIdx, endIdx };
+}
+
+function changeTurnoverPage(newPage) { currentPageTurnover = newPage; renderDashboard(); }
+function changeConsolidatedPage(newPage) { currentPageConsolidated = newPage; renderDashboard(); }
+function changeAnalyticPage(newPage) { currentPageAnalytic = newPage; renderDashboard(); }
+function changeProjPage(newPage) { currentPageProj = newPage; renderProjection(); }
+function changeStockPage(newPage) { currentPageStock = newPage; renderStockView(); }
+
+function getFilteredDashboardData() {
+const startDateVal = document.getElementById('startDate') ? document.getElementById('startDate').value : '';
+const endDateVal = document.getElementById('endDate') ? document.getElementById('endDate').value : '';
+const selectedClient = document.getElementById('clientFilter') ? document.getElementById('clientFilter').value : 'all';
+const selectedCat = document.getElementById('catFilter') ? document.getElementById('catFilter').value : 'all';
+const selectedProd = document.getElementById('prodFilter') ? document.getElementById('prodFilter').value.trim().toLowerCase() : '';
+const searchTerm = document.getElementById('searchInput') ? document.getElementById('searchInput').value.trim().toLowerCase() : '';
+
+let filteredData = globalData;
+if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
+if (endDateVal) filteredData = filteredData.filter(row => row.data <= endDateVal);
+if (selectedClient !== 'all') filteredData = filteredData.filter(row => row.cliente === selectedClient);
+if (selectedCat !== 'all') filteredData = filteredData.filter(row => row.categoria === selectedCat);
+if (selectedProd !== '') filteredData = filteredData.filter(row => row.produto.toLowerCase().includes(selectedProd));
+if (searchTerm !== '') {
+filteredData = filteredData.filter(row =>
+row.produto.toLowerCase().includes(searchTerm) ||
+row.cliente.toLowerCase().includes(searchTerm) ||
+row.categoria.toLowerCase().includes(searchTerm) ||
+(row.ean && row.ean.toLowerCase().includes(searchTerm))
+);
+}
+return { filteredData, startDateVal, endDateVal, selectedClient, selectedCat, selectedProd, searchTerm };
+}
+
+function renderDashboard() {
+const { filteredData, selectedClient, selectedCat } = getFilteredDashboardData();
+
+let totalFaturamento = 0;
+let totalCustoVendas = 0;
+let totalQtdUnidades = 0;
+let totalVendasCount = filteredData.length;
+
+const prodValueMap = {};
+const prodQtyMap = {};
+const catValueMap = {};
+const clientValueMap = {};
+const consolidatedProdMap = {};
+
+filteredData.sort((a, b) => b.qtd - a.qtd);
+
+filteredData.forEach(row => {
+const faturamento = row.qtd * row.vlrUnit;
+const custo = row.qtd * row.custoUnit;
+totalFaturamento += faturamento;
+totalCustoVendas += custo;
+totalQtdUnidades += row.qtd;
+
+prodValueMap[row.produto] = (prodValueMap[row.produto] || 0) + faturamento;
+prodQtyMap[row.produto] = (prodQtyMap[row.produto] || 0) + row.qtd;
+catValueMap[row.categoria] = (catValueMap[row.categoria] || 0) + faturamento;
+clientValueMap[row.cliente] = (clientValueMap[row.cliente] || 0) + faturamento;
+
+const officialStock = getOfficialStock(row.cliente, row.ean, row.produto);
+
+if (!consolidatedProdMap[row.produto]) {
+consolidatedProdMap[row.produto] = {
+ean: row.ean || '',
+categoria: row.categoria,
+qtdTotal: 0,
+faturamentoTotal: 0,
+estoque: officialStock,
+custoUnit: row.custoUnit
+};
+}
+consolidatedProdMap[row.produto].qtdTotal += row.qtd;
+consolidatedProdMap[row.produto].faturamentoTotal += faturamento;
+consolidatedProdMap[row.produto].estoque = officialStock;
+consolidatedProdMap[row.produto].custoUnit = row.custoUnit;
+if(row.ean) consolidatedProdMap[row.produto].ean = row.ean;
+});
+
+let totalEstoqueVal = 0;
+for (let k in globalOfficialStock) {
+  let item = globalOfficialStock[k];
+  if (selectedClient !== 'all' && item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
+  totalEstoqueVal += (Number(item.estoque) || 0) * 1; 
+}
+
+const analyticPageSizeVal = document.getElementById('analyticPageSize') ? document.getElementById('analyticPageSize').value : '30';
+const { pageItems: analyticPageItems } = renderPaginationControls('analyticPagination', filteredData, analyticPageSizeVal, currentPageAnalytic, 'changeAnalyticPage');
+
+const tbodyAnalytic = document.getElementById('dataTableBody');
+tbodyAnalytic.innerHTML = '';
+analyticPageItems.forEach(row => {
+const faturamento = row.qtd * row.vlrUnit;
+const officialStock = getOfficialStock(row.cliente, row.ean, row.produto);
+const tr = document.createElement('tr');
+tr.className = "hover:bg-slate-800/50 transition-colors";
+tr.innerHTML = `
+<td class="p-3 font-medium text-slate-100">${row.cliente}</td>
+<td class="p-3"><span class="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-[11px] border border-slate-700">${row.categoria}</span></td>
+<td class="p-3 font-medium text-amber-400">${row.produto}</td>
+<td class="p-3 text-xs font-mono text-slate-400">${row.ean || '-'}</td>
+<td class="p-3 text-slate-400">${row.data}</td>
+<td class="p-3 text-center font-semibold text-slate-100">${row.qtd}</td>
+<td class="p-3 text-right text-slate-300">${formatCurrency(row.vlrUnit)}</td>
+<td class="p-3 text-right font-bold text-slate-100">${formatCurrency(faturamento)}</td>
+<td class="p-3 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">${officialStock}</span></td>
+`;
+tbodyAnalytic.appendChild(tr);
+});
+
+const lucroBruto = totalFaturamento - totalCustoVendas;
+const margem = totalFaturamento > 0 ? (lucroBruto / totalFaturamento) * 100 : 0;
+const precoMedioUnitario = totalQtdUnidades > 0 ? (totalFaturamento / totalQtdUnidades) : 0;
+
+document.getElementById('card-faturamento').innerText = formatCurrency(totalFaturamento);
+document.getElementById('card-lucro').innerText = formatCurrency(lucroBruto);
+document.getElementById('card-margem').innerText = `Margem: ${margem.toFixed(1)}%`;
+document.getElementById('card-estoque-val').innerText = formatCurrency(totalEstoqueVal);
+document.getElementById('card-vendas').innerText = totalVendasCount;
+document.getElementById('card-preco-medio').innerText = formatCurrency(precoMedioUnitario);
+
+renderStorePerformance(clientValueMap, filteredData, totalFaturamento);
+renderWeeklyPerformanceFourWeeks(filteredData, totalFaturamento);
+renderCustomWeeklyComparison();
+renderCharts(prodValueMap, prodQtyMap, catValueMap, clientValueMap, filteredData);
+renderTurnoverTable(consolidatedProdMap);
+renderConsolidatedProducts(consolidatedProdMap);
+}
+
+function renderWeeklyPerformanceFourWeeks(filteredData, totalFaturamentoFiltrado) {
+const container = document.getElementById('weeklyCardsContainer');
+const badgeProjecao = document.getElementById('projecaoBadge');
+if (!container) return;
+
+container.innerHTML = '';
+const weeklyTotals = { 1: 0, 2: 0, 3: 0, 4: 0 };
+
+filteredData.forEach(row => {
+if (!row.data) return;
+const dayOfMonth = parseInt(row.data.split('-')[2]);
+const faturamento = row.qtd * row.vlrUnit;
+if (dayOfMonth <= 7) weeklyTotals[1] += faturamento;
+else if (dayOfMonth <= 14) weeklyTotals[2] += faturamento;
+else if (dayOfMonth <= 21) weeklyTotals[3] += faturamento;
+else weeklyTotals[4] += faturamento;
+});
+
+const labelsSemanas = [
+{ id: 1, desc: "Dia 01 a 07" },
+{ id: 2, desc: "Dia 08 a 14" },
+{ id: 3, desc: "Dia 15 a 21" },
+{ id: 4, desc: "Dia 22 ao Fim" }
+];
+
+labelsSemanas.forEach(sem => {
+const valorSemana = weeklyTotals[sem.id];
+const percentual = totalFaturamentoFiltrado > 0 ? ((valorSemana / totalFaturamentoFiltrado) * 100).toFixed(1) : 0;
+const card = document.createElement('div');
+card.className = "bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between space-y-2";
+card.innerHTML = `
+<div class="flex justify-between items-center text-xs text-slate-400 font-semibold uppercase">
+<span>Semana ${sem.id}</span>
+<span class="text-[10px] text-slate-500 font-normal">(${sem.desc})</span>
+</div>
+<div class="text-base md:text-lg font-bold text-white">${formatCurrency(valorSemana)}</div>
+<div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+<div class="bg-amber-400 h-1.5" style="width: ${percentual}%"></div>
+</div>
+<div class="text-[10px] text-slate-500 text-right font-medium">${percentual}% do total</div>
+`;
+container.appendChild(card);
+});
+
+const hoje = new Date();
+const diaAtual = hoje.getDate();
+const ultimoDiaDoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
+if (diaAtual > 0 && totalFaturamentoFiltrado > 0) {
+const mediaDiaria = totalFaturamentoFiltrado / diaAtual;
+const projecaoTotal = mediaDiaria * ultimoDiaDoMes;
+if (badgeProjecao) badgeProjecao.innerText = `Projeção: ${formatCurrency(projecaoTotal)}`;
+} else if (badgeProjecao) {
+badgeProjecao.innerText = `Projeção: R$ 0,00`;
+}
+}
+
+function renderCustomWeeklyComparison() {
+const container = document.getElementById('customWeeklyCardsContainer');
+const compTotalText = document.getElementById('compTotalText');
+if (!container) return;
+
+const compStart = document.getElementById('compStartDate') ? document.getElementById('compStartDate').value : '';
+const compEnd = document.getElementById('compEndDate') ? document.getElementById('compEndDate').value : '';
+const selectedClient = document.getElementById('clientFilter') ? document.getElementById('clientFilter').value : 'all';
+const selectedCat = document.getElementById('catFilter') ? document.getElementById('catFilter').value : 'all';
+const selectedProd = document.getElementById('prodFilter') ? document.getElementById('prodFilter').value.trim().toLowerCase() : '';
+const searchTerm = document.getElementById('searchInput') ? document.getElementById('searchInput').value.trim().toLowerCase() : '';
+
+let compData = globalData;
+if (compStart) compData = compData.filter(row => row.data >= compStart);
+if (compEnd) compData = compData.filter(row => row.data <= compEnd);
+if (selectedClient !== 'all') compData = compData.filter(row => row.cliente === selectedClient);
+if (selectedCat !== 'all') compData = compData.filter(row => row.categoria === selectedCat);
+if (selectedProd !== '') compData = compData.filter(row => row.produto.toLowerCase().includes(selectedProd));
+if (searchTerm !== '') {
+compData = compData.filter(row =>
+row.produto.toLowerCase().includes(searchTerm) ||
+row.cliente.toLowerCase().includes(searchTerm) ||
+row.categoria.toLowerCase().includes(searchTerm) ||
+(row.ean && row.ean.toLowerCase().includes(searchTerm))
+);
+}
+
+const weeklyTotals = { 1: 0, 2: 0, 3: 0, 4: 0 };
+let totalCompFat = 0;
+
+compData.forEach(row => {
+if (!row.data) return;
+const dayOfMonth = parseInt(row.data.split('-')[2]);
+const faturamento = row.qtd * row.vlrUnit;
+totalCompFat += faturamento;
+if (dayOfMonth <= 7) weeklyTotals[1] += faturamento;
+else if (dayOfMonth <= 14) weeklyTotals[2] += faturamento;
+else if (dayOfMonth <= 21) weeklyTotals[3] += faturamento;
+else weeklyTotals[4] += faturamento;
+});
+
+if (compTotalText) compTotalText.innerText = `Faturamento Período: ${formatCurrency(totalCompFat)}`;
+
+container.innerHTML = '';
+const labelsSemanas = [
+{ id: 1, desc: "Dia 01 a 07" },
+{ id: 2, desc: "Dia 08 a 14" },
+{ id: 3, desc: "Dia 15 a 21" },
+{ id: 4, desc: "Dia 22 ao Fim" }
+];
+
+labelsSemanas.forEach(sem => {
+const valorSemana = weeklyTotals[sem.id];
+const percentual = totalCompFat > 0 ? ((valorSemana / totalCompFat) * 100).toFixed(1) : 0;
+const card = document.createElement('div');
+card.className = "bg-slate-950 p-3.5 rounded-xl border border-indigo-500/20 flex flex-col justify-between space-y-2";
+card.innerHTML = `
+<div class="flex justify-between items-center text-xs text-indigo-300 font-semibold uppercase">
+<span>Semana ${sem.id}</span>
+<span class="text-[10px] text-slate-500 font-normal">(${sem.desc})</span>
+</div>
+<div class="text-base md:text-lg font-bold text-white">${formatCurrency(valorSemana)}</div>
+<div class="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+<div class="bg-indigo-500 h-1.5" style="width: ${percentual}%"></div>
+</div>
+<div class="text-[10px] text-indigo-400 text-right font-medium">${percentual}% do período</div>
+`;
+container.appendChild(card);
+});
+}
+
+function getStockFilteredData() {
+const startDateVal = document.getElementById('stockStartDate') ? document.getElementById('stockStartDate').value : '';
+const endDateVal = document.getElementById('stockEndDate') ? document.getElementById('stockEndDate').value : '';
+const selectedClient = document.getElementById('stockClientFilter') ? document.getElementById('stockClientFilter').value : 'all';
+const selectedCat = document.getElementById('stockCatFilter') ? document.getElementById('stockCatFilter').value : 'all';
+const searchTerm = document.getElementById('stockSearchInput') ? document.getElementById('stockSearchInput').value.trim().toLowerCase() : '';
+
+let filteredData = globalData;
+if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
+if (endDateVal) filteredData = filteredData.filter(row => row.data <= endDateVal);
+if (selectedClient !== 'all') filteredData = filteredData.filter(row => row.cliente === selectedClient);
+if (selectedCat !== 'all') filteredData = filteredData.filter(row => row.categoria === selectedCat);
+
+let daysCount = 30;
+if (startDateVal && endDateVal) {
+const diff = Math.ceil((new Date(endDateVal) - new Date(startDateVal)) / (1000 * 60 * 60 * 24)) + 1;
+if (diff > 0) daysCount = diff;
+}
+
+const stockMap = {};
+
+for (let k in globalOfficialStock) {
+  let item = globalOfficialStock[k];
+  if (selectedClient !== 'all' && item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
+  
+  let key = `${item.cliente.trim().toUpperCase()}___${item.produto.trim().toUpperCase()}`;
+
+  if (!stockMap[key]) {
+    stockMap[key] = {
+      cliente: item.cliente,
+      produto: item.produto,
+      ean: item.ean || '',
+      categoria: item.categoria || 'GERAL',
+      qtdVendida: 0,
+      estoqueAtual: 0
+    };
+  }
+  stockMap[key].estoqueAtual += Number(item.estoque) || 0;
+  if (item.categoria && stockMap[key].categoria === 'GERAL') stockMap[key].categoria = item.categoria;
+}
+
+filteredData.forEach(row => {
+  let key = `${row.cliente.trim().toUpperCase()}___${row.produto.trim().toUpperCase()}`;
+
+  if (!stockMap[key]) {
+    stockMap[key] = {
+      cliente: row.cliente,
+      produto: row.produto,
+      ean: row.ean || '',
+      categoria: row.categoria,
+      qtdVendida: 0,
+      estoqueAtual: getOfficialStock(row.cliente, row.ean, row.produto)
+    };
+  }
+  stockMap[key].qtdVendida += row.qtd;
+  if (row.categoria && stockMap[key].categoria === 'GERAL') stockMap[key].categoria = row.categoria;
+  if (row.ean && !stockMap[key].ean) stockMap[key].ean = row.ean;
+});
+
+let sortedProducts = Object.values(stockMap);
+if (selectedCat !== 'all') sortedProducts = sortedProducts.filter(item => item.categoria === selectedCat);
+if (searchTerm !== '') {
+sortedProducts = sortedProducts.filter(item =>
+  (item.cliente && item.cliente.toLowerCase().includes(searchTerm)) ||
+  item.produto.toLowerCase().includes(searchTerm) ||
+  item.categoria.toLowerCase().includes(searchTerm) ||
+  (item.ean && item.ean.toLowerCase().includes(searchTerm))
+);
+}
+
+// Ordenação por EAN e depois por Cliente
+sortedProducts.sort((a, b) => {
+  const eanA = (a.ean || '').trim();
+  const eanB = (b.ean || '').trim();
+  const compEan = eanA.localeCompare(eanB);
+  if (compEan !== 0) return compEan;
+  return (a.cliente || '').localeCompare(b.cliente || '');
+});
+
+return { sortedProducts, daysCount };
+}
+
+function renderStockView() {
+const tbody = document.getElementById('stockTableBody');
+const thClientCol = document.getElementById('thStockClientCol');
+if (!tbody) return;
+tbody.innerHTML = '';
+
+const pageSizeVal = document.getElementById('stockPageSize') ? document.getElementById('stockPageSize').value : '30';
+const { sortedProducts, daysCount } = getStockFilteredData();
+
+if (thClientCol) {
+  thClientCol.style.display = '';
+}
+
+if (sortedProducts.length === 0) {
+tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">Nenhum registro encontrado.</td></tr>`;
+renderPaginationControls('stockPagination', [], pageSizeVal, currentPageStock, 'changeStockPage');
+return;
+}
+
+// Calcular os mínimos e máximos individuais
+sortedProducts.forEach(item => {
+  const mediaDiaria = item.qtdVendida / daysCount;
+  let minCalc = Math.max(5, Math.ceil(mediaDiaria * 7));
+  let maxCalc = Math.max(20, Math.ceil(mediaDiaria * 30));
+  if (minCalc >= maxCalc) maxCalc = minCalc + 10;
+
+  let statusStr = 'Ideal';
+  let statusBadge = '';
+  if (item.estoqueAtual <= 0) {
+    statusStr = 'Zerado';
+    statusBadge = `<span class="px-2 py-0.5 bg-rose-500/10 text-rose-400 font-bold rounded text-xs">Zerado</span>`;
+  } else if (item.estoqueAtual < minCalc) {
+    statusStr = 'Baixo';
+    statusBadge = `<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 font-bold rounded text-xs">Baixo</span>`;
+  } else if (item.estoqueAtual > maxCalc) {
+    statusStr = 'Excesso';
+    statusBadge = `<span class="px-2 py-0.5 bg-purple-500/10 text-purple-400 font-bold rounded text-xs">Excesso</span>`;
+  } else {
+    statusBadge = `<span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 font-bold rounded text-xs">Ideal</span>`;
+  }
+
+  item._minCalc = minCalc;
+  item._maxCalc = maxCalc;
+  item._statusStr = statusStr;
+  item._statusBadge = statusBadge;
+});
+
+// Agrupamento por EAN (e depois Cliente) para inclusão dos totalizadores por EAN
+const groupedMap = {};
+sortedProducts.forEach(item => {
+  const eanKey = (item.ean || 'SEM_EAN').trim().toUpperCase();
+  if (!groupedMap[eanKey]) groupedMap[eanKey] = [];
+  groupedMap[eanKey].push(item);
+});
+
+// Construir lista exibível intercalando itens e totalizadores
+const displayRows = [];
+Object.keys(groupedMap).forEach(eanKey => {
+  const items = groupedMap[eanKey];
+  let totVendida = 0;
+  let totEstoque = 0;
+  let cat = items[0].categoria;
+  let prodNome = items[0].produto;
+
+  items.forEach(it => {
+    totVendida += it.qtdVendida;
+    totEstoque += it.estoqueAtual;
+    displayRows.push({ isTotal: false, data: it });
+  });
+
+  const mediaDiariaTot = totVendida / daysCount;
+  let minTot = Math.max(5, Math.ceil(mediaDiariaTot * 7));
+  let maxTot = Math.max(20, Math.ceil(mediaDiariaTot * 30));
+  if (minTot >= maxTot) maxTot = minTot + 10;
+
+  let statusBadgeTot = '';
+  if (totEstoque <= 0) {
+    statusBadgeTot = `<span class="px-2 py-0.5 bg-rose-500/20 text-rose-300 font-bold rounded text-xs border border-rose-500/30">Zerado</span>`;
+  } else if (totEstoque < minTot) {
+    statusBadgeTot = `<span class="px-2 py-0.5 bg-amber-500/20 text-amber-300 font-bold rounded text-xs border border-amber-500/30">Baixo</span>`;
+  } else if (totEstoque > maxTot) {
+    statusBadgeTot = `<span class="px-2 py-0.5 bg-purple-500/20 text-purple-300 font-bold rounded text-xs border border-purple-500/30">Excesso</span>`;
+  } else {
+    statusBadgeTot = `<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 font-bold rounded text-xs border border-emerald-500/30">Ideal</span>`;
+  }
+
+  displayRows.push({
+    isTotal: true,
+    produto: prodNome,
+    ean: items[0].ean || '-',
+    categoria: cat,
+    qtdVendida: totVendida,
+    estoqueAtual: totEstoque,
+    minCalc: minTot,
+    maxCalc: maxTot,
+    statusBadge: statusBadgeTot
+  });
+});
+
+const { pageItems } = renderPaginationControls('stockPagination', displayRows, pageSizeVal, currentPageStock, 'changeStockPage');
+
+pageItems.forEach(rowObj => {
+  const tr = document.createElement('tr');
+  
+  if (rowObj.isTotal) {
+    tr.className = "bg-slate-950/80 border-t border-b-2 border-amber-500/40 font-bold text-amber-300";
+    tr.innerHTML = `
+      <td class="p-3 font-bold text-amber-400">TOTAL EAN</td>
+      <td class="p-3 font-bold text-amber-300"></td>
+      <td class="p-3 text-xs font-mono font-bold text-amber-400">${rowObj.ean}</td>
+      <td class="p-3"><span class="px-2 py-0.5 bg-amber-500/10 text-amber-300 rounded text-[11px] border border-amber-500/20"></span></td>
+      <td class="p-3 text-center font-bold text-amber-300">${rowObj.qtdVendida}</td>
+      <td class="p-3 text-center font-bold text-amber-300">${rowObj.estoqueAtual}</td>
+      <td class="p-3 text-center font-bold text-amber-400">${rowObj.minCalc}</td>
+      <td class="p-3 text-center font-bold text-indigo-400">${rowObj.maxCalc}</td>
+      <td class="p-3 text-center">${rowObj.statusBadge}</td>
+    `;
+  } else {
+    const item = rowObj.data;
+    tr.className = "hover:bg-slate-800/50 transition-colors";
+    tr.innerHTML = `
+      <td class="p-3 font-semibold text-slate-100">${item.cliente || '-'}</td>
+      <td class="p-3 font-bold text-amber-400">${item.produto}</td>
+      <td class="p-3 text-xs font-mono text-slate-400">${item.ean || '-'}</td>
+      <td class="p-3"><span class="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-[11px]">${item.categoria}</span></td>
+      <td class="p-3 text-center font-semibold text-slate-100">${item.qtdVendida}</td>
+      <td class="p-3 text-center font-bold text-white">${item.estoqueAtual}</td>
+      <td class="p-3 text-center font-bold text-amber-400">${item._minCalc}</td>
+      <td class="p-3 text-center font-bold text-indigo-400">${item._maxCalc}</td>
+      <td class="p-3 text-center">${item._statusBadge}</td>
+    `;
+  }
+  tbody.appendChild(tr);
+});
+}
+
+function exportStockToExcel() {
+const { sortedProducts } = getStockFilteredData();
+if (!sortedProducts || sortedProducts.length === 0) {
+  alert("Nenhum dado de estoque para exportar.");
+  return;
+}
+
+const exportData = sortedProducts.map(item => {
+  return {
+    "Cliente": item.cliente || 'Geral',
+    "EAN": item.ean || '',
+    "Produto": item.produto,
+    "Categoria": item.categoria,
+    "Vendida": item.qtdVendida,
+    "Estoque Oficial": item.estoqueAtual,
+    "Mínimo": item._minCalc || 0,
+    "Máximo": item._maxCalc || 0,
+    "Status": item._statusStr || 'Ideal'
+  };
+});
+
+exportToExcelFile(exportData, "gestao_estoque_oficial", "Estoque");
+}
+
+function renderTurnoverTable(consolidatedMap) {
+const tbody = document.getElementById('turnoverTableBody');
+if(!tbody) return;
+tbody.innerHTML = '';
+
+const pageSizeVal = document.getElementById('turnoverPageSize') ? document.getElementById('turnoverPageSize').value : '30';
+const filterStockLowTurnover = document.getElementById('filterStockLowTurnover') ? document.getElementById('filterStockLowTurnover').checked : false;
+
+let sortedProducts = Object.entries(consolidatedMap);
+if (filterStockLowTurnover) {
+sortedProducts = sortedProducts.filter(([prodName, info]) => info.estoque > 0 && info.qtdTotal <= 1);
+}
+sortedProducts.sort((a, b) => b[1].estoque - a[1].estoque);
+
+if(sortedProducts.length === 0) {
+tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Nenhum dado encontrado.</td></tr>`;
+renderPaginationControls('turnoverPagination', [], pageSizeVal, currentPageTurnover, 'changeTurnoverPage');
+return;
+}
+
+const { pageItems } = renderPaginationControls('turnoverPagination', sortedProducts, pageSizeVal, currentPageTurnover, 'changeTurnoverPage');
+
+pageItems.forEach(([prodName, info]) => {
+let turnoverRatio = info.estoque > 0 ? (info.qtdTotal / info.estoque) : info.qtdTotal;
+let badgeColor = info.qtdTotal === 0 ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : (turnoverRatio >= 1 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20');
+
+const tr = document.createElement('tr');
+tr.className = "hover:bg-slate-800/50 transition-colors";
+tr.innerHTML = `
+<td class="p-3 font-bold text-amber-400">${prodName}</td>
+<td class="p-3 text-xs font-mono text-slate-400">${info.ean || '-'}</td>
+<td class="p-3"><span class="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-[11px]">${info.categoria}</span></td>
+<td class="p-3 text-center font-bold text-white">${info.estoque}</td>
+<td class="p-3 text-center font-semibold text-slate-200">${info.qtdTotal}</td>
+<td class="p-3 text-right font-semibold text-slate-200">${formatCurrency(info.faturamentoTotal)}</td>
+<td class="p-3 text-center"><span class="px-2 py-0.5 rounded text-xs font-bold border ${badgeColor}">${info.qtdTotal === 0 ? '0x' : `${turnoverRatio.toFixed(2)}x`}</span></td>
+`;
+tbody.appendChild(tr);
+});
+}
+
+function renderConsolidatedProducts(consolidatedMap) {
+const tbody = document.getElementById('consolidatedProdTableBody');
+if(!tbody) return;
+tbody.innerHTML = '';
+
+const sortBy = document.getElementById('consolidatedSortBy') ? document.getElementById('consolidatedSortBy').value : 'faturamento';
+const pageSizeVal = document.getElementById('consolidatedPageSize') ? document.getElementById('consolidatedPageSize').value : '30';
+
+const sortedProducts = Object.entries(consolidatedMap).sort((a, b) => {
+if (sortBy === 'quantidade') return b[1].qtdTotal - a[1].qtdTotal;
+return b[1].faturamentoTotal - a[1].faturamentoTotal;
+});
+
+if(sortedProducts.length === 0) {
+tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Nenhum dado encontrado.</td></tr>`;
+renderPaginationControls('consolidatedPagination', [], pageSizeVal, currentPageConsolidated, 'changeConsolidatedPage');
+return;
+}
+
+const { pageItems } = renderPaginationControls('consolidatedPagination', sortedProducts, pageSizeVal, currentPageConsolidated, 'changeConsolidatedPage');
+
+pageItems.forEach(([prodName, info]) => {
+const tr = document.createElement('tr');
+tr.className = "hover:bg-slate-800/50 transition-colors";
+tr.innerHTML = `
+<td class="p-3 font-bold text-amber-400">${prodName}</td>
+<td class="p-3 text-xs font-mono text-slate-400">${info.ean || '-'}</td>
+<td class="p-3 text-center font-semibold text-slate-100">${info.qtdTotal}</td>
+<td class="p-3 text-center"><span class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">${info.estoque}</span></td>
+<td class="p-3 text-right font-bold text-slate-100">${formatCurrency(info.faturamentoTotal)}</td>
+`;
+tbody.appendChild(tr);
+});
+}
+
+function renderStorePerformance(clientVal, filteredData, grandTotal) {
+const tbody = document.getElementById('storePerfTableBody');
+if(!tbody) return;
+tbody.innerHTML = '';
+
+const clientStats = {};
+filteredData.forEach(row => {
+const faturamento = row.qtd * row.vlrUnit;
+if(!clientStats[row.cliente]) clientStats[row.cliente] = { faturamento: 0, vendasCount: 0 };
+clientStats[row.cliente].faturamento += faturamento;
+clientStats[row.cliente].vendasCount += 1;
+});
+
+const sortedStores = Object.entries(clientStats).sort((a,b) => b[1].faturamento - a[1].faturamento);
+if(sortedStores.length === 0) {
+tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Nenhum dado.</td></tr>`;
+return;
+}
+
+sortedStores.forEach(([storeName, stats]) => {
+const ticketMedio = stats.vendasCount > 0 ? (stats.faturamento / stats.vendasCount) : 0;
+const participacao = grandTotal > 0 ? ((stats.faturamento / grandTotal) * 100) : 0;
+
+const tr = document.createElement('tr');
+tr.className = "hover:bg-slate-800/50 transition-colors";
+tr.innerHTML = `
+<td class="p-3 font-bold text-slate-100 flex items-center space-x-1.5"><i class="fa-solid fa-shop text-amber-400 text-xs"></i><span>${storeName}</span></td>
+<td class="p-3 text-center font-semibold text-slate-300">${stats.vendasCount}</td>
+<td class="p-3 text-right font-bold text-slate-100">${formatCurrency(stats.faturamento)}</td>
+<td class="p-3 text-right font-semibold text-emerald-400">${formatCurrency(ticketMedio)}</td>
+<td class="p-3 text-center font-bold text-slate-300">${participacao.toFixed(1)}%</td>
+`;
+tbody.appendChild(tr);
+});
+}
+
+function renderCharts(prodVal, prodQty, catVal, clientVal, filteredData) {
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = '#1e293b';
+
+// 1. Gráfico de Faturamento Mensal
+const monthlyMap = {};
+const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+filteredData.forEach(row => {
+if (!row.data) return;
+const parts = row.data.split('-');
+if (parts.length >= 2) {
+const yearMonthKey = `${parts[0]}-${parts[1]}`;
+monthlyMap[yearMonthKey] = (monthlyMap[yearMonthKey] || 0) + (row.qtd * row.vlrUnit);
+}
+});
+
+const sortedMonthKeys = Object.keys(monthlyMap).sort();
+const monthlyLabels = sortedMonthKeys.map(key => {
+const [yr, mo] = key.split('-');
+return `${monthNames[parseInt(mo, 10) - 1]}/${yr}`;
+});
+const monthlyValues = sortedMonthKeys.map(key => monthlyMap[key]);
+
+const ctxMonthly = document.getElementById('chartMonthlyRevenue').getContext('2d');
+if (chartMonthlyRevenueInst) chartMonthlyRevenueInst.destroy();
+chartMonthlyRevenueInst = new Chart(ctxMonthly, {
+type: 'bar',
+data: { labels: monthlyLabels, datasets: [{ label: 'Faturamento Mensal (R$)', data: monthlyValues, backgroundColor: '#10b981', borderRadius: 6 }] },
+options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#1e293b' } } } }
+});
+
+// 2. Gráfico Diário (30 Dias)
+const dailyMap = {};
+let maxDateStr = '';
+filteredData.forEach(r => { if (!maxDateStr || r.data > maxDateStr) maxDateStr = r.data; });
+const baseDate = maxDateStr ? new Date(maxDateStr + 'T00:00:00') : new Date();
+
+const last30DaysLabels = [];
+const last30DaysValues = [];
+for (let i = 29; i >= 0; i--) {
+const d = new Date(baseDate);
+d.setDate(baseDate.getDate() - i);
+const dateStr = d.toISOString().split('T')[0];
+last30DaysLabels.push(dateStr.split('-').reverse().join('/'));
+dailyMap[dateStr] = 0;
+}
+
+filteredData.forEach(row => {
+if (dailyMap[row.data] !== undefined) dailyMap[row.data] += (row.qtd * row.vlrUnit);
+});
+
+Object.keys(dailyMap).sort().forEach(dateStr => { last30DaysValues.push(dailyMap[dateStr]); });
+
+const ctx30Days = document.getElementById('chartLast30Days').getContext('2d');
+if(chartLast30DaysInst) chartLast30DaysInst.destroy();
+chartLast30DaysInst = new Chart(ctx30Days, {
+type: 'bar',
+data: { labels: last30DaysLabels, datasets: [{ label: 'Faturamento (R$)', data: last30DaysValues, backgroundColor: '#fbbf24', borderRadius: 4 }] },
+options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#1e293b' } } } }
+});
+
+const topVal = Object.entries(prodVal).sort((a,b) => b[1] - a[1]).slice(0, 10);
+const ctxVal = document.getElementById('chartTopValue').getContext('2d');
+if(chartTopValueInst) chartTopValueInst.destroy();
+chartTopValueInst = new Chart(ctxVal, {
+type: 'bar',
+data: { labels: topVal.map(i => i[0]), datasets: [{ label: 'Faturamento (R$)', data: topVal.map(i => i[1]), backgroundColor: '#fbbf24', borderRadius: 6 }] },
+options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+});
+
+const topQty = Object.entries(prodQty).sort((a,b) => b[1] - a[1]).slice(0, 10);
+const ctxQty = document.getElementById('chartTopQty').getContext('2d');
+if(chartTopQtyInst) chartTopQtyInst.destroy();
+chartTopQtyInst = new Chart(ctxQty, {
+type: 'bar',
+data: { labels: topQty.map(i => i[0]), datasets: [{ label: 'Unidades', data: topQty.map(i => i[1]), backgroundColor: '#818cf8', borderRadius: 6 }] },
+options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+});
+
+const topCat = Object.entries(catVal).sort((a,b) => b[1] - a[1]);
+const ctxCat = document.getElementById('chartCategory').getContext('2d');
+if(chartCategoryInst) chartCategoryInst.destroy();
+chartCategoryInst = new Chart(ctxCat, {
+type: 'doughnut',
+data: { labels: topCat.map(i => i[0]), datasets: [{ data: topCat.map(i => i[1]), backgroundColor: ['#34d399', '#fbbf24', '#818cf8', '#f472b6', '#a78bfa', '#22d3ee'] }] },
+options: { responsive: true, maintainAspectRatio: false }
+});
+
+const topClient = Object.entries(clientVal).sort((a,b) => b[1] - a[1]).slice(0, 5);
+const ctxClient = document.getElementById('chartClients').getContext('2d');
+if(chartClientsInst) chartClientsInst.destroy();
+chartClientsInst = new Chart(ctxClient, {
+type: 'pie',
+data: { labels: topClient.map(i => i[0]), datasets: [{ data: topClient.map(i => i[1]), backgroundColor: ['#fbbf24', '#34d399', '#818cf8', '#f87171', '#38bdf8'] }] },
+options: { responsive: true, maintainAspectRatio: false }
+});
+}
+
+function getProjectionFilteredData() {
+const startDateVal = document.getElementById('projStartDate') ? document.getElementById('projStartDate').value : '';
+const endDateVal = document.getElementById('projEndDate') ? document.getElementById('projEndDate').value : '';
+const selectedClient = document.getElementById('projClientFilter') ? document.getElementById('projClientFilter').value : 'all';
+const projSearchTerm = document.getElementById('projSearchInput') ? document.getElementById('projSearchInput').value.toLowerCase() : '';
+const onlySuggestionFilter = document.getElementById('filterOnlySuggestion') ? document.getElementById('filterOnlySuggestion').checked : false;
+
+let filteredData = globalData;
+if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
+if (endDateVal) filteredData = filteredData.filter(row => row.data <= endDateVal);
+if (selectedClient !== 'all') filteredData = filteredData.filter(row => row.cliente === selectedClient);
+if (projSearchTerm) {
+filteredData = filteredData.filter(row =>
+row.produto.toLowerCase().includes(projSearchTerm) ||
+row.cliente.toLowerCase().includes(projSearchTerm) ||
+row.categoria.toLowerCase().includes(projSearchTerm) ||
+(row.ean && row.ean.toLowerCase().includes(projSearchTerm))
+);
+}
+
+const productStatsMap = {};
+
+for (let k in globalOfficialStock) {
+  let item = globalOfficialStock[k];
+  if (selectedClient !== 'all' && item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
+  
+  let key = `${item.cliente.trim().toUpperCase()}___${item.produto.trim().toUpperCase()}`;
+  if (!productStatsMap[key]) {
+    productStatsMap[key] = {
+      cliente: item.cliente,
+      produto: item.produto,
+      ean: item.ean || '',
+      categoria: item.categoria || 'GERAL',
+      totalQtdVendida: 0,
+      estoqueAtual: 0,
+      custoUnit: 1
+    };
+  }
+  productStatsMap[key].estoqueAtual += Number(item.estoque) || 0;
+  if (item.categoria && productStatsMap[key].categoria === 'GERAL') productStatsMap[key].categoria = item.categoria;
+  if (item.ean && !productStatsMap[key].ean) productStatsMap[key].ean = item.ean;
+}
+
+filteredData.forEach(row => {
+  let key = `${row.cliente.trim().toUpperCase()}___${row.produto.trim().toUpperCase()}`;
+  if (!productStatsMap[key]) {
+    productStatsMap[key] = {
+      cliente: row.cliente,
+      produto: row.produto,
+      ean: row.ean || '',
+      categoria: row.categoria,
+      totalQtdVendida: 0,
+      estoqueAtual: getOfficialStock(row.cliente, row.ean, row.produto),
+      custoUnit: row.custoUnit
+    };
+  }
+  productStatsMap[key].totalQtdVendida += row.qtd;
+  productStatsMap[key].custoUnit = row.custoUnit;
+  if (row.categoria && productStatsMap[key].categoria === 'GERAL') productStatsMap[key].categoria = row.categoria;
+  if (row.ean && !productStatsMap[key].ean) productStatsMap[key].ean = row.ean;
+});
+
+let sortedProducts = Object.values(productStatsMap);
+if (projSearchTerm) {
+  sortedProducts = sortedProducts.filter(item =>
+    item.produto.toLowerCase().includes(projSearchTerm) ||
+    item.cliente.toLowerCase().includes(projSearchTerm) ||
+    item.categoria.toLowerCase().includes(projSearchTerm) ||
+    (item.ean && item.ean.toLowerCase().includes(projSearchTerm))
+  );
+}
+
+if (onlySuggestionFilter) {
+  sortedProducts = sortedProducts.filter(item => {
+    let suggestion = Math.max(0, item.totalQtdVendida - item.estoqueAtual);
+    return suggestion > 0;
+  });
+}
+
+// Ordenação por EAN e depois por Cliente
+sortedProducts.sort((a, b) => {
+  const eanA = (a.ean || '').trim();
+  const eanB = (b.ean || '').trim();
+  const compEan = eanA.localeCompare(eanB);
+  if (compEan !== 0) return compEan;
+  return (a.cliente || '').localeCompare(b.cliente || '');
+});
+
+return sortedProducts;
+}
+
+function renderProjection() {
+const tbody = document.getElementById('projectionTableBody');
+if(!tbody) return;
+tbody.innerHTML = '';
+
+const pageSizeVal = document.getElementById('projPageSize') ? document.getElementById('projPageSize').value : '30';
+const sortedProducts = getProjectionFilteredData();
+
+if (sortedProducts.length === 0) {
+tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Nenhum produto encontrado.</td></tr>`;
+renderPaginationControls('projPagination', [], pageSizeVal, currentPageProj, 'changeProjPage');
+return;
+}
+
+// Agrupamento por EAN para inclusão dos totalizadores por EAN
+const groupedMap = {};
+sortedProducts.forEach(item => {
+  const eanKey = (item.ean || 'SEM_EAN').trim().toUpperCase();
+  if (!groupedMap[eanKey]) groupedMap[eanKey] = [];
+  groupedMap[eanKey].push(item);
+});
+
+const displayRows = [];
+Object.keys(groupedMap).forEach(eanKey => {
+  const items = groupedMap[eanKey];
+  let totVendida = 0;
+  let totEstoque = 0;
+  let totSugestao = 0;
+  let cat = items[0].categoria;
+  let prodNome = items[0].produto;
+  let ean = items[0].ean || '-';
+  let custoUnit = items[0].custoUnit;
+
+  items.forEach(it => {
+    totVendida += it.totalQtdVendida;
+    totEstoque += it.estoqueAtual;
+    totSugestao += Math.max(0, it.totalQtdVendida - it.estoqueAtual);
+    displayRows.push({ isTotal: false, data: it });
+  });
+
+  displayRows.push({
+    isTotal: true,
+    produto: prodNome,
+    ean: ean,
+    categoria: cat,
+    estoqueAtual: totEstoque,
+    totalQtdVendida: totVendida,
+    custoUnit: custoUnit,
+    sugestao: totSugestao
+  });
+});
+
+const { pageItems } = renderPaginationControls('projPagination', displayRows, pageSizeVal, currentPageProj, 'changeProjPage');
+
+pageItems.forEach(rowObj => {
+const tr = document.createElement('tr');
+
+if (rowObj.isTotal) {
+  tr.className = "bg-slate-950/80 border-t border-b-2 border-amber-500/40 font-bold text-amber-300";
+  tr.innerHTML = `
+    <td class="p-3 font-bold text-amber-400">TOTAL EAN</td>
+    <td class="p-3 font-bold text-amber-300"></td>
+    <td class="p-3 text-xs font-mono font-bold text-amber-400">${rowObj.ean}</td>
+    <td class="p-3"><span class="px-2 py-0.5 bg-amber-500/10 text-amber-300 rounded text-[11px] border border-amber-500/20"></span></td>
+    <td class="p-3 text-center font-bold text-amber-300">${rowObj.estoqueAtual}</td>
+    <td class="p-3 text-center font-bold text-amber-300">${rowObj.totalQtdVendida}</td>
+    <td class="p-3 text-center text-slate-400">${formatCurrency(rowObj.custoUnit)}</td>
+    <td class="p-3 text-center"><span class="px-2.5 py-1 bg-amber-500/20 text-amber-300 font-bold rounded text-xs border border-amber-500/30">${rowObj.sugestao}</span></td>
+  `;
+} else {
+  const stats = rowObj.data;
+  let suggestion = Math.max(0, stats.totalQtdVendida - stats.estoqueAtual);
+  tr.className = "hover:bg-slate-800/50 transition-colors";
+  tr.innerHTML = `
+    <td class="p-3 font-semibold text-slate-100">${stats.cliente}</td>
+    <td class="p-3 font-semibold text-amber-400">${stats.produto}</td>
+    <td class="p-3 text-xs font-mono text-slate-400">${stats.ean || '-'}</td>
+    <td class="p-3"><span class="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-[11px]">${stats.categoria}</span></td>
+    <td class="p-3 text-center font-bold text-white">${stats.estoqueAtual}</td>
+    <td class="p-3 text-center font-bold text-slate-100">${stats.totalQtdVendida}</td>
+    <td class="p-3 text-center text-slate-300">${formatCurrency(stats.custoUnit)}</td>
+    <td class="p-3 text-center"><span class="px-2.5 py-1 bg-amber-500/10 text-amber-400 font-bold rounded text-xs">${suggestion}</span></td>
+  `;
+}
+tbody.appendChild(tr);
+});
+}
+
+function handleEntryFile(e) {
+const file = e.target.files[0];
+if (!file) return;
+const reader = new FileReader();
+reader.onload = function(evt) {
+try {
+const data = new Uint8Array(evt.target.result);
+const workbook = XLSX.read(data, {type: 'array', cellDates: false});
+const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
+
+if(json.length > 0) {
+const importedEntries = json.map(item => ({
+pedido: String(item['Pedido'] || item['pedido'] || 'PED-GEN').trim(),
+fornecedor: item['Fornecedor'] || item['fornecedor'] || 'Fornecedor',
+produto: item['Produto'] || item['produto'] || 'Não informado',
+ean: String(item['Ean'] || item['EAN'] || item['ean'] || '').trim(),
+data: parseExcelDate(item['Data'] || item['data']),
+qtd: parseDecimal(item['Quantidade'] || item['quantidade'] || item['Qtd']),
+precoUnit: parseDecimal(item['Preço unitário'] || item['Preço Unitário'] || item['Custo'] || 0)
+})).filter(row => row.produto !== 'Não informado');
+
+if(importedEntries.length > 0) {
+globalEntries = importedEntries;
+localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
+updateAllViews();
+renderEntries();
+alert("Notas importadas com sucesso!");
+} else { alert("Nenhum dado válido."); }
+}
+} catch(err) { alert("Erro ao ler arquivo."); }
+};
+reader.readAsArrayBuffer(file);
+}
+
+function downloadEntryTemplateCSV() {
+const csvContent = "data:text/csv;charset=utf-8,\uFEFF" +
+"Pedido;Fornecedor;Produto;Ean;Data;Quantidade;Preço unitário\n" +
+"PED-001;Fornecedor Central SP;ALGODAO;78944880;15/10/2026;100;0,80";
+const encodedUri = encodeURI(csvContent);
+const link = document.createElement("a");
+link.setAttribute("href", encodedUri);
+link.setAttribute("download", "modelo_notas_entrada.csv");
+document.body.appendChild(link);
+link.click();
+link.remove();
+}
+
+function renderEntries() {
+const masterTbody = document.getElementById('entryMasterTableBody');
+const detailTbody = document.getElementById('entryDetailTableBody');
+const titleEl = document.getElementById('selectedOrderTitle');
+if(!masterTbody || !detailTbody) return;
+
+masterTbody.innerHTML = '';
+const ordersMap = {};
+globalEntries.forEach(row => {
+const key = row.pedido || 'PED-GEN';
+if (!ordersMap[key]) {
+ordersMap[key] = { pedido: key, fornecedor: row.fornecedor, data: row.data, itensCount: 0, valorTotalNota: 0, itens: [] };
+}
+ordersMap[key].itensCount += 1;
+ordersMap[key].valorTotalNota += (row.qtd * row.precoUnit);
+ordersMap[key].itens.push(row);
+});
+
+const ordersArray = Object.values(ordersMap);
+if (ordersArray.length === 0) {
+masterTbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">Nenhuma nota cadastrada.</td></tr>`;
+detailTbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Nenhum pedido selecionado.</td></tr>`;
+return;
+}
+
+if (!selectedOrderKey || !ordersMap[selectedOrderKey]) selectedOrderKey = ordersArray[0].pedido;
+
+ordersArray.forEach(ord => {
+const isSelected = ord.pedido === selectedOrderKey;
+const tr = document.createElement('tr');
+tr.className = `cursor-pointer transition-colors ${isSelected ? 'bg-amber-500/10 border-l-4 border-l-amber-400' : 'hover:bg-slate-800/50'}`;
+tr.onclick = () => { selectedOrderKey = ord.pedido; renderEntries(); };
+tr.innerHTML = `
+<td class="p-3 font-bold text-amber-400">${ord.pedido}</td>
+<td class="p-3 font-semibold text-slate-100">${ord.fornecedor}</td>
+<td class="p-3 text-slate-400">${ord.data}</td>
+<td class="p-3 text-center text-slate-300">${ord.itensCount}</td>
+<td class="p-3 text-right font-bold text-emerald-400">${formatCurrency(ord.valorTotalNota)}</td>
+<td class="p-3 text-center"><button class="px-2 py-1 bg-slate-800 text-amber-400 rounded text-xs">Ver</button></td>
+`;
+masterTbody.appendChild(tr);
+});
+
+const activeOrder = ordersMap[selectedOrderKey];
+if (activeOrder) {
+titleEl.innerHTML = `<i class="fa-solid fa-boxes-stacked mr-2"></i>Itens do Pedido: <span class="text-amber-300 ml-1 font-bold">${activeOrder.pedido}</span>`;
+detailTbody.innerHTML = '';
+activeOrder.itens.forEach(item => {
+const tr = document.createElement('tr');
+tr.className = "hover:bg-slate-800/50 transition-colors";
+tr.innerHTML = `
+<td class="p-3 font-medium text-amber-400">${item.produto}</td>
+<td class="p-3 text-xs font-mono text-slate-400">${item.ean || '-'}</td>
+<td class="p-3 text-center font-bold text-slate-100">${item.qtd}</td>
+<td class="p-3 text-right text-slate-300">${formatCurrency(item.precoUnit)}</td>
+<td class="p-3 text-right font-bold text-slate-100">${formatCurrency(item.qtd * item.precoUnit)}</td>
+`;
+detailTbody.appendChild(tr);
+});
+}
+}
+
+function exportToExcelFile(dataArray, fileName, sheetName) {
+if (!dataArray || dataArray.length === 0) { alert("Sem dados para exportar."); return; }
+const worksheet = XLSX.utils.json_to_sheet(dataArray);
+const workbook = XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(workbook, worksheet, sheetName || "Dados");
+XLSX.writeFile(workbook, `${fileName}_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
+function exportSummaryCardsToExcel() {
+const { filteredData, selectedClient, selectedCat } = getFilteredDashboardData();
+let totalFaturamento = 0, totalCustoVendas = 0, totalQtdUnidades = 0;
+filteredData.forEach(row => { totalFaturamento += (row.qtd * row.vlrUnit); totalCustoVendas += (row.qtd * row.custoUnit); totalQtdUnidades += row.qtd; });
+
+let totalEstoqueVal = 0;
+for (let k in globalOfficialStock) {
+  let item = globalOfficialStock[k];
+  if (selectedClient !== 'all' && item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
+  totalEstoqueVal += (Number(item.estoque) || 0) * 1;
+}
+
+const lucroBruto = totalFaturamento - totalCustoVendas;
+const margem = totalFaturamento > 0 ? (lucroBruto / totalFaturamento) * 100 : 0;
+const summaryData = [
+{ "Indicador": "Faturamento Total", "Valor": totalFaturamento },
+{ "Indicador": "Lucro Bruto", "Valor": lucroBruto },
+{ "Indicador": "Margem (%)", "Valor": Number(margem.toFixed(2)) },
+{ "Indicador": "Valor em Estoque Oficial", "Valor": totalEstoqueVal },
+{ "Indicador": "Vendas", "Valor": filteredData.length }
+];
+exportToExcelFile(summaryData, "indicadores_nexxa", "Resumo");
+}
+
+function exportStorePerfToExcel() {
+const { filteredData } = getFilteredDashboardData();
+let grandTotal = 0, clientStats = {};
+filteredData.forEach(row => {
+const f = row.qtd * row.vlrUnit; grandTotal += f;
+if (!clientStats[row.cliente]) clientStats[row.cliente] = { faturamento: 0, vendasCount: 0 };
+clientStats[row.cliente].faturamento += f; clientStats[row.cliente].vendasCount += 1;
+});
+const exportData = Object.entries(clientStats).map(([s, st]) => ({ "Loja": s, "Vendas": st.vendasCount, "Faturamento": st.faturamento }));
+exportToExcelFile(exportData, "desempenho_lojas", "Lojas");
+}
+
+function exportFourWeeksToExcel() {
+const { filteredData } = getFilteredDashboardData();
+let weeklyTotals = { 1: 0, 2: 0, 3: 0, 4: 0 };
+filteredData.forEach(row => {
+if (!row.data) return;
+const d = parseInt(row.data.split('-')[2]);
+const f = row.qtd * row.vlrUnit;
+if (d <= 7) weeklyTotals[1] += f; else if (d <= 14) weeklyTotals[2] += f; else if (d <= 21) weeklyTotals[3] += f; else weeklyTotals[4] += f;
+});
+const exportData = [1,2,3,4].map(id => ({ "Semana": `Semana ${id}`, "Faturamento": weeklyTotals[id] }));
+exportToExcelFile(exportData, "faturamento_4_semanas", "Semanas");
+}
+
+function exportCustomWeeklyToExcel() { exportFourWeeksToExcel(); }
+function exportTurnoverToExcel() { exportConsolidatedToExcel(); }
+function exportConsolidatedToExcel() {
+const { filteredData, selectedClient } = getFilteredDashboardData();
+const map = {};
+filteredData.forEach(row => {
+if(!map[row.produto]) {
+map[row.produto] = {
+ean: row.ean,
+categoria: row.categoria,
+qtdTotal: 0,
+faturamentoTotal: 0,
+estoque: getOfficialStock(selectedClient !== 'all' ? selectedClient : row.cliente, row.ean, row.produto)
+};
+}
+map[row.produto].qtdTotal += row.qtd;
+map[row.produto].faturamentoTotal += (row.qtd * row.vlrUnit);
+});
+const data = Object.entries(map).map(([p, i]) => ({ "Produto": p, "EAN": i.ean, "Categoria": i.categoria, "Qtd": i.qtdTotal, "Estoque Oficial": i.estoque, "Faturamento": i.faturamentoTotal }));
+exportToExcelFile(data, "consolidado_produtos", "Produtos");
+}
+function exportAnalyticToExcel() {
+const { filteredData } = getFilteredDashboardData();
+exportToExcelFile(filteredData, "analitico_lancamentos", "Analítico");
+}
+function exportProjectionToExcel() {
+const sortedProducts = getProjectionFilteredData();
+const exportData = sortedProducts.map(stats => ({
+  "Cliente": stats.cliente,
+  "EAN": stats.ean || '',
+  "Produto": stats.produto,
+  "Categoria": stats.categoria,
+  "Estoque Oficial": stats.estoqueAtual,
+  "Vendida": stats.totalQtdVendida,
+  "Custo Unit": stats.custoUnit,
+  "Sugestão Compra": Math.max(0, stats.totalQtdVendida - stats.estoqueAtual)
+}));
+exportToExcelFile(exportData, "projecao_compras", "Projeção");
+}
+
+function exportFullDatabaseJSON() {
+const backupData = { globalData, globalEntries, globalOfficialStock };
+const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+const a = document.createElement('a'); a.href = dataStr; a.download = `backup_nexxa_${new Date().toISOString().split('T')[0]}.json`;
+document.body.appendChild(a); a.click(); a.remove();
+}
+
+function importFullDatabaseJSON(e) {
+    const file = e.target.files[0]; 
+    if (!file) return;
+    
+    const reader = new FileReader();
+    
+    // Usamos readAsDataURL para evitar qualquer conflito de encoding no telemóvel
+    reader.onload = function(evt) {
+        try {
+            const base64Data = evt.target.result.split(',')[1];
+            if (!base64Data) {
+                alert("O arquivo está vazio ou corrompido.");
+                return;
+            }
+
+            // Decodifica o Base64 garantindo UTF-8 correto em qualquer dispositivo
+            const jsonString = decodeURIComponent(escape(atob(base64Data)));
+            const imp = JSON.parse(jsonString);
+            
+            if (!imp || typeof imp !== 'object') {
+                alert("Formato de arquivo JSON inválido.");
+                return;
+            }
+
+            // Restaura os dados com segurança
+            if (Array.isArray(imp.globalData)) {
+                globalData = imp.globalData;
+                localStorage.setItem('nexxa_data', JSON.stringify(globalData));
+            } else {
+                globalData = [];
+                localStorage.removeItem('nexxa_data');
+            }
+
+            if (Array.isArray(imp.globalEntries)) {
+                globalEntries = imp.globalEntries;
+                localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
+            } else {
+                globalEntries = [];
+                localStorage.removeItem('nexxa_entries');
+            }
+
+            if (imp.globalOfficialStock && typeof imp.globalOfficialStock === 'object') {
+                globalOfficialStock = imp.globalOfficialStock;
+                localStorage.setItem('nexxa_official_stock', JSON.stringify(globalOfficialStock));
+            } else {
+                globalOfficialStock = {};
+                localStorage.removeItem('nexxa_official_stock');
+            }
+
+            // Atualiza a interface da aplicação
+            populateFilterDropdowns();
+            updateAllViews();
+            renderEntries();
+            
+            e.target.value = ''; // Reseta o input para permitir nova importação
+
+            alert("Backup restaurado com sucesso no telemóvel!");
+        } catch(err) {
+            console.error("Erro crítico na restauração mobile:", err);
+            alert("Não foi possível processar o arquivo JSON neste telemóvel. Certifique-se de que o arquivo foi gerado pelo botão 'Backup' do próprio painel.");
+        }
+    };
+    
+    reader.onerror = function() {
+        alert("Erro crítico na leitura do arquivo pelo navegador.");
+    };
+
+    reader.readAsDataURL(file);
+}
+
+function applyProjDatePreset() { currentPageProj = 1; renderProjection(); }
+function onProjCustomDateChange() { currentPageProj = 1; renderProjection(); }
+function applyStockDatePreset() { currentPageStock = 1; renderStockView(); }
+function onStockCustomDateChange() { currentPageStock = 1; renderStockView(); }
+
+window.onload = function() {
+initTheme();
+setDefaultCurrentDate();
+populateFilterDropdowns();
+updateAllViews();
+renderEntries();
+};
+</script>
