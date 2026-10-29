@@ -955,17 +955,16 @@ async function carregarDadosDoPainel() {
     console.log("Painel totalmente inicializado e verificado.");
 }
 
+
 function safeSetLocalStorage(key, value) {
     try {
         localStorage.setItem(key, JSON.stringify(value));
     } catch (e) {
-        if (e.name === 'QuotaExceededError' || e.code === 22 || e.number === -2147024882) {
-            console.warn(`⚠️ Limite do armazenamento local (localStorage) atingido para '${key}'. A priorizar salvamento na nuvem.`);
-        } else {
-            console.error("Erro ao salvar no localStorage:", e);
-        }
+        // Ignora silenciosamente qualquer erro de cota ou bloqueio de privacidade do iOS (Safari)
+        console.warn(`⚠️ Armazenamento local indisponível para '${key}' (Modo Privado ou Cota cheia). A usar apenas memória em nuvem/RAM.`);
     }
 }
+
 
 async function salvarDadosNaNuvem(tipo, payload) {
     if (tipo === 'vendas') {
