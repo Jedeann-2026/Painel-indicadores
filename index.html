@@ -1746,7 +1746,7 @@ for (let k in globalOfficialStock) {
   let item = globalOfficialStock[k];
   if (selectedClient !== 'all' && item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
   
-  let key = `${item.cliente.trim().toUpperCase()}___${item.produto.trim().toUpperCase()}`;
+  let key = `${(item.cliente || '').trim().toUpperCase()}___${item.produto.trim().toUpperCase()}`;
 
   if (!stockMap[key]) {
     stockMap[key] = {
@@ -1763,7 +1763,7 @@ for (let k in globalOfficialStock) {
 }
 
 filteredData.forEach(row => {
-  let key = `${row.cliente.trim().toUpperCase()}___${row.produto.trim().toUpperCase()}`;
+  let key = `${(row.cliente || '').trim().toUpperCase()}___${row.produto.trim().toUpperCase()}`;
 
   if (!stockMap[key]) {
     stockMap[key] = {
