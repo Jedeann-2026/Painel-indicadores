@@ -885,6 +885,9 @@ let globalOfficialStock = {};
 
 let selectedOrderKey = null;
 
+
+
+
 async function carregarDadosDoPainel() {
     try {
         console.log("A sincronizar dados com o Supabase...");
@@ -952,7 +955,17 @@ async function carregarDadosDoPainel() {
     console.log("Painel totalmente inicializado e verificado.");
 }
 
-
+function safeSetLocalStorage(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+        if (e.name === 'QuotaExceededError' || e.code === 22 || e.number === -2147024882) {
+            console.warn(`⚠️ Limite do armazenamento local (localStorage) atingido para '${key}'. A priorizar salvamento na nuvem.`);
+        } else {
+            console.error("Erro ao salvar no localStorage:", e);
+        }
+    }
+}
 
 async function salvarDadosNaNuvem(tipo, payload) {
     if (tipo === 'vendas') {
@@ -960,13 +973,13 @@ async function salvarDadosNaNuvem(tipo, payload) {
             console.warn("Tentativa de salvar vendas vazias bloqueada.");
             return;
         }
-        localStorage.setItem('nexxa_data', JSON.stringify(payload));
+        safeSetLocalStorage('nexxa_data', payload);
     }
-    if (tipo === 'entradas') localStorage.setItem('nexxa_entries', JSON.stringify(payload));
-    if (tipo === 'estoque') localStorage.setItem('nexxa_official_stock', JSON.stringify(payload));
+    if (tipo === 'entradas') safeSetLocalStorage('nexxa_entries', payload);
+    if (tipo === 'estoque') safeSetLocalStorage('nexxa_official_stock', payload);
 
     try {
-        console.log(`A enviar dados de '${tipo}' para a nuvem. Total de registos:`, payload.length || Object.keys(payload).length);
+        console.log(`A enviar dados de '${tipo}' para a nuvem. Total:`, payload.length || Object.keys(payload).length);
         
         const { data, error } = await supabaseClient
             .from('nexxa_store')
@@ -979,42 +992,14 @@ async function salvarDadosNaNuvem(tipo, payload) {
             });
 
         if (error) {
-            console.error(`Erro do Supabase ao salvar '${tipo}':`, error.message, error.details);
-            alert(`Erro ao salvar ${tipo} na nuvem: ${error.message}`);
+            console.error(`Erro do Supabase ao salvar '${tipo}':`, error.message);
         } else {
-            console.log(`Dados de '${tipo}' salvos com sucesso na nuvem!`);
+            console.log(`✅ Dados de '${tipo}' salvos com sucesso na nuvem!`);
         }
     } catch (err) {
         console.error(`Erro crítico ao salvar '${tipo}' na nuvem:`, err);
     }
 }
-/*
-async function salvarDadosNaNuvem(tipo, payload) {
-    if (tipo === 'vendas') localStorage.setItem('nexxa_data', JSON.stringify(payload));
-    if (tipo === 'entradas') localStorage.setItem('nexxa_entries', JSON.stringify(payload));
-    if (tipo === 'estoque') localStorage.setItem('nexxa_official_stock', JSON.stringify(payload));
-
-    try {
-        const { data, error } = await supabaseClient
-            .from('nexxa_store')
-            .upsert({
-                id: tipo,
-                data: payload,
-                updated_at: new Date().toISOString()
-            }, { 
-                onConflict: 'id'
-            });
-
-        if (error) {
-            console.error("Erro detalhado do Supabase:", error);
-        } else {
-            console.log(`Dados do tipo '${tipo}' salvos com sucesso na nuvem!`);
-        }
-    } catch (err) {
-        console.error("Erro crítico ao salvar na nuvem:", err);
-    }
-}
-*/
 
 function getOfficialStock(clientName, ean, productName) {
   const cleanClient = (clientName || '').trim().toUpperCase();
