@@ -1752,85 +1752,79 @@ container.appendChild(card);
 }
 
 function getStockFilteredData() {
-const startDateVal = document.getElementById('stockStartDate') ? document.getElementById('stockStartDate').value : '';
-const endDateVal = document.getElementById('stockEndDate') ? document.getElementById('stockEndDate').value : '';
-const selectedClient = document.getElementById('stockClientFilter') ? document.getElementById('stockClientFilter').value : 'all';
-const selectedCat = document.getElementById('stockCatFilter') ? document.getElementById('stockCatFilter').value : 'all';
-const searchTerm = document.getElementById('stockSearchInput') ? document.getElementById('stockSearchInput').value.trim().toLowerCase() : '';
+    const startDateVal = document.getElementById('stockStartDate') ? document.getElementById('stockStartDate').value : '';
+    const endDateVal = document.getElementById('stockEndDate') ? document.getElementById('stockEndDate').value : '';
+    const selectedClient = document.getElementById('stockClientFilter') ? document.getElementById('stockClientFilter').value : 'all';
+    const selectedCat = document.getElementById('stockCatFilter') ? document.getElementById('stockCatFilter').value : 'all';
+    const searchTerm = document.getElementById('stockSearchInput') ? document.getElementById('stockSearchInput').value.trim().toLowerCase() : '';
 
-let filteredData = globalData;
-if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
-if (endDateVal) filteredData = filteredData.filter(row => row.data <= endDateVal);
-if (selectedClient !== 'all') filteredData = filteredData.filter(row => row.cliente === selectedClient);
-if (selectedCat !== 'all') filteredData = filteredData.filter(row => row.categoria === selectedCat);
+    let filteredData = globalData;
+    if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
+    if (endDateVal) filteredData = filteredData.filter(row => row.data <= endDateVal);
+    if (selectedClient !== 'all') filteredData = filteredData.filter(row => row.cliente === selectedClient);
+    if (selectedCat !== 'all') filteredData = filteredData.filter(row => row.categoria === selectedCat);
 
-let daysCount = 30;
-if (startDateVal && endDateVal) {
-const diff = Math.ceil((new Date(endDateVal) - new Date(startDateVal)) / (1000 * 60 * 60 * 24)) + 1;
-if (diff > 0) daysCount = diff;
+    let daysCount = 30;
+    if (startDateVal && endDateVal) {
+        const diff = Math.ceil((new Date(endDateVal) - new Date(startDateVal)) / (1000 * 60 * 60 * 24)) + 1;
+        if (diff > 0) daysCount = diff;
+    }
+
+    const stockMap = {};
+
+    // 1. CARREGA PRIMEIRO O ESTOQUE OFICIAL (Garante que o CD e itens sem vendas entrem na conta)
+    for (let k in globalOfficialStock) {
+        let item = globalOfficialStock[k];
+        if (selectedClient !== 'all' && (item.cliente || '').trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
+        
+        let key = `${(item.cliente || '').trim().toUpperCase()}___${(item.produto || '').trim().toUpperCase()}`;
+
+        stockMap[key] = {
+            cliente: item.cliente,
+            produto: item.produto,
+            ean: item.ean || '',
+            categoria: item.categoria || 'GERAL',
+            qtdVendida: 0,
+            estoqueAtual: Number(item.estoque) || 0
+        };
+    }
+
+    // 2. SOMA AS VENDAS CORRESPONDENTES (Se houver no período)
+    filteredData.forEach(row => {
+        let key = `${(row.cliente || '').trim().toUpperCase()}___${(row.produto || '').trim().toUpperCase()}`;
+
+        if (!stockMap[key]) {
+            stockMap[key] = {
+                cliente: row.cliente,
+                produto: row.produto,
+                ean: row.ean || '',
+                categoria: row.categoria || 'GERAL',
+                qtdVendida: 0,
+                estoqueAtual: getOfficialStock(row.cliente, row.ean, row.produto)
+            };
+        }
+        stockMap[key].qtdVendida += row.qtd;
+        if (row.categoria && stockMap[key].categoria === 'GERAL') stockMap[key].categoria = row.categoria;
+        if (row.ean && !stockMap[key].ean) stockMap[key].ean = row.ean;
+    });
+
+    let sortedProducts = Object.values(stockMap);
+    if (selectedCat !== 'all') sortedProducts = sortedProducts.filter(item => item.categoria === selectedCat);
+    if (searchTerm !== '') {
+        sortedProducts = sortedProducts.filter(item =>
+            (item.cliente && item.cliente.toLowerCase().includes(searchTerm)) ||
+            item.produto.toLowerCase().includes(searchTerm) ||
+            item.categoria.toLowerCase().includes(searchTerm) ||
+            (item.ean && item.ean.toLowerCase().includes(searchTerm))
+        );
+    }
+
+    // Ordena do maior para o menor em quantidade vendida
+    sortedProducts.sort((a, b) => b.qtdVendida - a.qtdVendida);
+
+    return { sortedProducts, daysCount };
 }
 
-const stockMap = {};
-
-for (let k in globalOfficialStock) {
-  let item = globalOfficialStock[k];
-  if (selectedClient !== 'all' && item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
-  
-  let key = `${(item.cliente || '').trim().toUpperCase()}___${item.produto.trim().toUpperCase()}`;
-
-  if (!stockMap[key]) {
-    stockMap[key] = {
-      cliente: item.cliente,
-      produto: item.produto,
-      ean: item.ean || '',
-      categoria: item.categoria || 'GERAL',
-      qtdVendida: 0,
-      estoqueAtual: 0
-    };
-  }
-  stockMap[key].estoqueAtual += Number(item.estoque) || 0;
-  if (item.categoria && stockMap[key].categoria === 'GERAL') stockMap[key].categoria = item.categoria;
-}
-
-filteredData.forEach(row => {
-  let key = `${(row.cliente || '').trim().toUpperCase()}___${row.produto.trim().toUpperCase()}`;
-
-  if (!stockMap[key]) {
-    stockMap[key] = {
-      cliente: row.cliente,
-      produto: row.produto,
-      ean: row.ean || '',
-      categoria: row.categoria,
-      qtdVendida: 0,
-      estoqueAtual: getOfficialStock(row.cliente, row.ean, row.produto)
-    };
-  }
-  stockMap[key].qtdVendida += row.qtd;
-  if (row.categoria && stockMap[key].categoria === 'GERAL') stockMap[key].categoria = row.categoria;
-  if (row.ean && !stockMap[key].ean) stockMap[key].ean = row.ean;
-});
-
-let sortedProducts = Object.values(stockMap);
-if (selectedCat !== 'all') sortedProducts = sortedProducts.filter(item => item.categoria === selectedCat);
-if (searchTerm !== '') {
-sortedProducts = sortedProducts.filter(item =>
-  (item.cliente && item.cliente.toLowerCase().includes(searchTerm)) ||
-  item.produto.toLowerCase().includes(searchTerm) ||
-  item.categoria.toLowerCase().includes(searchTerm) ||
-  (item.ean && item.ean.toLowerCase().includes(searchTerm))
-);
-}
-
-sortedProducts.sort((a, b) => {
-  const eanA = (a.ean || '').trim();
-  const eanB = (b.ean || '').trim();
-  const compEan = eanA.localeCompare(eanB);
-  if (compEan !== 0) return compEan;
-  return (a.cliente || '').localeCompare(b.cliente || '');
-});
-
-return { sortedProducts, daysCount };
-}
 
 function renderStockView() {
     const tbody = document.getElementById('stockTableBody');
@@ -2212,93 +2206,83 @@ options: { responsive: true, maintainAspectRatio: false }
 }
 
 function getProjectionFilteredData() {
-const startDateVal = document.getElementById('projStartDate') ? document.getElementById('projStartDate').value : '';
-const endDateVal = document.getElementById('projEndDate') ? document.getElementById('projEndDate').value : '';
-const selectedClient = document.getElementById('projClientFilter') ? document.getElementById('projClientFilter').value : 'all';
-const projSearchTerm = document.getElementById('projSearchInput') ? document.getElementById('projSearchInput').value.toLowerCase() : '';
-const onlySuggestionFilter = document.getElementById('filterOnlySuggestion') ? document.getElementById('filterOnlySuggestion').checked : false;
+    const startDateVal = document.getElementById('projStartDate') ? document.getElementById('projStartDate').value : '';
+    const endDateVal = document.getElementById('projEndDate') ? document.getElementById('projEndDate').value : '';
+    const selectedClient = document.getElementById('projClientFilter') ? document.getElementById('projClientFilter').value : 'all';
+    const projSearchTerm = document.getElementById('projSearchInput') ? document.getElementById('projSearchInput').value.toLowerCase() : '';
 
-let filteredData = globalData;
-if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
-if (endDateVal) filteredData = filteredData.filter(row => row.data <= endDateVal);
-if (selectedClient !== 'all') filteredData = filteredData.filter(row => row.cliente === selectedClient);
-if (projSearchTerm) {
-filteredData = filteredData.filter(row =>
-row.produto.toLowerCase().includes(projSearchTerm) ||
-row.cliente.toLowerCase().includes(projSearchTerm) ||
-row.categoria.toLowerCase().includes(projSearchTerm) ||
-(row.ean && row.ean.toLowerCase().includes(projSearchTerm))
-);
-}
+    let filteredData = globalData;
+    if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
+    if (endDateVal) filteredData = filteredData.filter(row => row.data <= endDateVal);
+    if (selectedClient !== 'all') filteredData = filteredData.filter(row => row.cliente === selectedClient);
+    if (projSearchTerm) {
+        filteredData = filteredData.filter(row =>
+            row.produto.toLowerCase().includes(projSearchTerm) ||
+            row.cliente.toLowerCase().includes(projSearchTerm) ||
+            row.categoria.toLowerCase().includes(projSearchTerm) ||
+            (row.ean && row.ean.toLowerCase().includes(projSearchTerm))
+        );
+    }
 
-const productStatsMap = {};
+    const productStatsMap = {};
 
-for (let k in globalOfficialStock) {
-  let item = globalOfficialStock[k];
-  if (selectedClient !== 'all' && (item.cliente || '').trim().toUpperCase() !== (selectedClient || '').trim().toUpperCase()) continue;
-  
-  let key = `${item.cliente.trim().toUpperCase()}___${(item.produto || '').trim().toUpperCase()}`;
-  if (!productStatsMap[key]) {
-    productStatsMap[key] = {
-      cliente: item.cliente,
-      produto: item.produto,
-      ean: item.ean || '',
-      categoria: item.categoria || 'GERAL',
-      totalQtdVendida: 0,
-      estoqueAtual: 0,
-      custoUnit: 1
-    };
-  }
-  productStatsMap[key].estoqueAtual += Number(item.estoque) || 0;
-  if (item.categoria && productStatsMap[key].categoria === 'GERAL') productStatsMap[key].categoria = item.categoria;
-  if (item.ean && !productStatsMap[key].ean) productStatsMap[key].ean = item.ean;
-}
+    // 1. CARREGA PRIMEIRO O ESTOQUE OFICIAL CONSOLIDADO POR EAN
+    for (let k in globalOfficialStock) {
+        let item = globalOfficialStock[k];
+        if (selectedClient !== 'all' && (item.cliente || '').trim().toUpperCase() !== (selectedClient || '').trim().toUpperCase()) continue;
+        
+        // Usa estritamente o EAN como chave principal se existir, senão usa o nome do produto
+        let eanKey = item.ean ? String(item.ean).trim().toUpperCase() : (item.produto || '').trim().toUpperCase();
+        
+        if (!productStatsMap[eanKey]) {
+            productStatsMap[eanKey] = {
+                produto: item.produto,
+                ean: item.ean || '',
+                categoria: item.categoria || 'GERAL',
+                totalQtdVendida: 0,
+                estoqueAtual: 0,
+                custoUnit: 1
+            };
+        }
+        productStatsMap[eanKey].estoqueAtual += Number(item.estoque) || 0;
+        if (item.categoria && productStatsMap[eanKey].categoria === 'GERAL') productStatsMap[eanKey].categoria = item.categoria;
+        if (item.produto && !productStatsMap[eanKey].produto) productStatsMap[eanKey].produto = item.produto;
+    }
 
-filteredData.forEach(row => {
-  let key = `${(row.cliente || '').trim().toUpperCase()}___${(row.produto || '').trim().toUpperCase()}`;
-  if (!productStatsMap[key]) {
-    productStatsMap[key] = {
-      cliente: row.cliente,
-      produto: row.produto,
-      ean: row.ean || '',
-      categoria: row.categoria,
-      totalQtdVendida: 0,
-      estoqueAtual: getOfficialStock(row.cliente, row.ean, row.produto),
-      custoUnit: row.custoUnit
-    };
-  }
-  productStatsMap[key].totalQtdVendida += row.qtd;
-  productStatsMap[key].custoUnit = row.custoUnit;
-  if (row.categoria && productStatsMap[key].categoria === 'GERAL') productStatsMap[key].categoria = row.categoria;
-  if (row.ean && !productStatsMap[key].ean) productStatsMap[key].ean = row.ean;
-});
+    // 2. SOMA AS VENDAS CORRESPONDENTES POR EAN
+    filteredData.forEach(row => {
+        let eanKey = row.ean ? String(row.ean).trim().toUpperCase() : (row.produto || '').trim().toUpperCase();
 
-let sortedProducts = Object.values(productStatsMap);
-if (projSearchTerm) {
-  sortedProducts = sortedProducts.filter(item =>
-    item.produto.toLowerCase().includes(projSearchTerm) ||
-    item.cliente.toLowerCase().includes(projSearchTerm) ||
-    item.categoria.toLowerCase().includes(projSearchTerm) ||
-    (item.ean && item.ean.toLowerCase().includes(projSearchTerm))
-  );
-}
+        if (!productStatsMap[eanKey]) {
+            productStatsMap[eanKey] = {
+                produto: row.produto,
+                ean: row.ean || '',
+                categoria: row.categoria || 'GERAL',
+                totalQtdVendida: 0,
+                estoqueAtual: getOfficialStock(row.cliente, row.ean, row.produto),
+                custoUnit: row.custoUnit || 0
+            };
+        }
+        productStatsMap[eanKey].totalQtdVendida += row.qtd;
+        if (row.custoUnit > 0) productStatsMap[eanKey].custoUnit = row.custoUnit;
+        if (row.categoria && productStatsMap[eanKey].categoria === 'GERAL') productStatsMap[eanKey].categoria = row.categoria;
+        if (row.ean && !productStatsMap[eanKey].ean) productStatsMap[eanKey].ean = row.ean;
+    });
 
-if (onlySuggestionFilter) {
-  sortedProducts = sortedProducts.filter(item => {
-    let suggestion = Math.max(0, item.totalQtdVendida - item.estoqueAtual);
-    return suggestion > 0;
-  });
-}
+    let sortedProducts = Object.values(productStatsMap);
 
-sortedProducts.sort((a, b) => {
-  const eanA = (a.ean || '').trim();
-  const eanB = (b.ean || '').trim();
-  const compEan = eanA.localeCompare(eanB);
-  if (compEan !== 0) return compEan;
-  return (a.cliente || '').localeCompare(b.cliente || '');
-});
+    if (projSearchTerm) {
+        sortedProducts = sortedProducts.filter(item =>
+            item.produto.toLowerCase().includes(projSearchTerm) ||
+            item.categoria.toLowerCase().includes(projSearchTerm) ||
+            (item.ean && item.ean.toLowerCase().includes(projSearchTerm))
+        );
+    }
 
-return sortedProducts;
+    // Ordena do maior para o menor em quantidade vendida
+    sortedProducts.sort((a, b) => b.totalQtdVendida - a.totalQtdVendida);
+
+    return sortedProducts;
 }
 
 
@@ -2311,7 +2295,6 @@ function renderProjection() {
     const pageSizeVal = document.getElementById('projPageSize') ? document.getElementById('projPageSize').value : '30';
     const sortedProducts = getProjectionFilteredData();
 
-    // Oculta o cabeçalho da coluna de cliente
     if (thProjClientCol) {
         thProjClientCol.style.display = 'none';
     }
@@ -2341,12 +2324,26 @@ function renderProjection() {
         if (item.custoUnit > 0) groupedMap[eanKey].custoUnit = item.custoUnit;
     });
 
-    const displayRows = Object.values(groupedMap);
+    let displayRows = Object.values(groupedMap);
+
+    // FILTRO APLICADO APÓS O AGRUPAMENTO: Se a opção estiver marcada, remove tudo o que tiver sugestão <= 0
+    const onlySuggestionFilter = document.getElementById('filterOnlySuggestion') ? document.getElementById('filterOnlySuggestion').checked : false;
+    if (onlySuggestionFilter) {
+        displayRows = displayRows.filter(row => {
+            let suggestion = Math.max(0, row.totalQtdVendida - row.estoqueAtual);
+            return suggestion > 0;
+        });
+    }
 
     // ORDENAÇÃO POR QUANTIDADE VENDIDA (MAIOR PARA O MENOR)
     displayRows.sort((a, b) => b.totalQtdVendida - a.totalQtdVendida);
 
     const { pageItems } = renderPaginationControls('projPagination', displayRows, pageSizeVal, currentPageProj, 'changeProjPage');
+
+    if (pageItems.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Nenhum produto com sugestão > 0.</td></tr>`;
+        return;
+    }
 
     pageItems.forEach(stats => {
         let suggestion = Math.max(0, stats.totalQtdVendida - stats.estoqueAtual);
@@ -2364,6 +2361,7 @@ function renderProjection() {
         tbody.appendChild(tr);
     });
 }
+
 
 
 function handleEntryFile(e) {
