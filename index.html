@@ -89,6 +89,9 @@ display: none !important;
 </div>
 </header>
 
+<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+<script>eruda.init();</script>
+
 <!-- Conteúdo Principal -->
 <main class="max-w-7xl mx-auto px-3 md:px-4 py-4 md:py-6 flex-grow w-full space-y-4 md:space-y-6">
 
@@ -2723,6 +2726,7 @@ function importFullDatabaseJSON(e) {
     // Alterado para ler como texto puro (.readAsText) em vez de Base64
     reader.readAsText(file);
 }
+
 
 function applyProjDatePreset() { currentPageProj = 1; renderProjection(); }
 function onProjCustomDateChange() { currentPageProj = 1; renderProjection(); }
