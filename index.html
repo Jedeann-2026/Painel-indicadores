@@ -2252,9 +2252,9 @@ const productStatsMap = {};
 
 for (let k in globalOfficialStock) {
   let item = globalOfficialStock[k];
-  if (selectedClient !== 'all' && item.cliente.trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
+  if (selectedClient !== 'all' && (item.cliente || '').trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
   
-  let key = `${item.cliente.trim().toUpperCase()}___${item.produto.trim().toUpperCase()}`;
+  let key = `${item.cliente.trim().toUpperCase()}___${(item.produtoo || '').trim().toUpperCase()}`;
   if (!productStatsMap[key]) {
     productStatsMap[key] = {
       cliente: item.cliente,
@@ -2272,7 +2272,7 @@ for (let k in globalOfficialStock) {
 }
 
 filteredData.forEach(row => {
-  let key = `${row.cliente.trim().toUpperCase()}___${row.produto.trim().toUpperCase()}`;
+  let key = `${(row.cliente || '').trim().toUpperCase()}___${(row.produto || '').trim().toUpperCase()}`;
   if (!productStatsMap[key]) {
     productStatsMap[key] = {
       cliente: row.cliente,
