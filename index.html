@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="pt-PT" class="dark">
 <head>
 <meta charset="UTF-8">
@@ -501,21 +501,23 @@ Projeção: R$ 0,00
 <div class="bg-slate-950 p-3 md:p-4 rounded-xl border border-slate-800 flex flex-col lg:flex-row items-center justify-between gap-3 no-print">
 <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
 <div class="flex items-center space-x-1 bg-slate-900 border border-slate-800 rounded-xl px-2 py-1.5 shadow-sm col-span-full">
-<select id="stockDatePreset" onchange="applyStockDatePreset()" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer">
+
+<select id="stockDatePreset" onchange="aplicarPeriodoGeral(this.value, 'stock')" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer">
 <option value="all">Todo o Período</option>
 <option value="7">Últimos 7 dias</option>
 <option value="15">Últimos 15 dias</option>
 <option value="30">Últimos 30 dias</option>
 <option value="custom" selected>Personalizado</option>
 </select>
+
 <div class="flex items-center space-x-1 border-l border-slate-800 pl-2 overflow-x-auto">
 <span class="text-[11px] text-slate-400 font-medium">De:</span>
 <input type="date" id="stockStartDate" onchange="onStockCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
 <span class="text-[11px] text-slate-400 font-medium ml-1">Até:</span>
 <input type="date" id="stockEndDate" onchange="onStockCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
 </div>
-</div>
 
+</div>
 <select id="stockClientFilter" onchange="currentPageStock=1; renderStockView()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 font-medium text-slate-200 w-full lg:w-auto">
 <option value="all">Todos os Clientes</option>
 </select>
@@ -537,7 +539,6 @@ Projeção: R$ 0,00
 </select>
 </div>
 </div>
-
 <div class="overflow-x-auto rounded-xl border border-slate-800">
 <table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
 <tr class="bg-slate-950 text-slate-300 uppercase text-[9px] md:text-xs tracking-wider border-b border-slate-800">
@@ -572,13 +573,15 @@ Projeção: R$ 0,00
 <div class="bg-slate-950 p-3 md:p-4 rounded-xl border border-slate-800 mb-4 flex flex-col lg:flex-row items-center justify-between gap-3 no-print">
 <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
 <div class="flex items-center space-x-1 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 shadow-sm">
-<select id="projDatePreset" onchange="applyProjDatePreset()" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer">
+
+<select id="projDatePreset" onchange="aplicarPeriodoGeral(this.value, 'proj')" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer">
 <option value="all">Todo o Período</option>
 <option value="7">Últimos 7 dias</option>
 <option value="15">Últimos 15 dias</option>
 <option value="30">Últimos 30 dias</option>
 <option value="custom" selected>Personalizado</option>
 </select>
+
 <div class="flex items-center space-x-1 border-l border-slate-800 pl-2 overflow-x-auto">
 <span class="text-[11px] text-slate-400 font-medium">De:</span>
 <input type="date" id="projStartDate" onchange="onProjCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
@@ -1027,6 +1030,7 @@ function getOfficialStock(clientName, ean, productName) {
   }
   return 0;
 }
+
 
 function syncCostsWithEntries() {
 const costMapByEan = {};
@@ -2968,6 +2972,54 @@ function importFullDatabaseJSON(e) {
     reader.readAsText(file);
 }
 
+
+function aplicarPeriodoGeral(dias, tipoAba) {
+    if (dias === 'all') {
+        if (tipoAba === 'stock') {
+            document.getElementById('stockStartDate').value = '';
+            document.getElementById('stockEndDate').value = '';
+            currentPageStock = 1;
+            renderStockView();
+        } else if (tipoAba === 'proj') {
+            document.getElementById('projStartDate').value = '';
+            document.getElementById('projEndDate').value = '';
+            currentPageProj = 1;
+            renderProjection();
+        }
+        return;
+    }
+
+    const numDias = parseInt(dias);
+    const dataFim = new Date();
+    const dataInicio = new Date();
+    dataInicio.setDate(dataFim.getDate() - numDias);
+
+    const formatYMD = (d) => {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    };
+
+    const inicioStr = formatYMD(dataInicio);
+    const fimStr = formatYMD(dataFim);
+
+    if (tipoAba === 'stock') {
+        const startInp = document.getElementById('stockStartDate');
+        const endInp = document.getElementById('stockEndDate');
+        if (startInp) startInp.value = inicioStr;
+        if (endInp) endInp.value = fimStr;
+        currentPageStock = 1;
+        renderStockView();
+    } else if (tipoAba === 'proj') {
+        const startInp = document.getElementById('projStartDate');
+        const endInp = document.getElementById('projEndDate');
+        if (startInp) startInp.value = inicioStr;
+        if (endInp) endInp.value = fimStr;
+        currentPageProj = 1;
+        renderProjection();
+    }
+}
 
 function applyProjDatePreset() { currentPageProj = 1; renderProjection(); }
 function onProjCustomDateChange() { currentPageProj = 1; renderProjection(); }
