@@ -614,15 +614,17 @@ Projeção: R$ 0,00
 <div class="overflow-x-auto rounded-xl border border-slate-800">
 <table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
 <thead>
-<tr class="bg-slate-950 text-slate-300 uppercase text-[10px] md:text-xs tracking-wider border-b border-slate-800">
-<th id="thProjClientCol" class="p-3 font-semibold">Cliente</th>
-<th class="p-3 font-semibold">Produto</th>
-<th class="p-3 font-semibold">EAN</th>
-<th class="p-3 font-semibold">Categoria</th>
-<th class="p-3 font-semibold text-center">Estoque Oficial</th>
-<th class="p-3 font-semibold text-center">Vendida</th>
-<th class="p-3 font-semibold text-center">Custo Unit</th>
-<th class="p-3 font-semibold text-center">Sugestão Compra</th>
+<tr class="bg-slate-950 text-slate-300 uppercase text-[9px] md:text-xs tracking-wider border-b border-slate-800">
+<th id="thProjClientCol" class="p-2 md:p-3 font-semibold" style="display:none;">Cliente</th>
+<th class="p-2 md:p-3 font-semibold">Produto</th>
+<th class="p-2 md:p-3 font-semibold">EAN</th>
+<th class="p-2 md:p-3 font-semibold">Categoria</th>
+<th class="p-2 md:p-3 font-semibold text-center text-emerald-400">Est. Loja</th>
+<th class="p-2 md:p-3 font-semibold text-center text-blue-400">Est. CD</th>
+<th class="p-2 md:p-3 font-semibold text-center">Est. Total</th>
+<th class="p-2 md:p-3 font-semibold text-center">Vendida</th>
+<th class="p-2 md:p-3 font-semibold text-center">Custo Unit</th>
+<th class="p-2 md:p-3 font-semibold text-center">Sugestão Compra</th>
 </tr>
 </thead>
 <tbody id="projectionTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
@@ -2204,7 +2206,7 @@ data: { labels: topClient.map(i => i[0]), datasets: [{ data: topClient.map(i => 
 options: { responsive: true, maintainAspectRatio: false }
 });
 }
-
+/*
 function getProjectionFilteredData() {
     const startDateVal = document.getElementById('projStartDate') ? document.getElementById('projStartDate').value : '';
     const endDateVal = document.getElementById('projEndDate') ? document.getElementById('projEndDate').value : '';
@@ -2284,8 +2286,103 @@ function getProjectionFilteredData() {
 
     return sortedProducts;
 }
+*/
 
 
+function getProjectionFilteredData() {
+    const startDateVal = document.getElementById('projStartDate') ? document.getElementById('projStartDate').value : '';
+    const endDateVal = document.getElementById('projEndDate') ? document.getElementById('projEndDate').value : '';
+    const selectedClient = document.getElementById('projClientFilter') ? document.getElementById('projClientFilter').value : 'all';
+    const projSearchTerm = document.getElementById('projSearchInput') ? document.getElementById('projSearchInput').value.toLowerCase() : '';
+
+    let filteredData = globalData;
+    if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
+    if (endDateVal) filteredData = filteredData.filter(row => row.data <= endDateVal);
+    if (selectedClient !== 'all') filteredData = filteredData.filter(row => row.cliente === selectedClient);
+    if (projSearchTerm) {
+        filteredData = filteredData.filter(row =>
+            row.produto.toLowerCase().includes(projSearchTerm) ||
+            row.cliente.toLowerCase().includes(projSearchTerm) ||
+            row.categoria.toLowerCase().includes(projSearchTerm) ||
+            (row.ean && row.ean.toLowerCase().includes(projSearchTerm))
+        );
+    }
+
+    const productStatsMap = {};
+
+    // 1. CARREGA O ESTOQUE OFICIAL E SEPARA O ESTOQUE DO CD
+    for (let k in globalOfficialStock) {
+        let item = globalOfficialStock[k];
+        let clienteNome = (item.cliente || '').trim().toUpperCase();
+        
+        let eanKey = item.ean ? String(item.ean).trim().toUpperCase() : (item.produto || '').trim().toUpperCase();
+        
+        if (!productStatsMap[eanKey]) {
+            productStatsMap[eanKey] = {
+                produto: item.produto,
+                ean: item.ean || '',
+                categoria: item.categoria || 'GERAL',
+                totalQtdVendida: 0,
+                estoqueLoja: 0,
+                estoqueCd: 0,
+                custoUnit: 1
+            };
+        }
+
+        let qtdEstoque = Number(item.estoque) || 0;
+
+        // Verifica se o cliente começa com "CD"
+        if (clienteNome.startsWith('CD')) {
+            productStatsMap[eanKey].estoqueCd += qtdEstoque;
+        } else {
+            // Se houver filtro de cliente específico, só soma se for o cliente selecionado
+            if (selectedClient === 'all' || clienteNome === selectedClient.trim().toUpperCase()) {
+                productStatsMap[eanKey].estoqueLoja += qtdEstoque;
+            }
+        }
+
+        if (item.categoria && productStatsMap[eanKey].categoria === 'GERAL') productStatsMap[eanKey].categoria = item.categoria;
+        if (item.produto && !productStatsMap[eanKey].produto) productStatsMap[eanKey].produto = item.produto;
+    }
+
+    // 2. SOMA AS VENDAS POR EAN
+    filteredData.forEach(row => {
+        let eanKey = row.ean ? String(row.ean).trim().toUpperCase() : (row.produto || '').trim().toUpperCase();
+
+        if (!productStatsMap[eanKey]) {
+            productStatsMap[eanKey] = {
+                produto: row.produto,
+                ean: row.ean || '',
+                categoria: row.categoria || 'GERAL',
+                totalQtdVendida: 0,
+                estoqueLoja: 0,
+                estoqueCd: 0,
+                custoUnit: row.custoUnit || 0
+            };
+        }
+        productStatsMap[eanKey].totalQtdVendida += row.qtd;
+        if (row.custoUnit > 0) productStatsMap[eanKey].custoUnit = row.custoUnit;
+        if (row.categoria && productStatsMap[eanKey].categoria === 'GERAL') productStatsMap[eanKey].categoria = row.categoria;
+        if (row.ean && !productStatsMap[eanKey].ean) productStatsMap[eanKey].ean = row.ean;
+    });
+
+    let sortedProducts = Object.values(productStatsMap);
+
+    if (projSearchTerm) {
+        sortedProducts = sortedProducts.filter(item =>
+            item.produto.toLowerCase().includes(projSearchTerm) ||
+            item.categoria.toLowerCase().includes(projSearchTerm) ||
+            (item.ean && item.ean.toLowerCase().includes(projSearchTerm))
+        );
+    }
+
+    // Ordena do maior para o menor em quantidade vendida
+    sortedProducts.sort((a, b) => b.totalQtdVendida - a.totalQtdVendida);
+
+    return sortedProducts;
+}
+
+/*
 function renderProjection() {
     const tbody = document.getElementById('projectionTableBody');
     const thProjClientCol = document.getElementById('thProjClientCol');
@@ -2361,8 +2458,88 @@ function renderProjection() {
         tbody.appendChild(tr);
     });
 }
+*/
+function renderProjection() {
+    const tbody = document.getElementById('projectionTableBody');
+    const thProjClientCol = document.getElementById('thProjClientCol');
+    if (!tbody) return;
+    tbody.innerHTML = '';
 
+    const pageSizeVal = document.getElementById('projPageSize') ? document.getElementById('projPageSize').value : '30';
+    const sortedProducts = getProjectionFilteredData();
 
+    if (thProjClientCol) {
+        thProjClientCol.style.display = 'none';
+    }
+
+    if (sortedProducts.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500 text-xs">Nenhum produto encontrado.</td></tr>`;
+        renderPaginationControls('projPagination', [], pageSizeVal, currentPageProj, 'changeProjPage');
+        return;
+    }
+
+    // Agrupa e consolida por EAN / Produto
+    const groupedMap = {};
+    sortedProducts.forEach(item => {
+        const eanKey = (item.ean || item.produto || 'SEM_EAN').trim().toUpperCase();
+        if (!groupedMap[eanKey]) {
+            groupedMap[eanKey] = {
+                produto: item.produto,
+                ean: item.ean || '-',
+                categoria: item.categoria || 'GERAL',
+                totalQtdVendida: 0,
+                estoqueLoja: 0,
+                estoqueCd: 0,
+                custoUnit: item.custoUnit || 0
+            };
+        }
+        groupedMap[eanKey].totalQtdVendida += item.totalQtdVendida;
+        groupedMap[eanKey].estoqueLoja += item.estoqueLoja;
+        groupedMap[eanKey].estoqueCd += item.estoqueCd;
+        if (item.custoUnit > 0) groupedMap[eanKey].custoUnit = item.custoUnit;
+    });
+
+    let displayRows = Object.values(groupedMap);
+
+    // Calcula estoque total e sugestão de compra
+    displayRows.forEach(row => {
+        row._estoqueTotal = row.estoqueLoja + row.estoqueCd;
+        row._sugestaoCalculada = Math.max(0, row.totalQtdVendida - row._estoqueTotal);
+    });
+
+    // Filtro "Sugestão > 0"
+    const onlySuggestionFilter = document.getElementById('filterOnlySuggestion') ? document.getElementById('filterOnlySuggestion').checked : false;
+    if (onlySuggestionFilter) {
+        displayRows = displayRows.filter(row => row._sugestaoCalculada > 0);
+    }
+
+    // Ordenação por Quantidade Vendida (Maior para o menor)
+    displayRows.sort((a, b) => b.totalQtdVendida - a.totalQtdVendida);
+
+    const { pageItems } = renderPaginationControls('projPagination', displayRows, pageSizeVal, currentPageProj, 'changeProjPage');
+
+    if (pageItems.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500 text-xs">Nenhum produto com sugestão maior que 0.</td></tr>`;
+        return;
+    }
+
+    pageItems.forEach(stats => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/50 transition-colors text-[11px] md:text-xs";
+        tr.innerHTML = `
+            <td class="p-2 md:p-2.5 font-semibold text-amber-400 truncate max-w-[150px] md:max-w-none">${stats.produto}</td>
+            <td class="p-2 md:p-2.5 text-[10px] md:text-xs font-mono text-slate-400">${stats.ean || '-'}</td>
+            <td class="p-2 md:p-2.5"><span class="px-1.5 py-0.5 bg-slate-800 text-slate-300 rounded text-[10px] md:text-[11px]">${stats.categoria}</span></td>
+            <td class="p-2 md:p-2.5 text-center font-bold text-emerald-400">${stats.estoqueLoja}</td>
+            <td class="p-2 md:p-2.5 text-center font-bold text-blue-400">${stats.estoqueCd}</td>
+            <td class="p-2 md:p-2.5 text-center font-bold text-white">${stats._estoqueTotal}</td>
+            <td class="p-2 md:p-2.5 text-center font-bold text-slate-100">${stats.totalQtdVendida}</td>
+            <td class="p-2 md:p-2.5 text-center text-slate-300">${formatCurrency(stats.custoUnit)}</td>
+            <td class="p-2 md:p-2.5 text-center"><span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 font-bold rounded text-[10px] md:text-xs">${stats._sugestaoCalculada}</span></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
 
 function handleEntryFile(e) {
 const file = e.target.files[0];
@@ -2556,19 +2733,132 @@ function exportAnalyticToExcel() {
 const { filteredData } = getFilteredDashboardData();
 exportToExcelFile(filteredData, "analitico_lancamentos", "Analítico");
 }
+
+/*
 function exportProjectionToExcel() {
-const sortedProducts = getProjectionFilteredData();
-const exportData = sortedProducts.map(stats => ({
-  "Cliente": stats.cliente,
-  "EAN": stats.ean || '',
-  "Produto": stats.produto,
-  "Categoria": stats.categoria,
-  "Estoque Oficial": stats.estoqueAtual,
-  "Vendida": stats.totalQtdVendida,
-  "Custo Unit": stats.custoUnit,
-  "Sugestão Compra": Math.max(0, stats.totalQtdVendida - stats.estoqueAtual)
-}));
-exportToExcelFile(exportData, "projecao_compras", "Projeção");
+    const sortedProducts = getProjectionFilteredData();
+    if (!sortedProducts || sortedProducts.length === 0) {
+        alert("Nenhum dado de projeção para exportar.");
+        return;
+    }
+
+    // 1. Agrupa e soma por EAN / Produto (idêntico ao que é exibido na tela)
+    const groupedMap = {};
+    sortedProducts.forEach(item => {
+        const eanKey = (item.ean || item.produto || 'SEM_EAN').trim().toUpperCase();
+        if (!groupedMap[eanKey]) {
+            groupedMap[eanKey] = {
+                produto: item.produto,
+                ean: item.ean || '-',
+                categoria: item.categoria || 'GERAL',
+                totalQtdVendida: 0,
+                estoqueAtual: 0,
+                custoUnit: item.custoUnit || 0
+            };
+        }
+        groupedMap[eanKey].totalQtdVendida += item.totalQtdVendida;
+        groupedMap[eanKey].estoqueAtual += item.estoqueAtual;
+        if (item.custoUnit > 0) groupedMap[eanKey].custoUnit = item.custoUnit;
+    });
+
+    let displayRows = Object.values(groupedMap);
+
+    // 2. Aplica o filtro se a opção "Sugestão > 0" estiver marcada
+    const onlySuggestionFilter = document.getElementById('filterOnlySuggestion') ? document.getElementById('filterOnlySuggestion').checked : false;
+    if (onlySuggestionFilter) {
+        displayRows = displayRows.filter(row => {
+            let suggestion = Math.max(0, row.totalQtdVendida - row.estoqueAtual);
+            return suggestion > 0;
+        });
+    }
+
+    if (displayRows.length === 0) {
+        alert("Nenhum produto com sugestão > 0 para exportar.");
+        return;
+    }
+
+    // 3. Monta o array de dados formatado para a planilha Excel
+    const exportData = displayRows.map(stats => {
+        let suggestion = Math.max(0, stats.totalQtdVendida - stats.estoqueAtual);
+        return {
+            "Produto": stats.produto,
+            "EAN": stats.ean || '',
+            "Categoria": stats.categoria,
+            "Estoque Oficial": stats.estoqueAtual,
+            "Vendida": stats.totalQtdVendida,
+            "Custo Unit": stats.custoUnit,
+            "Sugestão Compra": suggestion
+        };
+    });
+
+    exportToExcelFile(exportData, "projecao_compras", "Projeção");
+}
+*/
+
+function exportProjectionToExcel() {
+    const sortedProducts = getProjectionFilteredData();
+    if (!sortedProducts || sortedProducts.length === 0) {
+        alert("Nenhum dado de projeção para exportar.");
+        return;
+    }
+
+    // 1. Agrupa e consolida por EAN / Produto (idêntico ao exibido na tabela do painel)
+    const groupedMap = {};
+    sortedProducts.forEach(item => {
+        const eanKey = (item.ean || item.produto || 'SEM_EAN').trim().toUpperCase();
+        if (!groupedMap[eanKey]) {
+            groupedMap[eanKey] = {
+                produto: item.produto,
+                ean: item.ean || '-',
+                categoria: item.categoria || 'GERAL',
+                totalQtdVendida: 0,
+                estoqueLoja: 0,
+                estoqueCd: 0,
+                custoUnit: item.custoUnit || 0
+            };
+        }
+        groupedMap[eanKey].totalQtdVendida += item.totalQtdVendida;
+        groupedMap[eanKey].estoqueLoja += item.estoqueLoja;
+        groupedMap[eanKey].estoqueCd += item.estoqueCd;
+        if (item.custoUnit > 0) groupedMap[eanKey].custoUnit = item.custoUnit;
+    });
+
+    let displayRows = Object.values(groupedMap);
+
+    // 2. Calcula o estoque total (Loja + CD) e a sugestão de compra
+    displayRows.forEach(row => {
+        row._estoqueTotal = row.estoqueLoja + row.estoqueCd;
+        row._sugestaoCalculada = Math.max(0, row.totalQtdVendida - row._estoqueTotal);
+    });
+
+    // 3. Aplica o filtro se a opção "Sugestão > 0" estiver ativa
+    const onlySuggestionFilter = document.getElementById('filterOnlySuggestion') ? document.getElementById('filterOnlySuggestion').checked : false;
+    if (onlySuggestionFilter) {
+        displayRows = displayRows.filter(row => row._sugestaoCalculada > 0);
+    }
+
+    if (displayRows.length === 0) {
+        alert("Nenhum produto com sugestão > 0 para exportar.");
+        return;
+    }
+
+    // 4. Ordena por quantidade vendida (maior para o menor)
+    displayRows.sort((a, b) => b.totalQtdVendida - a.totalQtdVendida);
+
+    // 5. Monta a estrutura para o ficheiro Excel
+    const exportData = displayRows.map(stats => ({
+        "Produto": stats.produto,
+        "EAN": stats.ean || '',
+        "Categoria": stats.categoria,
+        "Estoque Loja": stats.estoqueLoja,
+        "Estoque CD": stats.estoqueCd,
+        "Estoque Total": stats._estoqueTotal,
+        "Vendida": stats.totalQtdVendida,
+        "Custo Unit": stats.custoUnit,
+        "Sugestão Compra": stats._sugestaoCalculada
+    }));
+
+    exportToExcelFile(exportData, "projecao_compras", "Projeção");
 }
 
 function exportFullDatabaseJSON() {
