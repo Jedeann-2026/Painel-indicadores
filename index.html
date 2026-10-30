@@ -540,17 +540,18 @@ Projeção: R$ 0,00
 
 <div class="overflow-x-auto rounded-xl border border-slate-800">
 <table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
-<thead>
-<tr class="bg-slate-950 text-slate-400 uppercase text-[10px] md:text-xs tracking-wider border-b border-slate-800">
-<th id="thStockClientCol" class="p-3 font-semibold">Cliente</th>
-<th class="p-3 font-semibold">Produto</th>
-<th class="p-3 font-semibold">EAN</th>
-<th class="p-3 font-semibold">Categoria</th>
-<th class="p-3 font-semibold text-center">Vendida</th>
-<th class="p-3 font-semibold text-center">Estoque Oficial</th>
-<th class="p-3 font-semibold text-center">Mínimo</th>
-<th class="p-3 font-semibold text-center">Máximo</th>
-<th class="p-3 font-semibold text-center">Status</th>
+<tr class="bg-slate-950 text-slate-300 uppercase text-[9px] md:text-xs tracking-wider border-b border-slate-800">
+<th id="thStockClientCol" class="p-2 md:p-3 font-semibold" style="display:none;">Cliente</th>
+<th class="p-2 md:p-3 font-semibold">Produto</th>
+<th class="p-2 md:p-3 font-semibold">EAN</th>
+<th class="p-2 md:p-3 font-semibold">Categoria</th>
+<th class="p-2 md:p-3 font-semibold text-center text-emerald-400">Est. Loja</th>
+<th class="p-2 md:p-3 font-semibold text-center text-blue-400">Est. CD</th>
+<th class="p-2 md:p-3 font-semibold text-center">Est. Total</th>
+<th class="p-2 md:p-3 font-semibold text-center">Vendida</th>
+<th class="p-2 md:p-3 font-semibold text-center">Mín</th>
+<th class="p-2 md:p-3 font-semibold text-center">Máx</th>
+<th class="p-2 md:p-3 font-semibold text-center">Status</th>
 </tr>
 </thead>
 <tbody id="stockTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
@@ -1753,6 +1754,7 @@ container.appendChild(card);
 });
 }
 
+
 function getStockFilteredData() {
     const startDateVal = document.getElementById('stockStartDate') ? document.getElementById('stockStartDate').value : '';
     const endDateVal = document.getElementById('stockEndDate') ? document.getElementById('stockEndDate').value : '';
@@ -1774,81 +1776,100 @@ function getStockFilteredData() {
 
     const stockMap = {};
 
-    // 1. CARREGA PRIMEIRO O ESTOQUE OFICIAL (Garante que o CD e itens sem vendas entrem na conta)
+    // 1. Carrega o estoque oficial e separa o CD e Loja por EAN
     for (let k in globalOfficialStock) {
         let item = globalOfficialStock[k];
-        if (selectedClient !== 'all' && (item.cliente || '').trim().toUpperCase() !== selectedClient.trim().toUpperCase()) continue;
-        
-        let key = `${(item.cliente || '').trim().toUpperCase()}___${(item.produto || '').trim().toUpperCase()}`;
+        let clienteNome = (item.cliente || '').trim().toUpperCase();
+        let eanKey = item.ean ? String(item.ean).trim().toUpperCase() : (item.produto || '').trim().toUpperCase();
 
-        stockMap[key] = {
-            cliente: item.cliente,
-            produto: item.produto,
-            ean: item.ean || '',
-            categoria: item.categoria || 'GERAL',
-            qtdVendida: 0,
-            estoqueAtual: Number(item.estoque) || 0
-        };
+        if (!stockMap[eanKey]) {
+            stockMap[eanKey] = {
+                produto: item.produto,
+                ean: item.ean || '',
+                categoria: item.categoria || 'GERAL',
+                qtdVendida: 0,
+                estoqueLoja: 0,
+                estoqueCd: 0,
+                minimo: Number(item.minimo) || 0,
+                maximo: Number(item.maximo) || 0
+            };
+        }
+
+        let qtdEstoque = Number(item.estoque) || 0;
+
+        if (clienteNome.startsWith('CD')) {
+            stockMap[eanKey].estoqueCd += qtdEstoque;
+        } else {
+            if (selectedClient === 'all' || clienteNome === selectedClient.trim().toUpperCase()) {
+                stockMap[eanKey].estoqueLoja += qtdEstoque;
+            }
+        }
+
+        if (item.minimo > 0) stockMap[eanKey].minimo = Number(item.minimo);
+        if (item.maximo > 0) stockMap[eanKey].maximo = Number(item.maximo);
+        if (item.categoria && stockMap[eanKey].categoria === 'GERAL') stockMap[eanKey].categoria = item.categoria;
+        if (item.produto && !stockMap[eanKey].produto) stockMap[eanKey].produto = item.produto;
     }
 
-    // 2. SOMA AS VENDAS CORRESPONDENTES (Se houver no período)
+    // 2. Soma as vendas por EAN
     filteredData.forEach(row => {
-        let key = `${(row.cliente || '').trim().toUpperCase()}___${(row.produto || '').trim().toUpperCase()}`;
+        let eanKey = row.ean ? String(row.ean).trim().toUpperCase() : (row.produto || '').trim().toUpperCase();
 
-        if (!stockMap[key]) {
-            stockMap[key] = {
-                cliente: row.cliente,
+        if (!stockMap[eanKey]) {
+            stockMap[eanKey] = {
                 produto: row.produto,
                 ean: row.ean || '',
                 categoria: row.categoria || 'GERAL',
                 qtdVendida: 0,
-                estoqueAtual: getOfficialStock(row.cliente, row.ean, row.produto)
+                estoqueLoja: 0,
+                estoqueCd: 0,
+                minimo: 0,
+                maximo: 0
             };
         }
-        stockMap[key].qtdVendida += row.qtd;
-        if (row.categoria && stockMap[key].categoria === 'GERAL') stockMap[key].categoria = row.categoria;
-        if (row.ean && !stockMap[key].ean) stockMap[key].ean = row.ean;
+        stockMap[eanKey].qtdVendida += row.qtd;
+        if (row.categoria && stockMap[eanKey].categoria === 'GERAL') stockMap[eanKey].categoria = row.categoria;
+        if (row.ean && !stockMap[eanKey].ean) stockMap[eanKey].ean = row.ean;
     });
 
     let sortedProducts = Object.values(stockMap);
-    if (selectedCat !== 'all') sortedProducts = sortedProducts.filter(item => item.categoria === selectedCat);
+
+    if (selectedCat !== 'all') {
+        sortedProducts = sortedProducts.filter(item => item.categoria === selectedCat);
+    }
+
     if (searchTerm !== '') {
         sortedProducts = sortedProducts.filter(item =>
-            (item.cliente && item.cliente.toLowerCase().includes(searchTerm)) ||
             item.produto.toLowerCase().includes(searchTerm) ||
             item.categoria.toLowerCase().includes(searchTerm) ||
             (item.ean && item.ean.toLowerCase().includes(searchTerm))
         );
     }
 
-    // Ordena do maior para o menor em quantidade vendida
     sortedProducts.sort((a, b) => b.qtdVendida - a.qtdVendida);
 
     return { sortedProducts, daysCount };
 }
 
-
 function renderStockView() {
     const tbody = document.getElementById('stockTableBody');
-    const thClientCol = document.getElementById('thStockClientCol');
+    const thStockClientCol = document.getElementById('thStockClientCol');
     if (!tbody) return;
     tbody.innerHTML = '';
 
     const pageSizeVal = document.getElementById('stockPageSize') ? document.getElementById('stockPageSize').value : '30';
-    const { sortedProducts, daysCount } = getStockFilteredData();
+    const { sortedProducts } = getStockFilteredData();
 
-    // Oculta o cabeçalho da coluna de cliente
-    if (thClientCol) {
-        thClientCol.style.display = 'none';
+    if (thStockClientCol) {
+        thStockClientCol.style.display = 'none';
     }
 
     if (sortedProducts.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Nenhum registro encontrado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" class="p-4 text-center text-slate-500 text-xs">Nenhum produto encontrado.</td></tr>`;
         renderPaginationControls('stockPagination', [], pageSizeVal, currentPageStock, 'changeStockPage');
         return;
     }
 
-    // Agrupa e soma por EAN / Produto
     const groupedMap = {};
     sortedProducts.forEach(item => {
         const eanKey = (item.ean || item.produto || 'SEM_EAN').trim().toUpperCase();
@@ -1858,55 +1879,72 @@ function renderStockView() {
                 ean: item.ean || '-',
                 categoria: item.categoria || 'GERAL',
                 qtdVendida: 0,
-                estoqueAtual: 0
+                estoqueLoja: 0,
+                estoqueCd: 0,
+                minimo: item.minimo || 0,
+                maximo: item.maximo || 0
             };
         }
         groupedMap[eanKey].qtdVendida += item.qtdVendida;
-        groupedMap[eanKey].estoqueAtual += item.estoqueAtual;
+        groupedMap[eanKey].estoqueLoja += item.estoqueLoja;
+        groupedMap[eanKey].estoqueCd += item.estoqueCd;
+        if (item.minimo > 0) groupedMap[eanKey].minimo = item.minimo;
+        if (item.maximo > 0) groupedMap[eanKey].maximo = item.maximo;
     });
 
-    const displayRows = Object.values(groupedMap);
+    let displayRows = Object.values(groupedMap);
 
-    // ORDENAÇÃO POR QUANTIDADE VENDIDA (MAIOR PARA O MENOR)
-    displayRows.sort((a, b) => b.qtdVendida - a.qtdVendida);
+    displayRows.forEach(row => {
+        row._estoqueTotal = row.estoqueLoja + row.estoqueCd;
 
-    // Recalcula os status e mínimos/máximos para o total acumulado
-    displayRows.forEach(rowObj => {
-        const mediaDiariaTot = rowObj.qtdVendida / daysCount;
-        let minTot = Math.max(5, Math.ceil(mediaDiariaTot * 7));
-        let maxTot = Math.max(20, Math.ceil(mediaDiariaTot * 30));
-        if (minTot >= maxTot) maxTot = minTot + 10;
-
-        let statusBadgeTot = '';
-        if (rowObj.estoqueAtual <= 0) {
-            statusBadgeTot = `<span class="px-2 py-0.5 bg-rose-500/20 text-rose-300 font-bold rounded text-xs border border-rose-500/30">Zerado</span>`;
-        } else if (rowObj.estoqueAtual < minTot) {
-            statusBadgeTot = `<span class="px-2 py-0.5 bg-amber-500/20 text-amber-300 font-bold rounded text-xs border border-amber-500/30">Baixo</span>`;
-        } else if (rowObj.estoqueAtual > maxTot) {
-            statusBadgeTot = `<span class="px-2 py-0.5 bg-purple-500/20 text-purple-300 font-bold rounded text-xs border border-purple-500/30">Excesso</span>`;
+        // Cálculo dinâmico de Mínimo/Máximo caso venham a zero (Ex: Mínimo = média diária ou base de segurança padrão)
+        if (row.minimo <= 0) {
+            row._minimoCalc = Math.ceil(row.qtdVendida / 2) || 1;
         } else {
-            statusBadgeTot = `<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 font-bold rounded text-xs border border-emerald-500/30">Ideal</span>`;
+            row._minimoCalc = row.minimo;
         }
 
-        rowObj._minCalc = minTot;
-        rowObj._maxCalc = maxTot;
-        rowObj._statusBadge = statusBadgeTot;
+        if (row.maximo <= 0) {
+            row._maximoCalc = row._minimoCalc * 3;
+        } else {
+            row._maximoCalc = row.maximo;
+        }
+
+        // Definição do Status com base no Estoque Total vs Mínimo/Máximo
+        if (row._estoqueTotal <= 0) {
+            row._statusHtml = `<span class="px-2 py-0.5 bg-red-500/10 text-red-400 font-bold rounded text-[10px]">Crítico</span>`;
+        } else if (row._estoqueTotal < row._minimoCalc) {
+            row._statusHtml = `<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 font-bold rounded text-[10px]">Baixo</span>`;
+        } else if (row._estoqueTotal > row._maximoCalc) {
+            row._statusHtml = `<span class="px-2 py-0.5 bg-blue-500/10 text-blue-400 font-bold rounded text-[10px]">Excesso</span>`;
+        } else {
+            row._statusHtml = `<span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 font-bold rounded text-[10px]">Ideal</span>`;
+        }
     });
+
+    displayRows.sort((a, b) => b.qtdVendida - a.qtdVendida);
 
     const { pageItems } = renderPaginationControls('stockPagination', displayRows, pageSizeVal, currentPageStock, 'changeStockPage');
 
-    pageItems.forEach(item => {
+    if (pageItems.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="11" class="p-4 text-center text-slate-500 text-xs">Nenhum produto encontrado na página.</td></tr>`;
+        return;
+    }
+
+    pageItems.forEach(stats => {
         const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-800/50 transition-colors";
+        tr.className = "hover:bg-slate-800/50 transition-colors text-[11px] md:text-xs";
         tr.innerHTML = `
-            <td class="p-3 font-bold text-amber-400">${item.produto}</td>
-            <td class="p-3 text-xs font-mono text-slate-400">${item.ean || '-'}</td>
-            <td class="p-3"><span class="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-[11px]">${item.categoria}</span></td>
-            <td class="p-3 text-center font-semibold text-slate-100">${item.qtdVendida}</td>
-            <td class="p-3 text-center font-bold text-white">${item.estoqueAtual}</td>
-            <td class="p-3 text-center font-bold text-amber-400">${item._minCalc}</td>
-            <td class="p-3 text-center font-bold text-indigo-400">${item._maxCalc}</td>
-            <td class="p-3 text-center">${item._statusBadge}</td>
+            <td class="p-2 md:p-2.5 font-semibold text-amber-400 truncate max-w-[150px] md:max-w-none">${stats.produto}</td>
+            <td class="p-2 md:p-2.5 text-[10px] md:text-xs font-mono text-slate-400">${stats.ean || '-'}</td>
+            <td class="p-2 md:p-2.5"><span class="px-1.5 py-0.5 bg-slate-800 text-slate-300 rounded text-[10px] md:text-[11px]">${stats.categoria}</span></td>
+            <td class="p-2 md:p-2.5 text-center font-bold text-emerald-400">${stats.estoqueLoja}</td>
+            <td class="p-2 md:p-2.5 text-center font-bold text-blue-400">${stats.estoqueCd}</td>
+            <td class="p-2 md:p-2.5 text-center font-bold text-white">${stats._estoqueTotal}</td>
+            <td class="p-2 md:p-2.5 text-center font-bold text-slate-100">${stats.qtdVendida}</td>
+            <td class="p-2 md:p-2.5 text-center text-slate-300">${stats._minimoCalc}</td>
+            <td class="p-2 md:p-2.5 text-center text-slate-300">${stats._maximoCalc}</td>
+            <td class="p-2 md:p-2.5 text-center">${stats._statusHtml}</td>
         `;
         tbody.appendChild(tr);
     });
