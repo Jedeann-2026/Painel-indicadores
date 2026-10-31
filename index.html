@@ -1305,7 +1305,7 @@ if (typeof val === 'number') return val;
 let num = parseFloat(String(val).trim().replace(',', '.'));
 return isNaN(num) ? 0 : num;
 }
-
+/*
 function handleFile(e) {
 const file = e.target.files[0];
 if (!file) return;
@@ -1328,6 +1328,57 @@ qtd: parseDecimal(item['Quantidade'] || item['quantidade'] || item['Qtd'] || 0),
 vlrUnit: parseDecimal(item['Preço filial'] || item['Valor Unitário'] || item['Valor Unitario'] || 0),
 custoUnit: parseDecimal(item['Preço de Custo'] || item['preco_custo'] || 0)
 })).filter(row => row.produto !== 'Não informado' && row.produto !== '');
+
+if(importedRows.length > 0) {
+const importedKeys = new Set(importedRows.map(r => `${r.cliente}___${r.data}`));
+globalData = [...globalData.filter(r => !importedKeys.has(`${r.cliente}___${r.data}`)), ...importedRows];
+salvarDadosNaNuvem('vendas', globalData);
+populateFilterDropdowns();
+updateAllViews();
+alert("Planilha de vendas importada com sucesso!");
+} else { alert("Nenhum dado válido."); }
+} else { alert("Planilha vazia."); }
+} catch(err) { alert("Erro ao ler o arquivo de vendas."); }
+};
+reader.readAsArrayBuffer(file);
+}
+*/
+
+
+function handleFile(e) {
+const file = e.target.files[0];
+if (!file) return;
+const reader = new FileReader();
+reader.onload = function(evt) {
+try {
+const data = new Uint8Array(evt.target.result);
+const workbook = XLSX.read(data, {type: 'array', cellDates: false});
+const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
+
+if(json.length > 0) {
+const importedRows = json.map(item => {
+const qtd = parseDecimal(item['Quantidade'] || item['quantidade'] || item['Qtd'] || 0);
+// Captura o valor total da venda da nova planilha
+const vlrTotal = parseDecimal(item['Valor'] || item['Valor Total'] || item['valor'] || item['total'] || 0);
+
+// Calcula o preço unitário dividindo o valor total pela quantidade vendida
+const vlrUnit = qtd > 0 ? vlrTotal / qtd : 0;
+
+// Calcula o preço de custo (40% do preço unitário)
+const custoUnit = vlrUnit * 0.40;
+
+return {
+cliente: item['Cliente'] || item['cliente'] || item['Filial'] || item['filial'] || 'Geral',
+categoria: item['Categoria'] || item['categoria'] || 'Geral',
+produto: item['Nome do Produto'] || item['produto'] || item['Produto'] || 'Não informado',
+ean: String(item['Canaleta'] || item['EAN'] || item['ean'] || '').trim(), // Mapeia Canaleta como EAN/Código
+data: parseExcelDate(item['Dia'] || item['Data'] || item['data']),
+qtd: qtd,
+vlrUnit: vlrUnit,
+custoUnit: custoUnit
+};
+}).filter(row => row.produto !== 'Não informado' && row.produto !== '');
 
 if(importedRows.length > 0) {
 const importedKeys = new Set(importedRows.map(r => `${r.cliente}___${r.data}`));
