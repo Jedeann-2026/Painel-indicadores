@@ -126,6 +126,11 @@ display: none !important;
 <input type="file" id="backup-file" accept=".json" class="hidden" onchange="importFullDatabaseJSON(event)">
 </label>
 
+<button onclick="apagarEstoqueOficialApenas()" class="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/40 px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 shadow-sm">
+<i class="fa-solid fa-eraser text-xs"></i>
+<span>Limpar Estoque</span>
+</button>
+
 <button onclick="openClearModal()" class="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/40 px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 shadow-sm w-full sm:w-auto">
 <i class="fa-solid fa-trash-can text-xs"></i>
 <span>Limpar Base</span>
@@ -1345,6 +1350,17 @@ reader.readAsArrayBuffer(file);
 */
 
 
+function apagarEstoqueOficialApenas() {
+    if (confirm("Deseja realmente apagar todo o Estoque Oficial atual?")) {
+        globalOfficialStock = {};
+        salvarDadosNaNuvem('estoque', globalOfficialStock);
+        populateFilterDropdowns();
+        updateAllViews();
+        alert("Estoque oficial limpo com sucesso!");
+    }
+}
+
+
 function handleFile(e) {
 const file = e.target.files[0];
 if (!file) return;
@@ -1406,57 +1422,115 @@ return obj[keyMatch];
 return null;
 }
 
+
+// Nova função handleStockFile com tratamento estrito de EAN (apenas números) e anti-duplicidade
 function handleStockFile(e) {
-const file = e.target.files[0];
-if (!file) return;
-const reader = new FileReader();
-reader.onload = function(evt) {
-try {
-const data = new Uint8Array(evt.target.result);
-const workbook = XLSX.read(data, {type: 'array', cellDates: false});
-const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        try {
+            const data = new Uint8Array(evt.target.result);
+            const workbook = XLSX.read(data, {type: 'array', cellDates: false});
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
 
-if(json.length > 0) {
-let count = 0;
-json.forEach(item => {
-const rawClient = getObjectValueIgnoreCase(item, ['cliente', 'loja', 'filial']) || 'Geral';
-const rawEan = getObjectValueIgnoreCase(item, ['ean', 'codigo', 'cod']);
-const rawNome = getObjectValueIgnoreCase(item, ['nome', 'produto', 'nome do produto', 'descricao']);
-const rawCategoria = getObjectValueIgnoreCase(item, ['categoria', 'cat', 'grupo']) || 'GERAL';
-const rawEstoque = getObjectValueIgnoreCase(item, ['estoque', 'quantidade', 'qtd', 'saldo']);
+            if(json.length > 0) {
+                let count = 0;
+                let duplicadosIgnorados = 0;
 
-const cliente = String(rawClient).trim();
-const ean = rawEan ? String(rawEan).trim() : '';
-const nome = rawNome ? String(rawNome).trim() : '';
-const categoria = String(rawCategoria).trim();
-const estoque = parseDecimal(rawEstoque);
+                // Conjuntos de controle de duplicidade por cliente
+                const eanVistosPorCliente = new Set();
+                const produtoVistoPorCliente = new Set();
 
-if (cliente && (ean || nome)) {
-const identifier = ean ? ean : nome.toUpperCase();
-const key = `${cliente.toUpperCase()}___${identifier}`;
-globalOfficialStock[key] = {
-cliente: cliente,
-produto: nome || identifier,
-ean: ean,
-categoria: categoria,
-estoque: estoque
-};
-count++;
+                // 1. Carrega o estoque oficial já existente para a memória de verificação
+                for (let k in globalOfficialStock) {
+                    const itemExistente = globalOfficialStock[k];
+                    if (itemExistente && itemExistente.cliente) {
+                        const cliUp = String(itemExistente.cliente).trim().toUpperCase();
+                        
+                        if (itemExistente.ean) {
+                            const eanExistenteLimpo = String(itemExistente.ean).replace(/\D/g, '').trim();
+                            if (eanExistenteLimpo) {
+                                eanVistosPorCliente.add(`${cliUp}___${eanExistenteLimpo}`);
+                            }
+                        }
+                        if (itemExistente.produto) {
+                            produtoVistoPorCliente.add(`${cliUp}___${String(itemExistente.produto).trim().toUpperCase()}`);
+                        }
+                    }
+                }
+
+                // 2. Processa cada linha da planilha
+                json.forEach(item => {
+                    const rawClient = getObjectValueIgnoreCase(item, ['cliente', 'loja', 'filial']) || 'Geral';
+                    const rawEan = getObjectValueIgnoreCase(item, ['ean', 'codigo', 'cod']);
+                    const rawNome = getObjectValueIgnoreCase(item, ['nome', 'produto', 'nome do produto', 'descricao']);
+                    const rawCategoria = getObjectValueIgnoreCase(item, ['categoria', 'cat', 'grupo']) || 'GERAL';
+                    const rawEstoque = getObjectValueIgnoreCase(item, ['estoque', 'quantidade', 'qtd', 'saldo']);
+
+                    const cliente = String(rawClient).trim();
+                    const clienteUp = cliente.toUpperCase();
+
+                    // Limpa EAN mantendo apenas números
+                    const eanLimpo = rawEan ? String(rawEan).replace(/\D/g, '').trim() : '';
+                    const nome = rawNome ? String(rawNome).trim() : '';
+                    const nomeUp = nome.toUpperCase();
+                    const categoria = String(rawCategoria).trim();
+                    const estoque = parseDecimal(rawEstoque);
+
+                    if (cliente && (eanLimpo || nomeUp)) {
+                        const chaveEanCliente = eanLimpo ? `${clienteUp}___${eanLimpo}` : null;
+                        const chaveProdCliente = nomeUp ? `${clienteUp}___${nomeUp}` : null;
+
+                        // Checa se o EAN ou a Descrição já foram importados para este cliente
+                        const jaExisteEan = chaveEanCliente && eanVistosPorCliente.has(chaveEanCliente);
+                        const jaExisteProd = chaveProdCliente && produtoVistoPorCliente.has(chaveProdCliente);
+
+                        // Se já existir por EAN ou pela Descrição/Nome, ignora para não duplicar
+                        if (jaExisteEan || jaExisteProd) {
+                            duplicadosIgnorados++;
+                            return;
+                        }
+
+                        // Registra o novo item nos Sets de controle
+                        if (chaveEanCliente) eanVistosPorCliente.add(chaveEanCliente);
+                        if (chaveProdCliente) produtoVistoPorCliente.add(chaveProdCliente);
+
+                        const identifier = eanLimpo ? eanLimpo : nomeUp;
+                        const key = `${clienteUp}___${identifier}`;
+
+                        globalOfficialStock[key] = {
+                            cliente: cliente,
+                            produto: nome || identifier,
+                            ean: eanLimpo,
+                            categoria: categoria,
+                            estoque: estoque
+                        };
+                        count++;
+                    }
+                });
+
+                if(count > 0) {
+                    salvarDadosNaNuvem('estoque', globalOfficialStock);
+                    populateFilterDropdowns();
+                    updateAllViews();
+                    alert(`Estoque importado com sucesso!\n• Registros novos importados: ${count}\n• Duplicados ignorados (EAN/Nome): ${duplicadosIgnorados}`);
+                } else { 
+                    alert("Nenhum registro novo importado. Todos os produtos já constavam no estoque do cliente."); 
+                }
+            } else { 
+                alert("Planilha de estoque vazia."); 
+            }
+        } catch(err) { 
+            console.error(err);
+            alert("Erro ao ler arquivo de estoque."); 
+        }
+    };
+    reader.readAsArrayBuffer(file);
 }
-});
 
-if(count > 0) {
-salvarDadosNaNuvem('estoque', globalOfficialStock);
-populateFilterDropdowns();
-updateAllViews();
-alert(`Estoque por cliente importado com sucesso! ${count} registros processados.`);
-} else { alert("Nenhuma coluna válida (cliente, ean/nome, estoque) encontrada."); }
-} else { alert("Planilha de estoque vazia."); }
-} catch(err) { alert("Erro ao ler arquivo de estoque."); }
-};
-reader.readAsArrayBuffer(file);
-}
+
 
 function downloadStockTemplateCSV() {
 const csvContent = "data:text/csv;charset=utf-8,\uFEFF" +
