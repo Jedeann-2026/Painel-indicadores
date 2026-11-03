@@ -1,54 +1,31 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-PT" class="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NEXXA conveniências - Painel de Indicadores</title>
-<!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
 tailwind.config = {
-darkMode: 'class',
-theme: {
-extend: {}
-}
+  darkMode: 'class',
+  theme: { extend: {} }
 }
 </script>
-<!-- SheetJS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<!-- Supabase JS Client -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- FontAwesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
 @media print {
-body * {
-visibility: hidden;
-}
-#tab-projection, #tab-projection *, #tab-stock, #tab-stock * {
-visibility: visible;
-}
-#tab-projection, #tab-stock {
-position: absolute;
-left: 0;
-top: 0;
-width: 100%;
-margin: 0;
-padding: 0;
-background: white !important;
-color: black !important;
-}
-.no-print {
-display: none !important;
-}
+  body * { visibility: hidden; }
+  #tab-projection, #tab-projection *, #tab-stock, #tab-stock * { visibility: visible; }
+  #tab-projection, #tab-stock { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; background: white !important; color: black !important; }
+  .no-print { display: none !important; }
 }
 </style>
 </head>
-<body class="bg-slate-950 text-slate-100 dark:bg-slate-950 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col transition-colors duration-200 text-sm md:text-base" id="mainBody">
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col text-sm md:text-base" id="mainBody">
 
-<!-- Cabeçalho -->
 <header class="bg-slate-900 text-white shadow-md border-b border-slate-800 no-print sticky top-0 z-40">
 <div class="max-w-7xl mx-auto px-3 py-3 flex flex-col md:flex-row justify-between items-center gap-3">
 <div class="flex items-center justify-between w-full md:w-auto">
@@ -61,7 +38,7 @@ display: none !important;
 <p class="text-[10px] md:text-xs text-slate-400">Gestão inteligente de estoque e vendas</p>
 </div>
 </div>
-<button onclick="toggleTheme()" class="md:hidden bg-slate-800 hover:bg-slate-700 text-amber-400 p-2 rounded-xl border border-slate-700 transition-all shadow-sm" title="Alternar Tema">
+<button onclick="toggleTheme()" class="md:hidden bg-slate-800 hover:bg-slate-700 text-amber-400 p-2 rounded-xl border border-slate-700 transition-all shadow-sm">
 <i id="themeIconMobile" class="fa-solid fa-sun text-sm"></i>
 </button>
 </div>
@@ -82,20 +59,15 @@ display: none !important;
 </button>
 </div>
 
-<button onclick="toggleTheme()" class="hidden md:block bg-slate-800 hover:bg-slate-700 text-amber-400 p-2.5 rounded-xl border border-slate-700 transition-all shadow-sm" title="Alternar Tema">
+<button onclick="toggleTheme()" class="hidden md:block bg-slate-800 hover:bg-slate-700 text-amber-400 p-2.5 rounded-xl border border-slate-700 transition-all shadow-sm">
 <i id="themeIcon" class="fa-solid fa-sun text-sm"></i>
 </button>
 </div>
 </div>
 </header>
 
-<script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init();</script>
-
-<!-- Conteúdo Principal -->
 <main class="max-w-7xl mx-auto px-3 md:px-4 py-4 md:py-6 flex-grow w-full space-y-4 md:space-y-6">
 
-<!-- Barra de Ações / Importação -->
 <div class="bg-slate-900 p-3 md:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3 no-print">
 <div class="flex flex-wrap items-center gap-2 w-full">
 <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-medium shadow-sm transition-all flex items-center justify-center space-x-1.5 flex-1 sm:flex-none">
@@ -104,7 +76,7 @@ display: none !important;
 <input type="file" id="excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFile(event)">
 </label>
 
-<label class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-xl text-xs font-medium shadow-sm transition-all flex items-center justify-center space-x-1.5 flex-1 sm:flex-none" title="Colunas: cliente, ean, nome, categoria, estoque">
+<label class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-xl text-xs font-medium shadow-sm transition-all flex items-center justify-center space-x-1.5 flex-1 sm:flex-none">
 <i class="fa-solid fa-boxes-stacked"></i>
 <span>Imp. Estoque por Cliente</span>
 <input type="file" id="stock-excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleStockFile(event)">
@@ -138,10 +110,7 @@ display: none !important;
 </div>
 </div>
 
-<!-- ABA 1: DASHBOARD -->
 <div id="tab-dashboard" class="space-y-4 md:space-y-6">
-
-<!-- 1º BLOCO: Filtros Gerais do Dashboard -->
 <div class="bg-slate-900 p-3 md:p-4 rounded-2xl shadow-sm border border-slate-800 flex flex-col gap-3">
 <div class="flex items-center justify-between">
 <div class="flex items-center space-x-2">
@@ -184,7 +153,6 @@ display: none !important;
 </div>
 </div>
 
-<!-- 2º BLOCO: Cards de Indicadores -->
 <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
 <div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 border-l-4 border-l-amber-400">
 <p class="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-slate-400">Faturamento Total</p>
@@ -213,7 +181,6 @@ display: none !important;
 </div>
 </div>
 
-<!-- 3º BLOCO: Tabela de Desempenho por Loja / Cliente -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
 <div class="p-3.5 md:p-5 border-b border-slate-800 flex justify-between items-center gap-2">
 <div>
@@ -241,7 +208,6 @@ display: none !important;
 </div>
 </div>
 
-<!-- Faturamento Mensal - 4 Últimas Semanas -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
 <div class="p-3.5 md:p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
 <div>
@@ -263,7 +229,6 @@ Projeção: R$ 0,00
 <div class="p-3.5 md:p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3" id="weeklyCardsContainer"></div>
 </div>
 
-<!-- COMPARATIVO SEMANAL COM FILTRO PRÓPRIO -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
 <div class="p-3.5 md:p-5 border-b border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
 <div>
@@ -281,7 +246,7 @@ Projeção: R$ 0,00
 <span class="text-[11px] text-slate-400 font-medium ml-1">Até:</span>
 <input type="date" id="compEndDate" onchange="renderCustomWeeklyComparison()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
 </div>
-<button onclick="exportCustomWeeklyToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1">
+<button onclick="exportCustomWeeklyToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center space-x-1">
 <i class="fa-solid fa-file-excel"></i>
 <span>Excel</span>
 </button>
@@ -296,9 +261,7 @@ Projeção: R$ 0,00
 </div>
 </div>
 
-<!-- 4º BLOCO: Seção de Gráficos -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-<!-- GRÁFICO: Faturamento Mensal -->
 <div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col lg:col-span-2">
 <div class="flex justify-between items-center mb-3">
 <h2 class="font-bold text-white text-sm md:text-base"><i class="fa-solid fa-calendar-days text-emerald-400 mr-2"></i>Faturamento Mensal</h2>
@@ -348,7 +311,6 @@ Projeção: R$ 0,00
 </div>
 </div>
 
-<!-- 5º BLOCO: CARD - Giro de Produto -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
 <div class="p-3.5 md:p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
 <div>
@@ -396,7 +358,6 @@ Projeção: R$ 0,00
 <div id="turnoverPagination" class="p-3 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-400"></div>
 </div>
 
-<!-- 6º BLOCO: Detalhamento Consolidado -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
 <div class="p-3.5 md:p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
 <div>
@@ -444,7 +405,6 @@ Projeção: R$ 0,00
 <div id="consolidatedPagination" class="p-3 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-400"></div>
 </div>
 
-<!-- 7º BLOCO: Tabela Detalhada Analítica -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
 <div class="p-3.5 md:p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
 <div>
@@ -491,13 +451,15 @@ Projeção: R$ 0,00
 
 <!-- ================= ABA 1: ESTOQUE ================= -->
 <div id="tab-stock" class="space-y-4 md:space-y-6 hidden">
+  
+  <!-- BARRA SUPERIOR DE FILTROS DO ESTOQUE -->
   <div class="bg-slate-900 p-4 md:p-6 rounded-2xl shadow-sm border border-slate-800">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
       <div>
         <h2 class="text-base md:text-lg font-bold text-white flex items-center gap-2">
           <i class="fa-solid fa-boxes-stacked text-amber-400"></i>Gestão de Estoque - Mínimo e Máximo
         </h2>
-        <p class="text-[11px] md:text-xs text-slate-400 mt-1">Visão baseada na tabela oficial de estoque por cliente.</p>
+        <p class="text-[11px] md:text-xs text-slate-400 mt-1">Visão consolidada e por loja individual.</p>
       </div>
       <button onclick="exportStockToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1 self-start md:self-auto">
         <i class="fa-solid fa-file-excel"></i>
@@ -505,8 +467,8 @@ Projeção: R$ 0,00
       </button>
     </div>
 
-    <!-- Filtros do Estoque -->
-    <div class="bg-slate-950 p-3 md:p-4 rounded-xl border border-slate-800 mb-4 flex flex-col lg:flex-row items-center justify-between gap-3 no-print">
+    <!-- Filtros -->
+    <div class="bg-slate-950 p-3 md:p-4 rounded-xl border border-slate-800 mb-2 flex flex-col lg:flex-row items-center justify-between gap-3 no-print">
       <div class="flex flex-wrap items-center gap-2 w-full">
         <div class="flex items-center space-x-1 bg-slate-900 border border-slate-800 rounded-xl px-2 py-1.5 shadow-sm w-full sm:w-auto overflow-x-auto">
           <select id="stockDatePreset" onchange="aplicarPeriodoGeral(this.value, 'stock')" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer shrink-0">
@@ -524,58 +486,65 @@ Projeção: R$ 0,00
           </div>
         </div>
 
-        <select id="stockClientFilter" onchange="currentPageStock=1; renderStockView()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 font-medium text-slate-200 flex-1 min-w-[140px]">
-          <option value="all">Todos os Clientes</option>
-        </select>
-
-        <select id="stockCatFilter" onchange="currentPageStock=1; renderStockView()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 font-medium text-slate-200 flex-1 min-w-[140px]">
+        <select id="stockCatFilter" onchange="resetStockPagesAndRender()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 font-medium text-slate-200 flex-1 min-w-[140px]">
           <option value="all">Todas as Categorias</option>
         </select>
 
-        <input type="text" id="stockSearchInput" placeholder="Pesquisar produto/EAN..." onkeyup="currentPageStock=1; renderStockView()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 text-slate-200 w-full sm:w-48">
-      </div>
+        <input type="text" id="stockSearchInput" placeholder="Pesquisar produto/EAN..." onkeyup="resetStockPagesAndRender()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 text-slate-200 w-full sm:w-48">
 
-      <div class="flex items-center space-x-1 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
-        <span class="text-xs font-medium text-slate-400">Exibir:</span>
-        <select id="stockPageSize" onchange="currentPageStock=1; renderStockView()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
-          <option value="10">10</option>
-          <option value="30" selected>30</option>
-          <option value="50">50</option>
-          <option value="all">Todos</option>
-        </select>
+        <!-- NOVO: Seletor de Quantidade por Página na Aba Estoque -->
+        <div class="flex items-center space-x-1 bg-slate-900 px-3 py-2 rounded-xl border border-slate-800 ml-auto">
+          <span class="text-xs font-medium text-slate-400">Exibir/card:</span>
+          <select id="stockPageSize" onchange="resetStockPagesAndRender()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
+            <option value="10">10</option>
+            <option value="30" selected>30</option>
+            <option value="50">50</option>
+            <option value="all">Todos</option>
+          </select>
+        </div>
       </div>
     </div>
+  </div>
 
-    <!-- Tabela do Estoque -->
+  <!-- 1. CARD CONSOLIDADO (GERAL) -->
+  <div class="bg-slate-900 p-4 md:p-6 rounded-2xl shadow-sm border border-slate-800 space-y-3">
+    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+      <h3 class="text-sm md:text-base font-bold text-amber-400 flex items-center gap-2">
+        <i class="fa-solid fa-globe"></i>Estoque Geral Consolidado (Todas as Lojas)
+      </h3>
+      <span id="consolidatedProductCount" class="text-xs bg-amber-500/10 text-amber-400 font-bold px-2.5 py-1 rounded-lg border border-amber-500/20">0 produtos</span>
+    </div>
+    
     <div class="overflow-x-auto rounded-xl border border-slate-800">
       <table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
         <thead>
           <tr class="bg-slate-950 text-slate-300 uppercase text-[9px] md:text-xs tracking-wider border-b border-slate-800">
-            <th class="p-2 md:p-3 font-semibold">Produto</th>
+            <th class="p-2 md:p-3 font-semibold">PRODUTO</th>
             <th class="p-2 md:p-3 font-semibold">EAN</th>
-            <th class="p-2 md:p-3 font-semibold">Categoria</th>
-            <th class="p-2 md:p-3 font-semibold text-center text-emerald-400">Est. Loja</th>
-            <th class="p-2 md:p-3 font-semibold text-center text-blue-400">Est. CD</th>
-            <th class="p-2 md:p-3 font-semibold text-center">Est. Total</th>
-            <th class="p-2 md:p-3 font-semibold text-center">Vendida</th>
-            <th class="p-2 md:p-3 font-semibold text-center">Mín</th>
-            <th class="p-2 md:p-3 font-semibold text-center">Máx</th>
-            <th class="p-2 md:p-3 font-semibold text-center">Status</th>
+            <th class="p-2 md:p-3 font-semibold">CATEGORIA</th>
+            <th class="p-2 md:p-3 font-semibold text-center text-emerald-400">EST. LOJAS</th>
+            <th class="p-2 md:p-3 font-semibold text-center text-blue-400">EST. CD</th>
+            <th class="p-2 md:p-3 font-semibold text-center">EST. TOTAL</th>
+            <th class="p-2 md:p-3 font-semibold text-center">VENDIDA</th>
+            <th class="p-2 md:p-3 font-semibold text-center">MÍN TOTAL</th>
+            <th class="p-2 md:p-3 font-semibold text-center">MÁX TOTAL</th>
+            <th class="p-2 md:p-3 font-semibold text-center">STATUS GERAL</th>
           </tr>
         </thead>
-        <tbody id="stockTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
+        <tbody id="consolidatedStockTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
       </table>
     </div>
-    <div id="stockPagination" class="p-3 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-400"></div>
+    <div id="consolidatedStockPagination" class="p-3 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-400 rounded-b-xl"></div>
   </div>
-</div> 
-<!-- FECHAMENTO RÍGIDO DA ABA ESTOQUE -->
 
+  <!-- 2. CONTAINER DE CARDS POR LOJA/CLIENTE INDIVIDUAL -->
+  <div id="storeCardsContainer" class="space-y-4 md:space-y-6"></div>
 
-<!-- ================= ABA 2: PROJEÇÃO ================= -->
+</div>
+
+<!-- ABA 2: PROJEÇÃO -->
 <div id="tab-projection" class="space-y-4 md:space-y-6 hidden">
   <div class="bg-slate-900 p-4 md:p-6 rounded-2xl shadow-sm border border-slate-800">
-    
     <div class="mb-4">
       <h2 class="text-base md:text-lg font-bold text-white flex items-center gap-2">
         <i class="fa-solid fa-cart-shopping text-amber-400"></i>Sugestão e Projeção de Compras
@@ -583,7 +552,6 @@ Projeção: R$ 0,00
       <p class="text-[11px] md:text-xs text-slate-400 mt-1">Cálculo de reposição baseado no estoque oficial por cliente.</p>
     </div>
 
-    <!-- Filtros da Projeção -->
     <div class="bg-slate-950 p-3 md:p-4 rounded-xl border border-slate-800 mb-4 flex flex-col lg:flex-row items-center justify-between gap-3 no-print">
       <div class="flex flex-wrap items-center gap-2 w-full">
         <div class="flex items-center space-x-1 bg-slate-900 border border-slate-800 rounded-xl px-2 py-1.5 shadow-sm w-full sm:w-auto overflow-x-auto">
@@ -642,7 +610,6 @@ Projeção: R$ 0,00
       </div>
     </div>
 
-    <!-- Tabela da Projeção -->
     <div class="overflow-x-auto rounded-xl border border-slate-800">
       <table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
         <thead>
@@ -735,7 +702,6 @@ Projeção: R$ 0,00
 
 </main>
 
-<!-- MODAL DE LIMPEZA -->
 <div id="clearModal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-3 hidden">
 <div class="bg-slate-900 border border-slate-800 p-5 md:p-6 rounded-2xl w-full max-w-md space-y-4 shadow-xl">
 <div class="flex justify-between items-center">
@@ -789,35 +755,27 @@ Projeção: R$ 0,00
 </div>
 </footer>
 
-<!-- Modal de Login / Restrição de Acesso -->
 <div id="loginModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; align-items: center; justify-content: center; z-index: 9999;">
   <div style="background: #1e1e1e; padding: 30px; border-radius: 12px; width: 320px; text-align: center; border: 1px solid #333; color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
     <h2 style="margin-top: 0; margin-bottom: 20px; font-family: sans-serif;">NEXXA Login</h2>
-    
     <div style="margin-bottom: 15px; text-align: left;">
       <label style="font-size: 12px; color: #aaa; font-family: sans-serif;">Usuário</label>
       <input type="text" id="loginUser" placeholder="Ex: jedeann" style="width: 100%; padding: 10px; margin-top: 5px; border-radius: 6px; border: 1px solid #444; background: #2a2a2a; color: #fff; box-sizing: border-box; outline: none;">
     </div>
-    
     <div style="margin-bottom: 20px; text-align: left;">
       <label style="font-size: 12px; color: #aaa; font-family: sans-serif;">Senha</label>
       <input type="password" id="loginPass" placeholder="••••••••" style="width: 100%; padding: 10px; margin-top: 5px; border-radius: 6px; border: 1px solid #444; background: #2a2a2a; color: #fff; box-sizing: border-box; outline: none;">
     </div>
-    
     <div id="loginError" style="color: #ff5555; font-size: 13px; margin-bottom: 15px; display: none; font-family: sans-serif;">
       Usuário ou senha inválidos!
     </div>
-    
     <button onclick="autenticarUsuario()" style="width: 100%; padding: 12px; border-radius: 6px; border: none; background: #007bff; color: #fff; font-weight: bold; cursor: pointer; font-size: 14px; transition: background 0.2s;">
       Entrar no Painel
     </button>
   </div>
 </div>
 
-<!-- Lógica JavaScript Integrada com Supabase -->
 <script>
-
-// Dicionário de usuários e senhas
 const USUARIOS_AUTORIZADOS = {
     'jedeann': { senha: '123', perfil: 'admin' },
     'cristiane': { senha: '123', perfil: 'admin' },
@@ -826,7 +784,6 @@ const USUARIOS_AUTORIZADOS = {
 
 let usuarioLogado = null;
 
-// Executa ao carregar a página para verificar se já existe sessão salva
 window.addEventListener('DOMContentLoaded', () => {
     const usuarioSalvo = localStorage.getItem('nexxa_user');
     if (usuarioSalvo && USUARIOS_AUTORIZADOS[usuarioSalvo]) {
@@ -839,7 +796,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Função de autenticação
 function autenticarUsuario() {
     const userInput = document.getElementById('loginUser').value.trim().toLowerCase();
     const passInput = document.getElementById('loginPass').value.trim();
@@ -848,56 +804,30 @@ function autenticarUsuario() {
     if (USUARIOS_AUTORIZADOS[userInput] && USUARIOS_AUTORIZADOS[userInput].senha === passInput) {
         usuarioLogado = USUARIOS_AUTORIZADOS[userInput];
         usuarioLogado.nome = userInput;
-        
         localStorage.setItem('nexxa_user', userInput);
-        
         errorDiv.style.display = 'none';
         document.getElementById('loginModal').style.display = 'none';
-        
         aplicarRestricoesPerfil();
-        
         if (typeof updateAllViews === 'function') updateAllViews();
     } else {
         errorDiv.style.display = 'block';
     }
 }
 
-// Aplica as restrições de perfil (Convidado vs Admin)
 function aplicarRestricoesPerfil() {
     if (!usuarioLogado) return;
 
     if (usuarioLogado.perfil === 'convidado') {
         const hoje = new Date().toISOString().split('T')[0];
-        
-        const startDateInput = document.getElementById('startDate');
-        const endDateInput = document.getElementById('endDate');
-        
-        if (startDateInput) {
-            startDateInput.value = hoje;
-            startDateInput.disabled = true;
-        }
-        if (endDateInput) {
-            endDateInput.value = hoje;
-            endDateInput.disabled = true;
-        }
-
-        const stockStartDateInput = document.getElementById('stockStartDate');
-        const stockEndDateInput = document.getElementById('stockEndDate');
-        if (stockStartDateInput) { stockStartDateInput.value = hoje; stockStartDateInput.disabled = true; }
-        if (stockEndDateInput) { stockEndDateInput.value = hoje; stockEndDateInput.disabled = true; }
-
-        const projStartDateInput = document.getElementById('projStartDate');
-        const projEndDateInput = document.getElementById('projEndDate');
-        if (projStartDateInput) { projStartDateInput.value = hoje; projStartDateInput.disabled = true; }
-        if (projEndDateInput) { projEndDateInput.value = hoje; projEndDateInput.disabled = true; }
-
-        console.log("Perfil 'convidado' ativo: restrição para dados de hoje aplicada.");
+        ['startDate', 'endDate', 'stockStartDate', 'stockEndDate', 'projStartDate', 'projEndDate'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.value = hoje; el.disabled = true; }
+        });
     } else {
-        const startDateInput = document.getElementById('startDate');
-        const endDateInput = document.getElementById('endDate');
-        
-        if (startDateInput) startDateInput.disabled = false;
-        if (endDateInput) endDateInput.disabled = false;
+        ['startDate', 'endDate'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = false;
+        });
     }
 }
 
@@ -906,9 +836,6 @@ function logout() {
     location.reload();
 }
 
-// ==========================================
-// CONFIGURAÇÃO DO SUPABASE
-// ==========================================
 const SUPABASE_URL = "https://mjkqkyuolsqhtxwzivof.supabase.co";
 const SUPABASE_KEY = "sb_publishable_taL59MpBnTvHmpfD8eMSnw_f2QuR6w-";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -916,122 +843,47 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let globalData = [];
 let globalEntries = [];
 let globalOfficialStock = {};
-
 let selectedOrderKey = null;
 
-
-
+// Controle de Páginas para a Aba de Estoque
+let currentPageConsolidatedStock = 1;
+let storePages = {}; 
 
 async function carregarDadosDoPainel() {
     try {
-        console.log("A sincronizar dados com o Supabase...");
         const { data: cloudData, error } = await supabaseClient.from('nexxa_store').select('*');
-        
-        if (error) {
-            console.error("Erro ao buscar dados na nuvem:", error);
-        }
-
         if (!error && cloudData && cloudData.length > 0) {
             const registroVendas = cloudData.find(d => d.id === 'vendas');
             const registroEntradas = cloudData.find(d => d.id === 'entradas');
             const registroEstoque = cloudData.find(d => d.id === 'estoque' || d.id === 'ESTOQUE');
 
-            // 1. Verificar Vendas
-            if (registroVendas && registroVendas.data && registroVendas.data.length > 0) {
-                globalData = registroVendas.data;
-                localStorage.setItem('nexxa_data', JSON.stringify(globalData));
-                console.log(`✅ Vendas carregadas da nuvem: ${globalData.length} registos.`);
-            } else {
-                console.warn("⚠️ Aviso: O registo de 'vendas' na nuvem está vazio ou nulo.");
-            }
-
-            // 2. Verificar Entradas
-            if (registroEntradas && registroEntradas.data && registroEntradas.data.length > 0) {
-                globalEntries = registroEntradas.data;
-                localStorage.setItem('nexxa_entries', JSON.stringify(globalEntries));
-                console.log(`✅ Entradas carregadas da nuvem: ${globalEntries.length} registos.`);
-            } else {
-                console.warn("⚠️ Aviso: O registo de 'entradas' na nuvem está vazio ou nulo.");
-            }
-
-            // 3. Verificar Estoque
-            if (registroEstoque && registroEstoque.data && Object.keys(registroEstoque.data).length > 0) {
-                globalOfficialStock = registroEstoque.data;
-                localStorage.setItem('nexxa_official_stock', JSON.stringify(globalOfficialStock));
-                console.log(`✅ Estoque oficial carregado da nuvem: ${Object.keys(globalOfficialStock).length} itens.`);
-            } else {
-                console.warn("⚠️ Aviso: O registo de 'estoque' na nuvem está vazio ou nulo.");
-            }
-
+            if (registroVendas && registroVendas.data) { globalData = registroVendas.data; safeSetLocalStorage('nexxa_data', globalData); }
+            if (registroEntradas && registroEntradas.data) { globalEntries = registroEntradas.data; safeSetLocalStorage('nexxa_entries', globalEntries); }
+            if (registroEstoque && registroEstoque.data) { globalOfficialStock = registroEstoque.data; safeSetLocalStorage('nexxa_official_stock', globalOfficialStock); }
         } else {
-            console.log("Modo offline ou nuvem vazia. A carregar dados do armazenamento local (Fallback)...");
-            const savedData = localStorage.getItem('nexxa_data');
-            if (savedData) { try { globalData = JSON.parse(savedData); } catch(e) {} }
-
-            const savedEntries = localStorage.getItem('nexxa_entries');
-            if (savedEntries) { try { globalEntries = JSON.parse(savedEntries); } catch(e) {} }
-
-            const savedStock = localStorage.getItem('nexxa_official_stock');
-            if (savedStock) { try { globalOfficialStock = JSON.parse(savedStock); } catch(e) {} }
+            const savedData = localStorage.getItem('nexxa_data'); if (savedData) try { globalData = JSON.parse(savedData); } catch(e){}
+            const savedEntries = localStorage.getItem('nexxa_entries'); if (savedEntries) try { globalEntries = JSON.parse(savedEntries); } catch(e){}
+            const savedStock = localStorage.getItem('nexxa_official_stock'); if (savedStock) try { globalOfficialStock = JSON.parse(savedStock); } catch(e){}
         }
-    } catch(err) {
-        console.warn("Modo offline ou erro crítico de conexão:", err);
-    }
+    } catch(err) { console.warn("Erro ao carregar dados:", err); }
 
     populateFilterDropdowns();
     updateAllViews();
     renderEntries();
-    
-    // Garante a renderização imediata de todas as abas
-    if (typeof renderStockView === 'function') renderStockView();
-    if (typeof renderProjection === 'function') renderProjection();
-    
-    console.log("Painel totalmente inicializado e verificado.");
 }
-
 
 function safeSetLocalStorage(key, value) {
-    try {
-        localStorage.setItem(key, JSON.stringify(value));
-    } catch (e) {
-        // Ignora silenciosamente qualquer erro de cota ou bloqueio de privacidade do iOS (Safari)
-        console.warn(`⚠️ Armazenamento local indisponível para '${key}' (Modo Privado ou Cota cheia). A usar apenas memória em nuvem/RAM.`);
-    }
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
 }
 
-
 async function salvarDadosNaNuvem(tipo, payload) {
-    if (tipo === 'vendas') {
-        if (!payload || payload.length === 0) {
-            console.warn("Tentativa de salvar vendas vazias bloqueada.");
-            return;
-        }
-        safeSetLocalStorage('nexxa_data', payload);
-    }
+    if (tipo === 'vendas') safeSetLocalStorage('nexxa_data', payload);
     if (tipo === 'entradas') safeSetLocalStorage('nexxa_entries', payload);
     if (tipo === 'estoque') safeSetLocalStorage('nexxa_official_stock', payload);
 
     try {
-        console.log(`A enviar dados de '${tipo}' para a nuvem. Total:`, payload.length || Object.keys(payload).length);
-        
-        const { data, error } = await supabaseClient
-            .from('nexxa_store')
-            .upsert({
-                id: tipo,
-                data: payload,
-                updated_at: new Date().toISOString()
-            }, { 
-                onConflict: 'id'
-            });
-
-        if (error) {
-            console.error(`Erro do Supabase ao salvar '${tipo}':`, error.message);
-        } else {
-            console.log(`✅ Dados de '${tipo}' salvos com sucesso na nuvem!`);
-        }
-    } catch (err) {
-        console.error(`Erro crítico ao salvar '${tipo}' na nuvem:`, err);
-    }
+        await supabaseClient.from('nexxa_store').upsert({ id: tipo, data: payload, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+    } catch (err) { console.error(err); }
 }
 
 function getOfficialStock(clientName, ean, productName) {
@@ -1059,7 +911,6 @@ function getOfficialStock(clientName, ean, productName) {
   return 0;
 }
 
-
 function syncCostsWithEntries() {
 const costMapByEan = {};
 const costMapByName = {};
@@ -1085,7 +936,6 @@ let currentPageTurnover = 1;
 let currentPageConsolidated = 1;
 let currentPageAnalytic = 1;
 let currentPageProj = 1;
-let currentPageStock = 1;
 
 let chartMonthlyRevenueInst = null;
 let chartLast30DaysInst = null;
@@ -1114,43 +964,32 @@ currentPageTurnover = 1;
 currentPageConsolidated = 1;
 currentPageAnalytic = 1;
 currentPageProj = 1;
-currentPageStock = 1;
 renderDashboard();
 renderStockView();
 renderProjection();
 }
 
+function resetStockPagesAndRender() {
+currentPageConsolidatedStock = 1;
+storePages = {};
+renderStockView();
+}
+
 function toggleTheme() {
 const htmlEl = document.documentElement;
-const iconEl = document.getElementById('themeIcon');
-const iconMobileEl = document.getElementById('themeIconMobile');
 if (htmlEl.classList.contains('dark')) {
 htmlEl.classList.remove('dark');
-if(iconEl) iconEl.className = "fa-solid fa-moon text-sm";
-if(iconMobileEl) iconMobileEl.className = "fa-solid fa-moon text-sm";
 localStorage.setItem('nexxa_theme', 'light');
 } else {
 htmlEl.classList.add('dark');
-if(iconEl) iconEl.className = "fa-solid fa-sun text-sm";
-if(iconMobileEl) iconMobileEl.className = "fa-solid fa-sun text-sm";
 localStorage.setItem('nexxa_theme', 'dark');
 }
 }
 
 function initTheme() {
 const savedTheme = localStorage.getItem('nexxa_theme');
-const htmlEl = document.documentElement;
-const iconEl = document.getElementById('themeIcon');
-const iconMobileEl = document.getElementById('themeIconMobile');
-if (savedTheme === 'light') {
-htmlEl.classList.remove('dark');
-if(iconEl) iconEl.className = "fa-solid fa-moon text-sm";
-if(iconMobileEl) iconMobileEl.className = "fa-solid fa-moon text-sm";
-} else {
-htmlEl.classList.add('dark');
-if(iconEl) iconEl.className = "fa-solid fa-sun text-sm";
-if(iconMobileEl) iconMobileEl.className = "fa-solid fa-sun text-sm";
-}
+if (savedTheme === 'light') document.documentElement.classList.remove('dark');
+else document.documentElement.classList.add('dark');
 }
 
 function openClearModal() {
@@ -1168,9 +1007,7 @@ const clients = [...clientsSet].sort();
 const clearClientSelect = document.getElementById('clearClientSelect');
 if (clearClientSelect) {
   clearClientSelect.innerHTML = '<option value="all">Todos os Clientes</option>';
-  clients.forEach(c => {
-    clearClientSelect.innerHTML += `<option value="${c}">${c}</option>`;
-  });
+  clients.forEach(c => { clearClientSelect.innerHTML += `<option value="${c}">${c}</option>`; });
 }
 }
 
@@ -1185,25 +1022,17 @@ function executeClearDatabase() {
 const clearType = document.querySelector('input[name="clearType"]:checked').value;
 if (clearType === 'all') {
 if (confirm("Deseja apagar TODOS os dados (vendas, entradas e estoque oficial)?")) {
-globalData = [];
-globalEntries = [];
-globalOfficialStock = {};
+globalData = []; globalEntries = []; globalOfficialStock = {};
 salvarDadosNaNuvem('vendas', globalData);
 salvarDadosNaNuvem('entradas', globalEntries);
 salvarDadosNaNuvem('estoque', globalOfficialStock);
-populateFilterDropdowns();
-updateAllViews();
-renderEntries();
-closeClearModal();
+populateFilterDropdowns(); updateAllViews(); renderEntries(); closeClearModal();
 alert("Base limpa com sucesso!");
 }
 } else if (clearType === 'stock') {
 if (confirm("Deseja apagar APENAS o Estoque Oficial?")) {
-globalOfficialStock = {};
-salvarDadosNaNuvem('estoque', globalOfficialStock);
-populateFilterDropdowns();
-updateAllViews();
-closeClearModal();
+globalOfficialStock = {}; salvarDadosNaNuvem('estoque', globalOfficialStock);
+populateFilterDropdowns(); updateAllViews(); closeClearModal();
 alert("Estoque oficial limpo com sucesso!");
 }
 } else {
@@ -1212,58 +1041,32 @@ const sDate = document.getElementById('clearStartDate').value;
 const eDate = document.getElementById('clearEndDate').value;
 if (!sDate || !eDate) { alert("Selecione as datas de início e fim."); return; }
 
-const msg = clearClient === 'all' 
-  ? `Apagar vendas de todos os clientes de ${sDate} até ${eDate}?` 
-  : `Apagar vendas do cliente "${clearClient}" de ${sDate} até ${eDate}?`;
-
-if (confirm(msg)) {
+if (confirm("Confirmar a remoção de vendas?")) {
 globalData = globalData.filter(row => {
   const matchClient = (clearClient === 'all' || (row.cliente || '').trim().toUpperCase() === clearClient.trim().toUpperCase());
   const matchDate = (row.data >= sDate && row.data <= eDate);
   return !(matchClient && matchDate);
 });
 salvarDadosNaNuvem('vendas', globalData);
-populateFilterDropdowns();
-updateAllViews();
-closeClearModal();
+populateFilterDropdowns(); updateAllViews(); closeClearModal();
 alert("Registros de vendas removidos com sucesso!");
 }
 }
 }
 
 function switchTab(tabName) {
-const dashTab = document.getElementById('tab-dashboard');
-const stockTab = document.getElementById('tab-stock');
-const projTab = document.getElementById('tab-projection');
-const entryTab = document.getElementById('tab-entries');
+['dashboard', 'stock', 'projection', 'entries'].forEach(t => {
+  document.getElementById(`tab-${t}`).classList.add('hidden');
+  document.getElementById(`btn-tab-${t}`).className = "px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap";
+});
 
-dashTab.classList.add('hidden');
-stockTab.classList.add('hidden');
-projTab.classList.add('hidden');
-entryTab.classList.add('hidden');
+document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+document.getElementById(`btn-tab-${tabName}`).className = "px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap";
 
-document.getElementById('btn-tab-dashboard').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap";
-document.getElementById('btn-tab-stock').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap";
-document.getElementById('btn-tab-projection').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap";
-document.getElementById('btn-tab-entries').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition-all text-slate-300 hover:text-white whitespace-nowrap";
-
-if(tabName === 'dashboard') {
-dashTab.classList.remove('hidden');
-document.getElementById('btn-tab-dashboard').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap";
-renderDashboard();
-} else if(tabName === 'stock') {
-stockTab.classList.remove('hidden');
-document.getElementById('btn-tab-stock').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap";
-renderStockView();
-} else if(tabName === 'projection') {
-projTab.classList.remove('hidden');
-document.getElementById('btn-tab-projection').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap";
-renderProjection();
-} else if(tabName === 'entries') {
-entryTab.classList.remove('hidden');
-document.getElementById('btn-tab-entries').className = "px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap";
-renderEntries();
-}
+if(tabName === 'dashboard') renderDashboard();
+else if(tabName === 'stock') renderStockView();
+else if(tabName === 'projection') renderProjection();
+else if(tabName === 'entries') renderEntries();
 }
 
 function applyDatePreset() {
@@ -1271,7 +1074,7 @@ const preset = document.getElementById('dateRangePreset').value;
 if (preset === 'all') {
 document.getElementById('startDate').value = '';
 document.getElementById('endDate').value = '';
-} else if (preset === '7' || preset === '15' || preset === '30') {
+} else if (['7', '15', '30'].includes(preset)) {
 const days = parseInt(preset);
 const today = new Date();
 const startDate = new Date();
@@ -1310,45 +1113,6 @@ if (typeof val === 'number') return val;
 let num = parseFloat(String(val).trim().replace(',', '.'));
 return isNaN(num) ? 0 : num;
 }
-/*
-function handleFile(e) {
-const file = e.target.files[0];
-if (!file) return;
-const reader = new FileReader();
-reader.onload = function(evt) {
-try {
-const data = new Uint8Array(evt.target.result);
-const workbook = XLSX.read(data, {type: 'array', cellDates: false});
-const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
-
-if(json.length > 0) {
-const importedRows = json.map(item => ({
-cliente: item['Cliente'] || item['cliente'] || item['Filial'] || item['filial'] || 'Geral',
-categoria: item['Categoria'] || item['categoria'] || 'Geral',
-produto: item['Nome do Produto'] || item['produto'] || item['Produto'] || 'Não informado',
-ean: String(item['EAN'] || item['ean'] || '').trim(),
-data: parseExcelDate(item['Data'] || item['data']),
-qtd: parseDecimal(item['Quantidade'] || item['quantidade'] || item['Qtd'] || 0),
-vlrUnit: parseDecimal(item['Preço filial'] || item['Valor Unitário'] || item['Valor Unitario'] || 0),
-custoUnit: parseDecimal(item['Preço de Custo'] || item['preco_custo'] || 0)
-})).filter(row => row.produto !== 'Não informado' && row.produto !== '');
-
-if(importedRows.length > 0) {
-const importedKeys = new Set(importedRows.map(r => `${r.cliente}___${r.data}`));
-globalData = [...globalData.filter(r => !importedKeys.has(`${r.cliente}___${r.data}`)), ...importedRows];
-salvarDadosNaNuvem('vendas', globalData);
-populateFilterDropdowns();
-updateAllViews();
-alert("Planilha de vendas importada com sucesso!");
-} else { alert("Nenhum dado válido."); }
-} else { alert("Planilha vazia."); }
-} catch(err) { alert("Erro ao ler o arquivo de vendas."); }
-};
-reader.readAsArrayBuffer(file);
-}
-*/
-
 
 function apagarEstoqueOficialApenas() {
     if (confirm("Deseja realmente apagar todo o Estoque Oficial atual?")) {
@@ -1359,7 +1123,6 @@ function apagarEstoqueOficialApenas() {
         alert("Estoque oficial limpo com sucesso!");
     }
 }
-
 
 function handleFile(e) {
 const file = e.target.files[0];
@@ -1375,20 +1138,15 @@ const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
 if(json.length > 0) {
 const importedRows = json.map(item => {
 const qtd = parseDecimal(item['Quantidade'] || item['quantidade'] || item['Qtd'] || 0);
-// Captura o valor total da venda da nova planilha
 const vlrTotal = parseDecimal(item['Valor'] || item['Valor Total'] || item['valor'] || item['total'] || 0);
-
-// Calcula o preço unitário dividindo o valor total pela quantidade vendida
 const vlrUnit = qtd > 0 ? vlrTotal / qtd : 0;
-
-// Calcula o preço de custo (40% do preço unitário)
 const custoUnit = vlrUnit * 0.40;
 
 return {
 cliente: item['Cliente'] || item['cliente'] || item['Filial'] || item['filial'] || 'Geral',
 categoria: item['Categoria'] || item['categoria'] || 'Geral',
 produto: item['Nome do Produto'] || item['produto'] || item['Produto'] || 'Não informado',
-ean: String(item['Canaleta'] || item['EAN'] || item['ean'] || '').trim(), // Mapeia Canaleta como EAN/Código
+ean: String(item['Canaleta'] || item['EAN'] || item['ean'] || '').trim(),
 data: parseExcelDate(item['Dia'] || item['Data'] || item['data']),
 qtd: qtd,
 vlrUnit: vlrUnit,
@@ -1422,8 +1180,6 @@ return obj[keyMatch];
 return null;
 }
 
-
-// Nova função handleStockFile com tratamento estrito de EAN (apenas números) e anti-duplicidade
 function handleStockFile(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -1438,30 +1194,21 @@ function handleStockFile(e) {
             if(json.length > 0) {
                 let count = 0;
                 let duplicadosIgnorados = 0;
-
-                // Conjuntos de controle de duplicidade por cliente
                 const eanVistosPorCliente = new Set();
                 const produtoVistoPorCliente = new Set();
 
-                // 1. Carrega o estoque oficial já existente para a memória de verificação
                 for (let k in globalOfficialStock) {
                     const itemExistente = globalOfficialStock[k];
                     if (itemExistente && itemExistente.cliente) {
                         const cliUp = String(itemExistente.cliente).trim().toUpperCase();
-                        
                         if (itemExistente.ean) {
                             const eanExistenteLimpo = String(itemExistente.ean).replace(/\D/g, '').trim();
-                            if (eanExistenteLimpo) {
-                                eanVistosPorCliente.add(`${cliUp}___${eanExistenteLimpo}`);
-                            }
+                            if (eanExistenteLimpo) eanVistosPorCliente.add(`${cliUp}___${eanExistenteLimpo}`);
                         }
-                        if (itemExistente.produto) {
-                            produtoVistoPorCliente.add(`${cliUp}___${String(itemExistente.produto).trim().toUpperCase()}`);
-                        }
+                        if (itemExistente.produto) produtoVistoPorCliente.add(`${cliUp}___${String(itemExistente.produto).trim().toUpperCase()}`);
                     }
                 }
 
-                // 2. Processa cada linha da planilha
                 json.forEach(item => {
                     const rawClient = getObjectValueIgnoreCase(item, ['cliente', 'loja', 'filial']) || 'Geral';
                     const rawEan = getObjectValueIgnoreCase(item, ['ean', 'codigo', 'cod']);
@@ -1471,8 +1218,6 @@ function handleStockFile(e) {
 
                     const cliente = String(rawClient).trim();
                     const clienteUp = cliente.toUpperCase();
-
-                    // Limpa EAN mantendo apenas números
                     const eanLimpo = rawEan ? String(rawEan).replace(/\D/g, '').trim() : '';
                     const nome = rawNome ? String(rawNome).trim() : '';
                     const nomeUp = nome.toUpperCase();
@@ -1483,17 +1228,11 @@ function handleStockFile(e) {
                         const chaveEanCliente = eanLimpo ? `${clienteUp}___${eanLimpo}` : null;
                         const chaveProdCliente = nomeUp ? `${clienteUp}___${nomeUp}` : null;
 
-                        // Checa se o EAN ou a Descrição já foram importados para este cliente
-                        const jaExisteEan = chaveEanCliente && eanVistosPorCliente.has(chaveEanCliente);
-                        const jaExisteProd = chaveProdCliente && produtoVistoPorCliente.has(chaveProdCliente);
-
-                        // Se já existir por EAN ou pela Descrição/Nome, ignora para não duplicar
-                        if (jaExisteEan || jaExisteProd) {
+                        if ((chaveEanCliente && eanVistosPorCliente.has(chaveEanCliente)) || (chaveProdCliente && produtoVistoPorCliente.has(chaveProdCliente))) {
                             duplicadosIgnorados++;
                             return;
                         }
 
-                        // Registra o novo item nos Sets de controle
                         if (chaveEanCliente) eanVistosPorCliente.add(chaveEanCliente);
                         if (chaveProdCliente) produtoVistoPorCliente.add(chaveProdCliente);
 
@@ -1515,28 +1254,16 @@ function handleStockFile(e) {
                     salvarDadosNaNuvem('estoque', globalOfficialStock);
                     populateFilterDropdowns();
                     updateAllViews();
-                    alert(`Estoque importado com sucesso!\n• Registros novos importados: ${count}\n• Duplicados ignorados (EAN/Nome): ${duplicadosIgnorados}`);
-                } else { 
-                    alert("Nenhum registro novo importado. Todos os produtos já constavam no estoque do cliente."); 
-                }
-            } else { 
-                alert("Planilha de estoque vazia."); 
-            }
-        } catch(err) { 
-            console.error(err);
-            alert("Erro ao ler arquivo de estoque."); 
-        }
+                    alert(`Estoque importado com sucesso!\n• Registros novos: ${count}\n• Duplicados ignorados: ${duplicadosIgnorados}`);
+                } else { alert("Nenhum registro novo importado."); }
+            } else { alert("Planilha de estoque vazia."); }
+        } catch(err) { alert("Erro ao ler arquivo de estoque."); }
     };
     reader.readAsArrayBuffer(file);
 }
 
-
-
 function downloadStockTemplateCSV() {
-const csvContent = "data:text/csv;charset=utf-8,\uFEFF" +
-"cliente;ean;nome;categoria;estoque\n" +
-"ANNA BEATRIZ (MARINHA);78944880;ALGODAO;PERFUM;86\n" +
-"ANNA BEATRIZ (MARINHA);78964338;ACUCAR;MERCADO;128";
+const csvContent = "data:text/csv;charset=utf-8,\uFEFFcliente;ean;nome;categoria;estoque\nANNA BEATRIZ (MARINHA);78944880;ALGODAO;PERFUM;86";
 const encodedUri = encodeURI(csvContent);
 const link = document.createElement("a");
 link.setAttribute("href", encodedUri);
@@ -1549,10 +1276,7 @@ link.remove();
 function populateFilterDropdowns() {
 const clientsSet = new Set();
 const categoriesSet = new Set();
-globalData.forEach(i => {
-  clientsSet.add(i.cliente);
-  categoriesSet.add(i.categoria);
-});
+globalData.forEach(i => { clientsSet.add(i.cliente); categoriesSet.add(i.categoria); });
 for(let k in globalOfficialStock) {
   if(globalOfficialStock[k].cliente) clientsSet.add(globalOfficialStock[k].cliente);
   if(globalOfficialStock[k].categoria) categoriesSet.add(globalOfficialStock[k].categoria);
@@ -1563,29 +1287,16 @@ const products = [...new Set(globalData.map(i => i.produto))].sort();
 
 const clientSelect = document.getElementById('clientFilter');
 const catSelect = document.getElementById('catFilter');
-const stockClientSelect = document.getElementById('stockClientFilter');
 const stockCatSelect = document.getElementById('stockCatFilter');
 const projClientSelect = document.getElementById('projClientFilter');
 
-const currentClient = clientSelect.value;
-const currentCat = catSelect.value;
-const currentStockClient = stockClientSelect ? stockClientSelect.value : 'all';
-const currentStockCat = stockCatSelect ? stockCatSelect.value : 'all';
-const currentProjClient = projClientSelect ? projClientSelect.value : 'all';
-
 clientSelect.innerHTML = '<option value="all">Todos os Clientes</option>';
-if(stockClientSelect) stockClientSelect.innerHTML = '<option value="all">Todos os Clientes</option>';
 if(projClientSelect) projClientSelect.innerHTML = '<option value="all">Todos os Clientes</option>';
 
 clients.forEach(c => { 
   clientSelect.innerHTML += `<option value="${c}">${c}</option>`; 
-  if(stockClientSelect) stockClientSelect.innerHTML += `<option value="${c}">${c}</option>`;
   if(projClientSelect) projClientSelect.innerHTML += `<option value="${c}">${c}</option>`;
 });
-
-clientSelect.value = clients.includes(currentClient) ? currentClient : 'all';
-if(stockClientSelect) stockClientSelect.value = clients.includes(currentStockClient) ? currentStockClient : 'all';
-if(projClientSelect) projClientSelect.value = clients.includes(currentProjClient) ? currentProjClient : 'all';
 
 catSelect.innerHTML = '<option value="all">Todas as Categorias</option>';
 if(stockCatSelect) stockCatSelect.innerHTML = '<option value="all">Todas as Categorias</option>';
@@ -1593,25 +1304,10 @@ categories.forEach(cat => {
   catSelect.innerHTML += `<option value="${cat}">${cat}</option>`; 
   if(stockCatSelect) stockCatSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
 });
-catSelect.value = categories.includes(currentCat) ? currentCat : 'all';
-if(stockCatSelect) stockCatSelect.value = categories.includes(currentStockCat) ? currentStockCat : 'all';
 
 const prodList = document.getElementById('prodList');
 prodList.innerHTML = '';
 products.forEach(p => { prodList.innerHTML += `<option value="${p}">`; });
-}
-
-function downloadTemplateCSV() {
-const csvContent = "data:text/csv;charset=utf-8,\uFEFF" +
-"Cliente;Categoria;Produto;EAN;Quantidade;Preço Unitário;Data\n" +
-"ANNA BEATRIZ (MARINHA);PERFUM;ALGODAO;78944880;18;1,29;2026-10-01";
-const encodedUri = encodeURI(csvContent);
-const link = document.createElement("a");
-link.setAttribute("href", encodedUri);
-link.setAttribute("download", "modelo_vendas_nexxa.csv");
-document.body.appendChild(link);
-link.click();
-link.remove();
 }
 
 function formatCurrency(val) {
@@ -1630,12 +1326,11 @@ return { pageItems: totalItems, startIdx: 0, endIdx: totalItems.length };
 const pageSize = parseInt(pageSizeVal) || 30;
 const totalPages = Math.ceil(totalItems.length / pageSize) || 1;
 const validPage = Math.min(Math.max(1, currentPage), totalPages);
-
 const startIdx = (validPage - 1) * pageSize;
 const endIdx = Math.min(startIdx + pageSize, totalItems.length);
 const pageItems = totalItems.slice(startIdx, endIdx);
 
-let controlsHtml = `
+container.innerHTML = `
 <div><b>${totalItems.length > 0 ? startIdx + 1 : 0}-${endIdx}</b> de <b>${totalItems.length}</b></div>
 <div class="flex items-center space-x-1.5">
 <button onclick="${onPageChangeFnName}(${validPage - 1})" ${validPage === 1 ? 'disabled class="px-2 py-1 bg-slate-900 text-slate-600 rounded cursor-not-allowed border border-slate-800"' : 'class="px-2.5 py-1 bg-slate-800 text-amber-400 hover:bg-slate-700 rounded border border-slate-700"'}>
@@ -1647,7 +1342,6 @@ let controlsHtml = `
 </button>
 </div>
 `;
-container.innerHTML = controlsHtml;
 return { pageItems, startIdx, endIdx };
 }
 
@@ -1655,7 +1349,6 @@ function changeTurnoverPage(newPage) { currentPageTurnover = newPage; renderDash
 function changeConsolidatedPage(newPage) { currentPageConsolidated = newPage; renderDashboard(); }
 function changeAnalyticPage(newPage) { currentPageAnalytic = newPage; renderDashboard(); }
 function changeProjPage(newPage) { currentPageProj = newPage; renderProjection(); }
-function changeStockPage(newPage) { currentPageStock = newPage; renderStockView(); }
 
 function getFilteredDashboardData() {
 const startDateVal = document.getElementById('startDate') ? document.getElementById('startDate').value : '';
@@ -1683,7 +1376,7 @@ return { filteredData, startDateVal, endDateVal, selectedClient, selectedCat, se
 }
 
 function renderDashboard() {
-const { filteredData, selectedClient, selectedCat } = getFilteredDashboardData();
+const { filteredData, selectedClient } = getFilteredDashboardData();
 
 let totalFaturamento = 0;
 let totalCustoVendas = 0;
@@ -1906,226 +1599,301 @@ container.appendChild(card);
 });
 }
 
+// ==========================================
+// RENDERIZAÇÃO REFORMULADA DA ABA DE ESTOQUE COM PAGINAÇÃO
+// ==========================================
+function renderTableWithPagination(tbodyId, pagId, itemsList, page, onPageChange) {
+  const tbody = document.getElementById(tbodyId);
+  const pag = document.getElementById(pagId);
+  if (!tbody) return;
 
-function getStockFilteredData() {
-    const startDateVal = document.getElementById('stockStartDate') ? document.getElementById('stockStartDate').value : '';
-    const endDateVal = document.getElementById('stockEndDate') ? document.getElementById('stockEndDate').value : '';
-    const selectedClient = document.getElementById('stockClientFilter') ? document.getElementById('stockClientFilter').value : 'all';
-    const selectedCat = document.getElementById('stockCatFilter') ? document.getElementById('stockCatFilter').value : 'all';
-    const searchTerm = document.getElementById('stockSearchInput') ? document.getElementById('stockSearchInput').value.trim().toLowerCase() : '';
+  tbody.innerHTML = '';
+  itemsList.sort((a,b) => b.qtdVendida - a.qtdVendida);
 
-    let filteredData = globalData;
-    if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
-    if (endDateVal) filteredData = filteredData.filter(row => row.data <= endDateVal);
-    if (selectedClient !== 'all') filteredData = filteredData.filter(row => row.cliente === selectedClient);
-    if (selectedCat !== 'all') filteredData = filteredData.filter(row => row.categoria === selectedCat);
+  const stockPageSizeVal = document.getElementById('stockPageSize') ? document.getElementById('stockPageSize').value : '30';
+  
+  if (stockPageSizeVal === 'all') {
+    itemsList.forEach(item => renderStockRow(tbody, item));
+    if (pag) pag.innerHTML = `<div>Mostrando <b>${itemsList.length}</b> de <b>${itemsList.length}</b></div><div>Página 1/1</div>`;
+    return;
+  }
 
-    let daysCount = 30;
-    if (startDateVal && endDateVal) {
-        const diff = Math.ceil((new Date(endDateVal) - new Date(startDateVal)) / (1000 * 60 * 60 * 24)) + 1;
-        if (diff > 0) daysCount = diff;
+  const pageSize = parseInt(stockPageSizeVal) || 30;
+  const totalPages = Math.ceil(itemsList.length / pageSize) || 1;
+  const currentPage = Math.min(Math.max(1, page), totalPages);
+
+  const pageItems = itemsList.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  if (pageItems.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" class="p-4 text-center text-slate-500 text-xs">Nenhum registro encontrado.</td></tr>`;
+    if(pag) pag.innerHTML = '';
+    return;
+  }
+
+  pageItems.forEach(item => renderStockRow(tbody, item));
+
+  if (pag) {
+    pag.innerHTML = `
+      <div>Mostrando <b>${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, itemsList.length)}</b> de <b>${itemsList.length}</b></div>
+      <div class="flex items-center space-x-1.5">
+        <button onclick="changeStockPage('${tbodyId}', ${currentPage - 1})" ${currentPage === 1 ? 'disabled class="px-2 py-1 bg-slate-900 text-slate-600 rounded cursor-not-allowed border border-slate-800"' : 'class="px-2.5 py-1 bg-slate-800 text-amber-400 hover:bg-slate-700 rounded border border-slate-700"'}>
+          <i class="fa-solid fa-chevron-left text-xs"></i>
+        </button>
+        <span class="font-bold text-slate-200">${currentPage}/${totalPages}</span>
+        <button onclick="changeStockPage('${tbodyId}', ${currentPage + 1})" ${currentPage === totalPages ? 'disabled class="px-2 py-1 bg-slate-900 text-slate-600 rounded cursor-not-allowed border border-slate-800"' : 'class="px-2.5 py-1 bg-slate-800 text-amber-400 hover:bg-slate-700 rounded border border-slate-700"'}>
+          <i class="fa-solid fa-chevron-right text-xs"></i>
+        </button>
+      </div>
+    `;
+  }
+}
+
+function renderStockRow(tbody, item) {
+    const estTotal = item.estoqueLoja + (item.estCd || 0);
+    const minCalc = item.minimo > 0 ? item.minimo : (Math.ceil(item.qtdVendida / 2) || 1);
+    const maxCalc = item.maximo > 0 ? item.maximo : (minCalc * 3);
+
+    let statusHtml = `<span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 font-bold rounded text-[10px]">Ideal</span>`;
+    if (estTotal <= 0) statusHtml = `<span class="px-2 py-0.5 bg-red-500/10 text-red-400 font-bold rounded text-[10px]">Crítico</span>`;
+    else if (estTotal < minCalc) statusHtml = `<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 font-bold rounded text-[10px]">Baixo</span>`;
+    else if (estTotal > maxCalc) statusHtml = `<span class="px-2 py-0.5 bg-blue-500/10 text-blue-400 font-bold rounded text-[10px]">Excesso</span>`;
+
+    const tr = document.createElement('tr');
+    tr.className = "hover:bg-slate-800/50 transition-colors text-[11px] md:text-xs";
+    tr.innerHTML = `
+      <td class="p-2 md:p-2.5 font-semibold text-amber-400 truncate max-w-[150px] md:max-w-none">${item.produto}</td>
+      <td class="p-2 md:p-2.5 text-[10px] md:text-xs font-mono text-slate-400">${item.ean || '-'}</td>
+      <td class="p-2 md:p-2.5"><span class="px-1.5 py-0.5 bg-slate-800 text-slate-300 rounded text-[10px]">${item.categoria}</span></td>
+      <td class="p-2 md:p-2.5 text-center font-bold text-emerald-400">${item.estoqueLoja}</td>
+      <td class="p-2 md:p-2.5 text-center font-bold text-blue-400">${item.estCd || 0}</td>
+      <td class="p-2 md:p-2.5 text-center font-bold text-white">${estTotal}</td>
+      <td class="p-2 md:p-2.5 text-center font-bold text-slate-100">${item.qtdVendida}</td>
+      <td class="p-2 md:p-2.5 text-center text-slate-300">${minCalc}</td>
+      <td class="p-2 md:p-2.5 text-center text-slate-300">${maxCalc}</td>
+      <td class="p-2 md:p-2.5 text-center">${statusHtml}</td>
+    `;
+    tbody.appendChild(tr);
+}
+
+function changeStockPage(tbodyId, newPage) {
+    if (tbodyId === 'consolidatedStockTableBody') {
+        currentPageConsolidatedStock = newPage;
+    } else {
+        const storeKey = tbodyId.replace('tbody-store-', '');
+        storePages[storeKey] = newPage;
     }
-
-    const stockMap = {};
-
-    // 1. Carrega o estoque oficial e separa o CD e Loja por EAN
-    for (let k in globalOfficialStock) {
-        let item = globalOfficialStock[k];
-        let clienteNome = (item.cliente || '').trim().toUpperCase();
-        let eanKey = item.ean ? String(item.ean).trim().toUpperCase() : (item.produto || '').trim().toUpperCase();
-
-        if (!stockMap[eanKey]) {
-            stockMap[eanKey] = {
-                produto: item.produto,
-                ean: item.ean || '',
-                categoria: item.categoria || 'GERAL',
-                qtdVendida: 0,
-                estoqueLoja: 0,
-                estoqueCd: 0,
-                minimo: Number(item.minimo) || 0,
-                maximo: Number(item.maximo) || 0
-            };
-        }
-
-        let qtdEstoque = Number(item.estoque) || 0;
-
-        if (clienteNome.startsWith('CD')) {
-            stockMap[eanKey].estoqueCd += qtdEstoque;
-        } else {
-            if (selectedClient === 'all' || clienteNome === selectedClient.trim().toUpperCase()) {
-                stockMap[eanKey].estoqueLoja += qtdEstoque;
-            }
-        }
-
-        if (item.minimo > 0) stockMap[eanKey].minimo = Number(item.minimo);
-        if (item.maximo > 0) stockMap[eanKey].maximo = Number(item.maximo);
-        if (item.categoria && stockMap[eanKey].categoria === 'GERAL') stockMap[eanKey].categoria = item.categoria;
-        if (item.produto && !stockMap[eanKey].produto) stockMap[eanKey].produto = item.produto;
-    }
-
-    // 2. Soma as vendas por EAN
-    filteredData.forEach(row => {
-        let eanKey = row.ean ? String(row.ean).trim().toUpperCase() : (row.produto || '').trim().toUpperCase();
-
-        if (!stockMap[eanKey]) {
-            stockMap[eanKey] = {
-                produto: row.produto,
-                ean: row.ean || '',
-                categoria: row.categoria || 'GERAL',
-                qtdVendida: 0,
-                estoqueLoja: 0,
-                estoqueCd: 0,
-                minimo: 0,
-                maximo: 0
-            };
-        }
-        stockMap[eanKey].qtdVendida += row.qtd;
-        if (row.categoria && stockMap[eanKey].categoria === 'GERAL') stockMap[eanKey].categoria = row.categoria;
-        if (row.ean && !stockMap[eanKey].ean) stockMap[eanKey].ean = row.ean;
-    });
-
-    let sortedProducts = Object.values(stockMap);
-
-    if (selectedCat !== 'all') {
-        sortedProducts = sortedProducts.filter(item => item.categoria === selectedCat);
-    }
-
-    if (searchTerm !== '') {
-        sortedProducts = sortedProducts.filter(item =>
-            item.produto.toLowerCase().includes(searchTerm) ||
-            item.categoria.toLowerCase().includes(searchTerm) ||
-            (item.ean && item.ean.toLowerCase().includes(searchTerm))
-        );
-    }
-
-    sortedProducts.sort((a, b) => b.qtdVendida - a.qtdVendida);
-
-    return { sortedProducts, daysCount };
+    renderStockView();
 }
 
 function renderStockView() {
-    const tbody = document.getElementById('stockTableBody');
-    const thStockClientCol = document.getElementById('thStockClientCol');
-    if (!tbody) return;
-    tbody.innerHTML = '';
+    const consolidatedBody = document.getElementById('consolidatedStockTableBody');
+    const storeCardsContainer = document.getElementById('storeCardsContainer');
+    const consolidatedProductCount = document.getElementById('consolidatedProductCount');
+    
+    if (!consolidatedBody || !storeCardsContainer) return;
 
-    const pageSizeVal = document.getElementById('stockPageSize') ? document.getElementById('stockPageSize').value : '30';
-    const { sortedProducts } = getStockFilteredData();
+    storeCardsContainer.innerHTML = '';
 
-    if (thStockClientCol) {
-        thStockClientCol.style.display = 'none';
-    }
+    const startDateVal = document.getElementById('stockStartDate') ? document.getElementById('stockStartDate').value : '';
+    const endDateVal = document.getElementById('stockEndDate') ? document.getElementById('stockEndDate').value : '';
+    const selectedCat = document.getElementById('stockCatFilter') ? document.getElementById('stockCatFilter').value : 'all';
+    const searchTerm = document.getElementById('stockSearchInput') ? document.getElementById('stockSearchInput').value.trim().toLowerCase() : '';
 
-    if (sortedProducts.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="11" class="p-4 text-center text-slate-500 text-xs">Nenhum produto encontrado.</td></tr>`;
-        renderPaginationControls('stockPagination', [], pageSizeVal, currentPageStock, 'changeStockPage');
-        return;
-    }
+    let filteredSales = globalData;
+    if (startDateVal) filteredSales = filteredSales.filter(row => row.data >= startDateVal);
+    if (endDateVal) filteredSales = filteredSales.filter(row => row.data <= endDateVal);
 
-    const groupedMap = {};
-    sortedProducts.forEach(item => {
-        const eanKey = (item.ean || item.produto || 'SEM_EAN').trim().toUpperCase();
-        if (!groupedMap[eanKey]) {
-            groupedMap[eanKey] = {
-                produto: item.produto,
-                ean: item.ean || '-',
-                categoria: item.categoria || 'GERAL',
-                qtdVendida: 0,
-                estoqueLoja: 0,
-                estoqueCd: 0,
-                minimo: item.minimo || 0,
-                maximo: item.maximo || 0
-            };
+    const cdStockMap = {}; 
+    const storeStockMap = {};
+    const storeNamesSet = new Set();
+
+    for (let k in globalOfficialStock) {
+        let item = globalOfficialStock[k];
+        let clientName = (item.cliente || 'Geral').trim();
+        let clientUpper = clientName.toUpperCase();
+        let eanKey = item.ean ? String(item.ean).trim().toUpperCase() : (item.produto || '').trim().toUpperCase();
+        let qtd = Number(item.estoque) || 0;
+
+        if (clientUpper.startsWith('CD')) {
+            cdStockMap[eanKey] = (cdStockMap[eanKey] || 0) + qtd;
+        } else {
+            storeNamesSet.add(clientName);
+            if (!storeStockMap[clientName]) storeStockMap[clientName] = {};
+
+            if (!storeStockMap[clientName][eanKey]) {
+                storeStockMap[clientName][eanKey] = {
+                    produto: item.produto,
+                    ean: item.ean || '',
+                    categoria: item.categoria || 'GERAL',
+                    estoqueLoja: 0,
+                    qtdVendida: 0,
+                    minimo: Number(item.minimo) || 0,
+                    maximo: Number(item.maximo) || 0
+                };
+            }
+            storeStockMap[clientName][eanKey].estoqueLoja += qtd;
+            if (item.categoria && storeStockMap[clientName][eanKey].categoria === 'GERAL') storeStockMap[clientName][eanKey].categoria = item.categoria;
         }
-        groupedMap[eanKey].qtdVendida += item.qtdVendida;
-        groupedMap[eanKey].estoqueLoja += item.estoqueLoja;
-        groupedMap[eanKey].estoqueCd += item.estoqueCd;
-        if (item.minimo > 0) groupedMap[eanKey].minimo = item.minimo;
-        if (item.maximo > 0) groupedMap[eanKey].maximo = item.maximo;
+    }
+
+    filteredSales.forEach(row => {
+        let clientName = (row.cliente || 'Geral').trim();
+        let clientUpper = clientName.toUpperCase();
+        
+        if (!clientUpper.startsWith('CD')) {
+            storeNamesSet.add(clientName);
+            if (!storeStockMap[clientName]) storeStockMap[clientName] = {};
+
+            let eanKey = row.ean ? String(row.ean).trim().toUpperCase() : (row.produto || '').trim().toUpperCase();
+
+            if (!storeStockMap[clientName][eanKey]) {
+                storeStockMap[clientName][eanKey] = {
+                    produto: row.produto,
+                    ean: row.ean || '',
+                    categoria: row.categoria || 'GERAL',
+                    estoqueLoja: 0,
+                    qtdVendida: 0,
+                    minimo: 0,
+                    maximo: 0
+                };
+            }
+            storeStockMap[clientName][eanKey].qtdVendida += row.qtd;
+            if (row.categoria && storeStockMap[clientName][eanKey].categoria === 'GERAL') storeStockMap[clientName][eanKey].categoria = row.categoria;
+        }
     });
 
-    let displayRows = Object.values(groupedMap);
+    const globalConsolidatedMap = {};
 
-    displayRows.forEach(row => {
-        row._estoqueTotal = row.estoqueLoja + row.estoqueCd;
-
-        // Cálculo dinâmico de Mínimo/Máximo caso venham a zero (Ex: Mínimo = média diária ou base de segurança padrão)
-        if (row.minimo <= 0) {
-            row._minimoCalc = Math.ceil(row.qtdVendida / 2) || 1;
-        } else {
-            row._minimoCalc = row.minimo;
-        }
-
-        if (row.maximo <= 0) {
-            row._maximoCalc = row._minimoCalc * 3;
-        } else {
-            row._maximoCalc = row.maximo;
-        }
-
-        // Definição do Status com base no Estoque Total vs Mínimo/Máximo
-        if (row._estoqueTotal <= 0) {
-            row._statusHtml = `<span class="px-2 py-0.5 bg-red-500/10 text-red-400 font-bold rounded text-[10px]">Crítico</span>`;
-        } else if (row._estoqueTotal < row._minimoCalc) {
-            row._statusHtml = `<span class="px-2 py-0.5 bg-amber-500/10 text-amber-400 font-bold rounded text-[10px]">Baixo</span>`;
-        } else if (row._estoqueTotal > row._maximoCalc) {
-            row._statusHtml = `<span class="px-2 py-0.5 bg-blue-500/10 text-blue-400 font-bold rounded text-[10px]">Excesso</span>`;
-        } else {
-            row._statusHtml = `<span class="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 font-bold rounded text-[10px]">Ideal</span>`;
-        }
+    Object.keys(storeStockMap).forEach(storeName => {
+        Object.keys(storeStockMap[storeName]).forEach(eanKey => {
+            const item = storeStockMap[storeName][eanKey];
+            if (!globalConsolidatedMap[eanKey]) {
+                globalConsolidatedMap[eanKey] = {
+                    produto: item.produto,
+                    ean: item.ean,
+                    categoria: item.categoria,
+                    estoqueLoja: 0,
+                    qtdVendida: 0,
+                    minimo: 0,
+                    maximo: 0
+                };
+            }
+            globalConsolidatedMap[eanKey].estoqueLoja += item.estoqueLoja;
+            globalConsolidatedMap[eanKey].qtdVendida += item.qtdVendida;
+            globalConsolidatedMap[eanKey].minimo += item.minimo;
+            globalConsolidatedMap[eanKey].maximo += item.maximo;
+            if (item.categoria && globalConsolidatedMap[eanKey].categoria === 'GERAL') globalConsolidatedMap[eanKey].categoria = item.categoria;
+        });
     });
 
-    displayRows.sort((a, b) => b.qtdVendida - a.qtdVendida);
-
-    const { pageItems } = renderPaginationControls('stockPagination', displayRows, pageSizeVal, currentPageStock, 'changeStockPage');
-
-    if (pageItems.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="11" class="p-4 text-center text-slate-500 text-xs">Nenhum produto encontrado na página.</td></tr>`;
-        return;
+    let sortedConsolidated = Object.keys(globalConsolidatedMap).map(key => {
+        const item = globalConsolidatedMap[key];
+        const eanKey = item.ean ? item.ean.trim().toUpperCase() : item.produto.trim().toUpperCase();
+        item.estCd = cdStockMap[eanKey] || 0;
+        return item;
+    });
+    
+    if (selectedCat !== 'all') {
+        sortedConsolidated = sortedConsolidated.filter(i => i.categoria === selectedCat);
+    }
+    if (searchTerm) {
+        sortedConsolidated = sortedConsolidated.filter(i =>
+            i.produto.toLowerCase().includes(searchTerm) ||
+            i.categoria.toLowerCase().includes(searchTerm) ||
+            (i.ean && i.ean.toLowerCase().includes(searchTerm))
+        );
     }
 
-    pageItems.forEach(stats => {
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-800/50 transition-colors text-[11px] md:text-xs";
-        tr.innerHTML = `
-            <td class="p-2 md:p-2.5 font-semibold text-amber-400 truncate max-w-[150px] md:max-w-none">${stats.produto}</td>
-            <td class="p-2 md:p-2.5 text-[10px] md:text-xs font-mono text-slate-400">${stats.ean || '-'}</td>
-            <td class="p-2 md:p-2.5"><span class="px-1.5 py-0.5 bg-slate-800 text-slate-300 rounded text-[10px] md:text-[11px]">${stats.categoria}</span></td>
-            <td class="p-2 md:p-2.5 text-center font-bold text-emerald-400">${stats.estoqueLoja}</td>
-            <td class="p-2 md:p-2.5 text-center font-bold text-blue-400">${stats.estoqueCd}</td>
-            <td class="p-2 md:p-2.5 text-center font-bold text-white">${stats._estoqueTotal}</td>
-            <td class="p-2 md:p-2.5 text-center font-bold text-slate-100">${stats.qtdVendida}</td>
-            <td class="p-2 md:p-2.5 text-center text-slate-300">${stats._minimoCalc}</td>
-            <td class="p-2 md:p-2.5 text-center text-slate-300">${stats._maximoCalc}</td>
-            <td class="p-2 md:p-2.5 text-center">${stats._statusHtml}</td>
+    if (consolidatedProductCount) {
+        consolidatedProductCount.innerText = `${sortedConsolidated.length} produtos`;
+    }
+
+    renderTableWithPagination('consolidatedStockTableBody', 'consolidatedStockPagination', sortedConsolidated, currentPageConsolidatedStock, p => {
+        currentPageConsolidatedStock = p; renderStockView();
+    });
+
+    const sortedStoreNames = [...storeNamesSet].sort();
+
+    sortedStoreNames.forEach(storeName => {
+        let storeProducts = Object.values(storeStockMap[storeName] || {}).map(item => {
+            const eanKey = item.ean ? item.ean.trim().toUpperCase() : item.produto.trim().toUpperCase();
+            item.estCd = cdStockMap[eanKey] || 0;
+            return item;
+        });
+
+        if (selectedCat !== 'all') {
+            storeProducts = storeProducts.filter(i => i.categoria === selectedCat);
+        }
+        if (searchTerm) {
+            storeProducts = storeProducts.filter(i =>
+                i.produto.toLowerCase().includes(searchTerm) ||
+                i.categoria.toLowerCase().includes(searchTerm) ||
+                (i.ean && i.ean.toLowerCase().includes(searchTerm))
+            );
+        }
+
+        if (storeProducts.length === 0) return;
+
+        const storeKey = storeName.replace(/\W/g, '');
+        if (!storePages[storeKey]) storePages[storeKey] = 1;
+
+        const storeCard = document.createElement('div');
+        storeCard.className = "bg-slate-900 p-4 md:p-6 rounded-2xl shadow-sm border border-slate-800 space-y-3";
+        
+        const tbodyId = `tbody-store-${storeKey}`;
+        const pagId = `pag-store-${storeKey}`;
+
+        storeCard.innerHTML = `
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+              <h3 class="text-sm md:text-base font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-store text-amber-400"></i>Loja / Cliente: <span class="text-amber-400">${storeName}</span>
+              </h3>
+              <span class="text-xs bg-slate-800 text-slate-300 font-medium px-2.5 py-1 rounded-lg border border-slate-700">${storeProducts.length} itens</span>
+            </div>
+            
+            <div class="overflow-x-auto rounded-xl border border-slate-800">
+              <table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
+                <thead>
+                  <tr class="bg-slate-950 text-slate-300 uppercase text-[9px] md:text-xs tracking-wider border-b border-slate-800">
+                    <th class="p-2 md:p-3 font-semibold">PRODUTO</th>
+                    <th class="p-2 md:p-3 font-semibold">EAN</th>
+                    <th class="p-2 md:p-3 font-semibold">CATEGORIA</th>
+                    <th class="p-2 md:p-3 font-semibold text-center text-emerald-400">EST. LOJA</th>
+                    <th class="p-2 md:p-3 font-semibold text-center text-blue-400">EST. CD</th>
+                    <th class="p-2 md:p-3 font-semibold text-center">EST. TOTAL</th>
+                    <th class="p-2 md:p-3 font-semibold text-center">VENDIDA</th>
+                    <th class="p-2 md:p-3 font-semibold text-center">MÍN</th>
+                    <th class="p-2 md:p-3 font-semibold text-center">MÁX</th>
+                    <th class="p-2 md:p-3 font-semibold text-center">STATUS</th>
+                  </tr>
+                </thead>
+                <tbody id="${tbodyId}" class="divide-y divide-slate-800 text-slate-200"></tbody>
+              </table>
+            </div>
+            <div id="${pagId}" class="p-3 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-400 rounded-b-xl"></div>
         `;
-        tbody.appendChild(tr);
+        storeCardsContainer.appendChild(storeCard);
+
+        renderTableWithPagination(tbodyId, pagId, storeProducts, storePages[storeKey], p => {
+            storePages[storeKey] = p; renderStockView();
+        });
     });
 }
-
-
 
 function exportStockToExcel() {
-const { sortedProducts } = getStockFilteredData();
-if (!sortedProducts || sortedProducts.length === 0) {
-  alert("Nenhum dado de estoque para exportar.");
-  return;
-}
-
-const exportData = sortedProducts.map(item => {
-  return {
-    "Cliente": item.cliente || 'Geral',
-    "EAN": item.ean || '',
-    "Produto": item.produto,
-    "Categoria": item.categoria,
-    "Vendida": item.qtdVendida,
-    "Estoque Oficial": item.estoqueAtual,
-    "Mínimo": item._minCalc || 0,
-    "Máximo": item._maxCalc || 0,
-    "Status": item._statusStr || 'Ideal'
-  };
-});
-
-exportToExcelFile(exportData, "gestao_estoque_oficial", "Estoque");
+    let exportData = [];
+    for (let k in globalOfficialStock) {
+        let item = globalOfficialStock[k];
+        exportData.push({
+            "Cliente": item.cliente || 'Geral',
+            "EAN": item.ean || '',
+            "Produto": item.produto,
+            "Categoria": item.categoria,
+            "Estoque Oficial": item.estoque
+        });
+    }
+    if (exportData.length === 0) { alert("Nenhum dado de estoque para exportar."); return; }
+    exportToExcelFile(exportData, "gestao_estoque_oficial", "Estoque");
 }
 
 function renderTurnoverTable(consolidatedMap) {
@@ -2244,9 +2012,6 @@ function renderCharts(prodVal, prodQty, catVal, clientVal, filteredData) {
 Chart.defaults.color = '#94a3b8';
 Chart.defaults.borderColor = '#1e293b';
 
-// =========================================================
-// 1. FATURAMENTO MENSAL (SEMPRE ÚLTIMOS 12 MESES)
-// =========================================================
 const selectedClient = document.getElementById('clientFilter') ? document.getElementById('clientFilter').value : 'all';
 const selectedCat = document.getElementById('catFilter') ? document.getElementById('catFilter').value : 'all';
 const selectedProd = document.getElementById('prodFilter') ? document.getElementById('prodFilter').value.trim().toLowerCase() : '';
@@ -2307,9 +2072,6 @@ data: { labels: monthlyLabels, datasets: [{ label: 'Faturamento Mensal (R$)', da
 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#1e293b' } } } }
 });
 
-// =========================================================
-// 2. FATURAMENTO DIÁRIO (SEMPRE ÚLTIMOS 30 DIAS)
-// =========================================================
 let dailyFilteredData = globalData;
 if (selectedClient !== 'all') dailyFilteredData = dailyFilteredData.filter(row => row.cliente === selectedClient);
 if (selectedCat !== 'all') dailyFilteredData = dailyFilteredData.filter(row => row.categoria === selectedCat);
@@ -2345,9 +2107,7 @@ dailyFilteredData.forEach(row => {
     }
 });
 
-Object.keys(dailyMap).sort().forEach(dateStr => { 
-    last30DaysValues.push(dailyMap[dateStr]); 
-});
+Object.keys(dailyMap).sort().forEach(dateStr => { last30DaysValues.push(dailyMap[dateStr]); });
 
 const ctx30Days = document.getElementById('chartLast30Days').getContext('2d');
 if(chartLast30DaysInst) chartLast30DaysInst.destroy();
@@ -2357,9 +2117,6 @@ data: { labels: last30DaysLabels, datasets: [{ label: 'Faturamento (R$)', data: 
 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#1e293b' } } } }
 });
 
-// =========================================================
-// 3. DEMAIS GRÁFICOS
-// =========================================================
 const topVal = Object.entries(prodVal).sort((a,b) => b[1] - a[1]).slice(0, 10);
 const ctxVal = document.getElementById('chartTopValue').getContext('2d');
 if(chartTopValueInst) chartTopValueInst.destroy();
@@ -2396,88 +2153,6 @@ data: { labels: topClient.map(i => i[0]), datasets: [{ data: topClient.map(i => 
 options: { responsive: true, maintainAspectRatio: false }
 });
 }
-/*
-function getProjectionFilteredData() {
-    const startDateVal = document.getElementById('projStartDate') ? document.getElementById('projStartDate').value : '';
-    const endDateVal = document.getElementById('projEndDate') ? document.getElementById('projEndDate').value : '';
-    const selectedClient = document.getElementById('projClientFilter') ? document.getElementById('projClientFilter').value : 'all';
-    const projSearchTerm = document.getElementById('projSearchInput') ? document.getElementById('projSearchInput').value.toLowerCase() : '';
-
-    let filteredData = globalData;
-    if (startDateVal) filteredData = filteredData.filter(row => row.data >= startDateVal);
-    if (endDateVal) filteredData = filteredData.filter(row => row.data <= endDateVal);
-    if (selectedClient !== 'all') filteredData = filteredData.filter(row => row.cliente === selectedClient);
-    if (projSearchTerm) {
-        filteredData = filteredData.filter(row =>
-            row.produto.toLowerCase().includes(projSearchTerm) ||
-            row.cliente.toLowerCase().includes(projSearchTerm) ||
-            row.categoria.toLowerCase().includes(projSearchTerm) ||
-            (row.ean && row.ean.toLowerCase().includes(projSearchTerm))
-        );
-    }
-
-    const productStatsMap = {};
-
-    // 1. CARREGA PRIMEIRO O ESTOQUE OFICIAL CONSOLIDADO POR EAN
-    for (let k in globalOfficialStock) {
-        let item = globalOfficialStock[k];
-        if (selectedClient !== 'all' && (item.cliente || '').trim().toUpperCase() !== (selectedClient || '').trim().toUpperCase()) continue;
-        
-        // Usa estritamente o EAN como chave principal se existir, senão usa o nome do produto
-        let eanKey = item.ean ? String(item.ean).trim().toUpperCase() : (item.produto || '').trim().toUpperCase();
-        
-        if (!productStatsMap[eanKey]) {
-            productStatsMap[eanKey] = {
-                produto: item.produto,
-                ean: item.ean || '',
-                categoria: item.categoria || 'GERAL',
-                totalQtdVendida: 0,
-                estoqueAtual: 0,
-                custoUnit: 1
-            };
-        }
-        productStatsMap[eanKey].estoqueAtual += Number(item.estoque) || 0;
-        if (item.categoria && productStatsMap[eanKey].categoria === 'GERAL') productStatsMap[eanKey].categoria = item.categoria;
-        if (item.produto && !productStatsMap[eanKey].produto) productStatsMap[eanKey].produto = item.produto;
-    }
-
-    // 2. SOMA AS VENDAS CORRESPONDENTES POR EAN
-    filteredData.forEach(row => {
-        let eanKey = row.ean ? String(row.ean).trim().toUpperCase() : (row.produto || '').trim().toUpperCase();
-
-        if (!productStatsMap[eanKey]) {
-            productStatsMap[eanKey] = {
-                produto: row.produto,
-                ean: row.ean || '',
-                categoria: row.categoria || 'GERAL',
-                totalQtdVendida: 0,
-                estoqueAtual: getOfficialStock(row.cliente, row.ean, row.produto),
-                custoUnit: row.custoUnit || 0
-            };
-        }
-        productStatsMap[eanKey].totalQtdVendida += row.qtd;
-        if (row.custoUnit > 0) productStatsMap[eanKey].custoUnit = row.custoUnit;
-        if (row.categoria && productStatsMap[eanKey].categoria === 'GERAL') productStatsMap[eanKey].categoria = row.categoria;
-        if (row.ean && !productStatsMap[eanKey].ean) productStatsMap[eanKey].ean = row.ean;
-    });
-
-    let sortedProducts = Object.values(productStatsMap);
-
-    if (projSearchTerm) {
-        sortedProducts = sortedProducts.filter(item =>
-            item.produto.toLowerCase().includes(projSearchTerm) ||
-            item.categoria.toLowerCase().includes(projSearchTerm) ||
-            (item.ean && item.ean.toLowerCase().includes(projSearchTerm))
-        );
-    }
-
-    // Ordena do maior para o menor em quantidade vendida
-    sortedProducts.sort((a, b) => b.totalQtdVendida - a.totalQtdVendida);
-
-    return sortedProducts;
-}
-*/
-
 
 function getProjectionFilteredData() {
     const startDateVal = document.getElementById('projStartDate') ? document.getElementById('projStartDate').value : '';
@@ -2500,11 +2175,9 @@ function getProjectionFilteredData() {
 
     const productStatsMap = {};
 
-    // 1. CARREGA O ESTOQUE OFICIAL E SEPARA O ESTOQUE DO CD
     for (let k in globalOfficialStock) {
         let item = globalOfficialStock[k];
         let clienteNome = (item.cliente || '').trim().toUpperCase();
-        
         let eanKey = item.ean ? String(item.ean).trim().toUpperCase() : (item.produto || '').trim().toUpperCase();
         
         if (!productStatsMap[eanKey]) {
@@ -2520,22 +2193,17 @@ function getProjectionFilteredData() {
         }
 
         let qtdEstoque = Number(item.estoque) || 0;
-
-        // Verifica se o cliente começa com "CD"
         if (clienteNome.startsWith('CD')) {
             productStatsMap[eanKey].estoqueCd += qtdEstoque;
         } else {
-            // Se houver filtro de cliente específico, só soma se for o cliente selecionado
             if (selectedClient === 'all' || clienteNome === selectedClient.trim().toUpperCase()) {
                 productStatsMap[eanKey].estoqueLoja += qtdEstoque;
             }
         }
-
         if (item.categoria && productStatsMap[eanKey].categoria === 'GERAL') productStatsMap[eanKey].categoria = item.categoria;
         if (item.produto && !productStatsMap[eanKey].produto) productStatsMap[eanKey].produto = item.produto;
     }
 
-    // 2. SOMA AS VENDAS POR EAN
     filteredData.forEach(row => {
         let eanKey = row.ean ? String(row.ean).trim().toUpperCase() : (row.produto || '').trim().toUpperCase();
 
@@ -2566,101 +2234,17 @@ function getProjectionFilteredData() {
         );
     }
 
-    // Ordena do maior para o menor em quantidade vendida
     sortedProducts.sort((a, b) => b.totalQtdVendida - a.totalQtdVendida);
-
     return sortedProducts;
 }
 
-/*
 function renderProjection() {
     const tbody = document.getElementById('projectionTableBody');
-    const thProjClientCol = document.getElementById('thProjClientCol');
     if (!tbody) return;
     tbody.innerHTML = '';
 
     const pageSizeVal = document.getElementById('projPageSize') ? document.getElementById('projPageSize').value : '30';
     const sortedProducts = getProjectionFilteredData();
-
-    if (thProjClientCol) {
-        thProjClientCol.style.display = 'none';
-    }
-
-    if (sortedProducts.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Nenhum produto encontrado.</td></tr>`;
-        renderPaginationControls('projPagination', [], pageSizeVal, currentPageProj, 'changeProjPage');
-        return;
-    }
-
-    // Agrupa e soma por EAN / Produto
-    const groupedMap = {};
-    sortedProducts.forEach(item => {
-        const eanKey = (item.ean || item.produto || 'SEM_EAN').trim().toUpperCase();
-        if (!groupedMap[eanKey]) {
-            groupedMap[eanKey] = {
-                produto: item.produto,
-                ean: item.ean || '-',
-                categoria: item.categoria || 'GERAL',
-                totalQtdVendida: 0,
-                estoqueAtual: 0,
-                custoUnit: item.custoUnit || 0
-            };
-        }
-        groupedMap[eanKey].totalQtdVendida += item.totalQtdVendida;
-        groupedMap[eanKey].estoqueAtual += item.estoqueAtual;
-        if (item.custoUnit > 0) groupedMap[eanKey].custoUnit = item.custoUnit;
-    });
-
-    let displayRows = Object.values(groupedMap);
-
-    // FILTRO APLICADO APÓS O AGRUPAMENTO: Se a opção estiver marcada, remove tudo o que tiver sugestão <= 0
-    const onlySuggestionFilter = document.getElementById('filterOnlySuggestion') ? document.getElementById('filterOnlySuggestion').checked : false;
-    if (onlySuggestionFilter) {
-        displayRows = displayRows.filter(row => {
-            let suggestion = Math.max(0, row.totalQtdVendida - row.estoqueAtual);
-            return suggestion > 0;
-        });
-    }
-
-    // ORDENAÇÃO POR QUANTIDADE VENDIDA (MAIOR PARA O MENOR)
-    displayRows.sort((a, b) => b.totalQtdVendida - a.totalQtdVendida);
-
-    const { pageItems } = renderPaginationControls('projPagination', displayRows, pageSizeVal, currentPageProj, 'changeProjPage');
-
-    if (pageItems.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Nenhum produto com sugestão > 0.</td></tr>`;
-        return;
-    }
-
-    pageItems.forEach(stats => {
-        let suggestion = Math.max(0, stats.totalQtdVendida - stats.estoqueAtual);
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-800/50 transition-colors";
-        tr.innerHTML = `
-            <td class="p-3 font-semibold text-amber-400">${stats.produto}</td>
-            <td class="p-3 text-xs font-mono text-slate-400">${stats.ean || '-'}</td>
-            <td class="p-3"><span class="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-[11px]">${stats.categoria}</span></td>
-            <td class="p-3 text-center font-bold text-white">${stats.estoqueAtual}</td>
-            <td class="p-3 text-center font-bold text-slate-100">${stats.totalQtdVendida}</td>
-            <td class="p-3 text-center text-slate-300">${formatCurrency(stats.custoUnit)}</td>
-            <td class="p-3 text-center"><span class="px-2.5 py-1 bg-amber-500/10 text-amber-400 font-bold rounded text-xs">${suggestion}</span></td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-*/
-function renderProjection() {
-    const tbody = document.getElementById('projectionTableBody');
-    const thProjClientCol = document.getElementById('thProjClientCol');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    const pageSizeVal = document.getElementById('projPageSize') ? document.getElementById('projPageSize').value : '30';
-    const sortedProducts = getProjectionFilteredData();
-
-    if (thProjClientCol) {
-        thProjClientCol.style.display = 'none';
-    }
 
     if (sortedProducts.length === 0) {
         tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500 text-xs">Nenhum produto encontrado.</td></tr>`;
@@ -2668,7 +2252,6 @@ function renderProjection() {
         return;
     }
 
-    // Agrupa e consolida por EAN / Produto
     const groupedMap = {};
     sortedProducts.forEach(item => {
         const eanKey = (item.ean || item.produto || 'SEM_EAN').trim().toUpperCase();
@@ -2691,19 +2274,16 @@ function renderProjection() {
 
     let displayRows = Object.values(groupedMap);
 
-    // Calcula estoque total e sugestão de compra
     displayRows.forEach(row => {
         row._estoqueTotal = row.estoqueLoja + row.estoqueCd;
         row._sugestaoCalculada = Math.max(0, row.totalQtdVendida - row._estoqueTotal);
     });
 
-    // Filtro "Sugestão > 0"
     const onlySuggestionFilter = document.getElementById('filterOnlySuggestion') ? document.getElementById('filterOnlySuggestion').checked : false;
     if (onlySuggestionFilter) {
         displayRows = displayRows.filter(row => row._sugestaoCalculada > 0);
     }
 
-    // Ordenação por Quantidade Vendida (Maior para o menor)
     displayRows.sort((a, b) => b.totalQtdVendida - a.totalQtdVendida);
 
     const { pageItems } = renderPaginationControls('projPagination', displayRows, pageSizeVal, currentPageProj, 'changeProjPage');
@@ -2767,9 +2347,7 @@ reader.readAsArrayBuffer(file);
 }
 
 function downloadEntryTemplateCSV() {
-const csvContent = "data:text/csv;charset=utf-8,\uFEFF" +
-"Pedido;Fornecedor;Produto;Ean;Data;Quantidade;Preço unitário\n" +
-"PED-001;Fornecedor Central SP;ALGODAO;78944880;15/10/2026;100;0,80";
+const csvContent = "data:text/csv;charset=utf-8,\uFEFFPedido;Fornecedor;Produto;Ean;Data;Quantidade;Preço unitário\nPED-001;Fornecedor Central SP;ALGODAO;78944880;15/10/2026;100;0,80";
 const encodedUri = encodeURI(csvContent);
 const link = document.createElement("a");
 link.setAttribute("href", encodedUri);
@@ -2850,9 +2428,9 @@ XLSX.writeFile(workbook, `${fileName}_${new Date().toISOString().split('T')[0]}.
 }
 
 function exportSummaryCardsToExcel() {
-const { filteredData, selectedClient, selectedCat } = getFilteredDashboardData();
-let totalFaturamento = 0, totalCustoVendas = 0, totalQtdUnidades = 0;
-filteredData.forEach(row => { totalFaturamento += (row.qtd * row.vlrUnit); totalCustoVendas += (row.qtd * row.custoUnit); totalQtdUnidades += row.qtd; });
+const { filteredData, selectedClient } = getFilteredDashboardData();
+let totalFaturamento = 0, totalCustoVendas = 0;
+filteredData.forEach(row => { totalFaturamento += (row.qtd * row.vlrUnit); totalCustoVendas += (row.qtd * row.custoUnit); });
 
 let totalEstoqueVal = 0;
 for (let k in globalOfficialStock) {
@@ -2875,9 +2453,9 @@ exportToExcelFile(summaryData, "indicadores_nexxa", "Resumo");
 
 function exportStorePerfToExcel() {
 const { filteredData } = getFilteredDashboardData();
-let grandTotal = 0, clientStats = {};
+let clientStats = {};
 filteredData.forEach(row => {
-const f = row.qtd * row.vlrUnit; grandTotal += f;
+const f = row.qtd * row.vlrUnit;
 if (!clientStats[row.cliente]) clientStats[row.cliente] = { faturamento: 0, vendasCount: 0 };
 clientStats[row.cliente].faturamento += f; clientStats[row.cliente].vendasCount += 1;
 });
@@ -2924,7 +2502,6 @@ const { filteredData } = getFilteredDashboardData();
 exportToExcelFile(filteredData, "analitico_lancamentos", "Analítico");
 }
 
-/*
 function exportProjectionToExcel() {
     const sortedProducts = getProjectionFilteredData();
     if (!sortedProducts || sortedProducts.length === 0) {
@@ -2932,67 +2509,6 @@ function exportProjectionToExcel() {
         return;
     }
 
-    // 1. Agrupa e soma por EAN / Produto (idêntico ao que é exibido na tela)
-    const groupedMap = {};
-    sortedProducts.forEach(item => {
-        const eanKey = (item.ean || item.produto || 'SEM_EAN').trim().toUpperCase();
-        if (!groupedMap[eanKey]) {
-            groupedMap[eanKey] = {
-                produto: item.produto,
-                ean: item.ean || '-',
-                categoria: item.categoria || 'GERAL',
-                totalQtdVendida: 0,
-                estoqueAtual: 0,
-                custoUnit: item.custoUnit || 0
-            };
-        }
-        groupedMap[eanKey].totalQtdVendida += item.totalQtdVendida;
-        groupedMap[eanKey].estoqueAtual += item.estoqueAtual;
-        if (item.custoUnit > 0) groupedMap[eanKey].custoUnit = item.custoUnit;
-    });
-
-    let displayRows = Object.values(groupedMap);
-
-    // 2. Aplica o filtro se a opção "Sugestão > 0" estiver marcada
-    const onlySuggestionFilter = document.getElementById('filterOnlySuggestion') ? document.getElementById('filterOnlySuggestion').checked : false;
-    if (onlySuggestionFilter) {
-        displayRows = displayRows.filter(row => {
-            let suggestion = Math.max(0, row.totalQtdVendida - row.estoqueAtual);
-            return suggestion > 0;
-        });
-    }
-
-    if (displayRows.length === 0) {
-        alert("Nenhum produto com sugestão > 0 para exportar.");
-        return;
-    }
-
-    // 3. Monta o array de dados formatado para a planilha Excel
-    const exportData = displayRows.map(stats => {
-        let suggestion = Math.max(0, stats.totalQtdVendida - stats.estoqueAtual);
-        return {
-            "Produto": stats.produto,
-            "EAN": stats.ean || '',
-            "Categoria": stats.categoria,
-            "Estoque Oficial": stats.estoqueAtual,
-            "Vendida": stats.totalQtdVendida,
-            "Custo Unit": stats.custoUnit,
-            "Sugestão Compra": suggestion
-        };
-    });
-
-    exportToExcelFile(exportData, "projecao_compras", "Projeção");
-}
-*/
-
-function exportProjectionToExcel() {
-    const sortedProducts = getProjectionFilteredData();
-    if (!sortedProducts || sortedProducts.length === 0) {
-        alert("Nenhum dado de projeção para exportar.");
-        return;
-    }
-
-    // 1. Agrupa e consolida por EAN / Produto (idêntico ao exibido na tabela do painel)
     const groupedMap = {};
     sortedProducts.forEach(item => {
         const eanKey = (item.ean || item.produto || 'SEM_EAN').trim().toUpperCase();
@@ -3015,13 +2531,11 @@ function exportProjectionToExcel() {
 
     let displayRows = Object.values(groupedMap);
 
-    // 2. Calcula o estoque total (Loja + CD) e a sugestão de compra
     displayRows.forEach(row => {
         row._estoqueTotal = row.estoqueLoja + row.estoqueCd;
         row._sugestaoCalculada = Math.max(0, row.totalQtdVendida - row._estoqueTotal);
     });
 
-    // 3. Aplica o filtro se a opção "Sugestão > 0" estiver ativa
     const onlySuggestionFilter = document.getElementById('filterOnlySuggestion') ? document.getElementById('filterOnlySuggestion').checked : false;
     if (onlySuggestionFilter) {
         displayRows = displayRows.filter(row => row._sugestaoCalculada > 0);
@@ -3032,10 +2546,8 @@ function exportProjectionToExcel() {
         return;
     }
 
-    // 4. Ordena por quantidade vendida (maior para o menor)
     displayRows.sort((a, b) => b.totalQtdVendida - a.totalQtdVendida);
 
-    // 5. Monta a estrutura para o ficheiro Excel
     const exportData = displayRows.map(stats => ({
         "Produto": stats.produto,
         "EAN": stats.ean || '',
@@ -3063,118 +2575,62 @@ function importFullDatabaseJSON(e) {
     if (!file) return;
     
     const reader = new FileReader();
-    
     reader.onload = function(evt) {
         try {
-            // Leitura direta do texto do JSON (Evita falhas de atob no telemóvel)
-            const jsonString = evt.target.result;
-            const imp = JSON.parse(jsonString);
-            
-            if (!imp || typeof imp !== 'object') {
-                alert("Formato de arquivo JSON inválido.");
-                return;
-            }
+            const imp = JSON.parse(evt.target.result);
+            if (!imp || typeof imp !== 'object') { alert("Formato JSON inválido."); return; }
 
-            if (Array.isArray(imp.globalData)) {
-                globalData = imp.globalData;
-                salvarDadosNaNuvem('vendas', globalData);
-            } else {
-                globalData = [];
-                salvarDadosNaNuvem('vendas', globalData);
-            }
+            globalData = Array.isArray(imp.globalData) ? imp.globalData : [];
+            salvarDadosNaNuvem('vendas', globalData);
 
-            if (Array.isArray(imp.globalEntries)) {
-                globalEntries = imp.globalEntries;
-                salvarDadosNaNuvem('entradas', globalEntries);
-            } else {
-                globalEntries = [];
-                salvarDadosNaNuvem('entradas', globalEntries);
-            }
+            globalEntries = Array.isArray(imp.globalEntries) ? imp.globalEntries : [];
+            salvarDadosNaNuvem('entradas', globalEntries);
 
-            if (imp.globalOfficialStock && typeof imp.globalOfficialStock === 'object') {
-                globalOfficialStock = imp.globalOfficialStock;
-                salvarDadosNaNuvem('estoque', globalOfficialStock);
-            } else {
-                globalOfficialStock = {};
-                salvarDadosNaNuvem('estoque', globalOfficialStock);
-            }
+            globalOfficialStock = (imp.globalOfficialStock && typeof imp.globalOfficialStock === 'object') ? imp.globalOfficialStock : {};
+            salvarDadosNaNuvem('estoque', globalOfficialStock);
 
             populateFilterDropdowns();
             updateAllViews();
             renderEntries();
-            
             e.target.value = '';
-
-            alert("Backup restaurado com sucesso e enviado para a nuvem!");
-        } catch(err) {
-            console.error("Erro crítico na restauração:", err);
-            alert("Não foi possível processar o arquivo JSON. Certifique-se de que é um backup válido do Nexxa.");
-        }
+            alert("Backup restaurado com sucesso!");
+        } catch(err) { alert("Erro ao processar o arquivo de backup."); }
     };
-    
-    reader.onerror = function() {
-        alert("Erro crítico na leitura do arquivo pelo navegador.");
-    };
-
-    // Alterado para ler como texto puro (.readAsText) em vez de Base64
     reader.readAsText(file);
 }
 
 function inicializarDatasHoje() {
   const hoje = new Date().toISOString().split('T')[0];
-
-  // Lista de IDs dos inputs de data de todas as abas
-  const idsInputs = [
-    'startDate', 'endDate',         // Dashboard (se houver)
-    'stockStartDate', 'stockEndDate', // Estoque
-    'projStartDate', 'projEndDate'    // Projeção (ajuste o ID se necessário)
-  ];
-
-  idsInputs.forEach(id => {
+  ['startDate', 'endDate', 'stockStartDate', 'stockEndDate', 'projStartDate', 'projEndDate'].forEach(id => {
     const input = document.getElementById(id);
-    if (input && !input.value) {
-      input.value = hoje; // Define a data de hoje se estiver vazio
-    }
+    if (input && !input.value) input.value = hoje;
   });
 }
 
-// Chame essa função assim que a página carregar ou quando o DOM estiver pronto
-document.addEventListener('DOMContentLoaded', () => {
-  inicializarDatasHoje();
-  // ... suas outras chamadas de inicialização
-});
-
+document.addEventListener('DOMContentLoaded', () => { inicializarDatasHoje(); });
 
 function aplicarPeriodoGeral(valor, aba) {
   if (valor === 'custom') {
     const hoje = new Date().toISOString().split('T')[0];
-    
-    // Define com base na aba ativa
     if (aba === 'stock') {
       document.getElementById('stockStartDate').value = hoje;
       document.getElementById('stockEndDate').value = hoje;
       renderStockView();
     } else if (aba === 'proj') {
-      // Ajuste para a aba de projeção se necessário
       document.getElementById('projStartDate').value = hoje;
       document.getElementById('projEndDate').value = hoje;
-      renderProjectionView();
+      renderProjection();
     } else {
-      // Dashboard
       document.getElementById('startDate').value = hoje;
       document.getElementById('endDate').value = hoje;
       renderDashboard();
     }
-  } else {
-    // Lógica para os dias pré-definidos (7, 15, 30, all)
-    // ...
   }
 }
 
 function applyProjDatePreset() { currentPageProj = 1; renderProjection(); }
 function onProjCustomDateChange() { currentPageProj = 1; renderProjection(); }
-function applyStockDatePreset() { currentPageStock = 1; renderStockView(); }
-function onStockCustomDateChange() { currentPageStock = 1; renderStockView(); }
+function onStockCustomDateChange() { resetStockPagesAndRender(); }
 
 window.onload = async function() {
 initTheme();
