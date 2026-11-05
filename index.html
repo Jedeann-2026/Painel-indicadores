@@ -643,15 +643,23 @@ Projeção: R$ 0,00
 </div>
 
 <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
-<label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs md:text-sm font-medium shadow-sm transition-all flex items-center justify-center space-x-1.5 flex-1 sm:flex-none">
-<i class="fa-solid fa-file-excel"></i>
-<span>Importar Notas</span>
-<input type="file" id="entry-excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleEntryFile(event)">
-</label>
-<button onclick="downloadEntryTemplateCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl text-xs md:text-sm font-medium transition-all flex items-center justify-center space-x-1.5 border border-slate-700 flex-1 sm:flex-none">
-<i class="fa-solid fa-download"></i>
-<span>Modelo</span>
-</button>
+
+<!-- Botão NOVO para Exportar Excel -->
+  <button onclick="exportEntriesToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs md:text-sm font-medium shadow-sm transition-all flex items-center justify-center space-x-1.5 flex-1 sm:flex-none">
+    <i class="fa-solid fa-file-excel"></i>
+    <span>Exportar Notas</span>
+  </button>
+
+  <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs md:text-sm font-medium shadow-sm transition-all flex items-center justify-center space-x-1.5 flex-1 sm:flex-none">
+    <i class="fa-solid fa-file-excel"></i>
+    <span>Importar Notas</span>
+    <input type="file" id="entry-excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleEntryFile(event)">
+  </label>
+
+  <button onclick="downloadEntryTemplateCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-xl text-xs md:text-sm font-medium transition-all flex items-center justify-center space-x-1.5 border border-slate-700 flex-1 sm:flex-none">
+    <i class="fa-solid fa-download"></i>
+    <span>Modelo</span>
+  </button>
 </div>
 </div>
 
@@ -858,7 +866,44 @@ async function carregarDadosDoPainel() {
             const registroEstoque = cloudData.find(d => d.id === 'estoque' || d.id === 'ESTOQUE');
 
             if (registroVendas && registroVendas.data) { globalData = registroVendas.data; safeSetLocalStorage('nexxa_data', globalData); }
-            if (registroEntradas && registroEntradas.data) { globalEntries = registroEntradas.data; safeSetLocalStorage('nexxa_entries', globalEntries); }
+       /*     if (registroEntradas && registroEntradas.data) { globalEntries = registroEntradas.data; safeSetLocalStorage('nexxa_entries', globalEntries); }*/
+
+       if (registroEntradas && registroEntradas.data) {
+    let entradasFormatadas = [];
+    const dadosEntradas = registroEntradas.data;
+
+    // Converte o formato de objeto do Supabase para o formato plano esperado pelo painel
+    if (typeof dadosEntradas === 'object' && !Array.isArray(dadosEntradas)) {
+        Object.keys(dadosEntradas).forEach(notaKey => {
+            const nota = dadosEntradas[notaKey];
+            if (nota && nota.itens && Array.isArray(nota.itens)) {
+                const pedido = nota.numeroPedido || notaKey;
+                const fornecedor = nota.fornecedor || 'Fornecedor';
+                const dataStr = nota.dataFinalizacao ? nota.dataFinalizacao.split('T')[0] : new Date().toISOString().split('T')[0];
+                
+                nota.itens.forEach(item => {
+                    entradasFormatadas.push({
+                        pedido: String(pedido),
+                        fornecedor: fornecedor,
+                        produto: item.descricao || 'Não informado',
+                        ean: String(item.codigo || '').trim(),
+                        data: dataStr,
+                        qtd: Number(item.qtd) || 0,
+                        precoUnit: Number(item.custo) || 0
+                    });
+                });
+            }
+        });
+        globalEntries = entradasFormatadas;
+    } else if (Array.isArray(dadosEntradas)) {
+        globalEntries = dadosEntradas;
+    }
+    
+    safeSetLocalStorage('nexxa_entries', globalEntries);
+}
+       
+       
+       
             if (registroEstoque && registroEstoque.data) { globalOfficialStock = registroEstoque.data; safeSetLocalStorage('nexxa_official_stock', globalOfficialStock); }
         } else {
             const savedData = localStorage.getItem('nexxa_data'); if (savedData) try { globalData = JSON.parse(savedData); } catch(e){}
@@ -870,6 +915,72 @@ async function carregarDadosDoPainel() {
     populateFilterDropdowns();
     updateAllViews();
     renderEntries();
+}
+
+function exportEntriesToExcel() {
+    if (!globalEntries || globalEntries.length === 0) {
+        alert("Nenhuma nota ou pedido cadastrado para exportar.");
+        return;
+    }
+
+    // 1. Agrupa os itens de globalEntries por pedido
+    const ordersMap = {};
+    globalEntries.forEach(row => {
+        const key = row.pedido || 'PED-GEN';
+        if (!ordersMap[key]) {
+            ordersMap[key] = {
+                pedido: key,
+                fornecedor: row.fornecedor || 'Fornecedor',
+                data: row.data || '',
+                itens: []
+            };
+        }
+        ordersMap[key].itens.push(row);
+    });
+
+    // 2. Monta as linhas em formato de matriz pura para respeitar a estrutura da imagem
+    const excelRows = [];
+
+    Object.values(ordersMap).forEach((ord) => {
+        // Linhas de cabeçalho do pedido (estilo bloco vertical)
+        excelRows.push([`PEDIDO: ${ord.pedido}`, "", "", "", ""]);
+        excelRows.push([`FORNECEDOR: ${ord.fornecedor}`, "", "", "", ""]);
+        excelRows.push([`DATA: ${ord.data}`, "", "", "", ""]);
+        excelRows.push(["", "", "", "", ""]); // Linha em branco de respiro
+
+        // Cabeçalho da tabela de itens
+        excelRows.push(["Produto", "EAN", "Quantidade", "Preço Unitário", "Valor Total"]);
+
+        // Linhas dos produtos do pedido
+        let totalNota = 0;
+        ord.itens.forEach(item => {
+            const vlrTotal = (item.qtd || 0) * (item.precoUnit || 0);
+            totalNota += vlrTotal;
+
+            excelRows.push([
+                item.produto || '',
+                item.ean || '',
+                item.qtd || 0,
+                item.precoUnit || 0,
+                vlrTotal
+            ]);
+        });
+
+        // Linha com o Total do Pedido alinhada abaixo de Preço Unitário
+        excelRows.push(["", "", "", "TOTAL PEDIDO:", totalNota]);
+
+        // Linhas em branco para separar dos próximos pedidos
+        excelRows.push(["", "", "", "", ""]);
+        excelRows.push(["", "", "", "", ""]);
+    });
+
+    // 3. Cria a planilha utilizando o SheetJS (XLSX) a partir de matrizes
+    const worksheet = XLSX.utils.aoa_to_sheet(excelRows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Notas por Pedido");
+
+    // Salva o arquivo Excel
+    XLSX.writeFile(workbook, `notas_de_entrada_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
 
 function safeSetLocalStorage(key, value) {
