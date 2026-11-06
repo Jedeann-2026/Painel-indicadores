@@ -923,65 +923,27 @@ function exportEntriesToExcel() {
         return;
     }
 
-    // 1. Agrupa os itens de globalEntries por pedido
-    const ordersMap = {};
-    globalEntries.forEach(row => {
-        const key = row.pedido || 'PED-GEN';
-        if (!ordersMap[key]) {
-            ordersMap[key] = {
-                pedido: key,
-                fornecedor: row.fornecedor || 'Fornecedor',
-                data: row.data || '',
-                itens: []
-            };
-        }
-        ordersMap[key].itens.push(row);
-    });
+    // Mapeia cada item do pedido para uma única linha com todas as colunas solicitadas
+    const exportData = globalEntries.map(item => ({
+        "Pedido": item.pedido || '',
+        "Fornecedor": item.fornecedor || '',
+        "Data": item.data || '',
+        "EAN": item.ean || '',
+        "Nome": item.produto || '',
+        "Qtd": item.qtd || 0,
+        "Unit": item.precoUnit || 0,
+        "Valor": (item.qtd || 0) * (item.precoUnit || 0)
+    }));
 
-    // 2. Monta as linhas em formato de matriz pura para respeitar a estrutura da imagem
-    const excelRows = [];
-
-    Object.values(ordersMap).forEach((ord) => {
-        // Linhas de cabeçalho do pedido (estilo bloco vertical)
-        excelRows.push([`PEDIDO: ${ord.pedido}`, "", "", "", ""]);
-        excelRows.push([`FORNECEDOR: ${ord.fornecedor}`, "", "", "", ""]);
-        excelRows.push([`DATA: ${ord.data}`, "", "", "", ""]);
-        excelRows.push(["", "", "", "", ""]); // Linha em branco de respiro
-
-        // Cabeçalho da tabela de itens
-        excelRows.push(["Produto", "EAN", "Quantidade", "Preço Unitário", "Valor Total"]);
-
-        // Linhas dos produtos do pedido
-        let totalNota = 0;
-        ord.itens.forEach(item => {
-            const vlrTotal = (item.qtd || 0) * (item.precoUnit || 0);
-            totalNota += vlrTotal;
-
-            excelRows.push([
-                item.produto || '',
-                item.ean || '',
-                item.qtd || 0,
-                item.precoUnit || 0,
-                vlrTotal
-            ]);
-        });
-
-        // Linha com o Total do Pedido alinhada abaixo de Preço Unitário
-        excelRows.push(["", "", "", "TOTAL PEDIDO:", totalNota]);
-
-        // Linhas em branco para separar dos próximos pedidos
-        excelRows.push(["", "", "", "", ""]);
-        excelRows.push(["", "", "", "", ""]);
-    });
-
-    // 3. Cria a planilha utilizando o SheetJS (XLSX) a partir de matrizes
-    const worksheet = XLSX.utils.aoa_to_sheet(excelRows);
+    // Cria a planilha em formato tabular simples
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Notas por Pedido");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Notas de Entrada");
 
-    // Salva o arquivo Excel
+    // Faz o download do arquivo Excel
     XLSX.writeFile(workbook, `notas_de_entrada_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
+
 
 function safeSetLocalStorage(key, value) {
     try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
@@ -1290,7 +1252,7 @@ return obj[keyMatch];
 }
 return null;
 }
-
+/*
 function handleStockFile(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -1372,6 +1334,88 @@ function handleStockFile(e) {
     };
     reader.readAsArrayBuffer(file);
 }
+*/ 
+
+function handleStockFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        try {
+            const data = new Uint8Array(evt.target.result);
+            const workbook = XLSX.read(data, {type: 'array', cellDates: false});
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
+
+            if(json.length > 0) {
+                let count = 0;
+
+                // 1. Identifica quais clientes estão presentes no arquivo que está sendo importado
+                const clientesNoArquivo = new Set();
+                json.forEach(item => {
+                    const rawClient = getObjectValueIgnoreCase(item, ['cliente', 'loja', 'filial']);
+                    if (rawClient) {
+                        clientesNoArquivo.add(String(rawClient).trim().toUpperCase());
+                    }
+                });
+
+                // 2. Remove do estoque oficial existente todos os registros pertencentes a esses clientes
+                if (clientesNoArquivo.size > 0) {
+                    for (let k in globalOfficialStock) {
+                        const itemEstoque = globalOfficialStock[k];
+                        if (itemEstoque && itemEstoque.cliente) {
+                            const cliEstoqueUp = String(itemEstoque.cliente).trim().toUpperCase();
+                            if (clientesNoArquivo.has(cliEstoqueUp)) {
+                                delete globalOfficialStock[k]; // Exclui os dados antigos do cliente presentes no arquivo
+                            }
+                        }
+                    }
+                }
+
+                // 3. Importa todos os dados novos da planilha limpinho
+                json.forEach(item => {
+                    const rawClient = getObjectValueIgnoreCase(item, ['cliente', 'loja', 'filial']) || 'Geral';
+                    const rawEan = getObjectValueIgnoreCase(item, ['ean', 'codigo', 'cod']);
+                    const rawNome = getObjectValueIgnoreCase(item, ['nome', 'produto', 'nome do produto', 'descricao']);
+                    const rawCategoria = getObjectValueIgnoreCase(item, ['categoria', 'cat', 'grupo']) || 'GERAL';
+                    const rawEstoque = getObjectValueIgnoreCase(item, ['estoque', 'quantidade', 'qtd', 'saldo']);
+
+                    const cliente = String(rawClient).trim();
+                    const clienteUp = cliente.toUpperCase();
+                    const eanLimpo = rawEan ? String(rawEan).replace(/\D/g, '').trim() : '';
+                    const nome = rawNome ? String(rawNome).trim() : '';
+                    const nomeUp = nome.toUpperCase();
+                    const categoria = String(rawCategoria).trim();
+                    const estoque = parseDecimal(rawEstoque);
+
+                    if (cliente && (eanLimpo || nomeUp)) {
+                        const identifier = eanLimpo ? eanLimpo : nomeUp;
+                        const key = `${clienteUp}___${identifier}`;
+
+                        globalOfficialStock[key] = {
+                            cliente: cliente,
+                            produto: nome || identifier,
+                            ean: eanLimpo,
+                            categoria: categoria,
+                            estoque: estoque
+                        };
+                        count++;
+                    }
+                });
+
+                if(count > 0) {
+                    salvarDadosNaNuvem('estoque', globalOfficialStock);
+                    populateFilterDropdowns();
+                    updateAllViews();
+                    alert(`Estoque importado com sucesso!\n• Dados anteriores dos clientes do arquivo foram limpos.\n• Novos registros importados: ${count}`);
+                } else { alert("Nenhum registro válido encontrado na planilha."); }
+            } else { alert("Planilha de estoque vazia."); }
+        } catch(err) { alert("Erro ao ler arquivo de estoque."); }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+
 
 function downloadStockTemplateCSV() {
 const csvContent = "data:text/csv;charset=utf-8,\uFEFFcliente;ean;nome;categoria;estoque\nANNA BEATRIZ (MARINHA);78944880;ALGODAO;PERFUM;86";
