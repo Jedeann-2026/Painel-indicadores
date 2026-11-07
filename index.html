@@ -2513,6 +2513,133 @@ link.remove();
 }
 
 function renderEntries() {
+    const masterTbody = document.getElementById('entryMasterTableBody');
+    const detailTbody = document.getElementById('entryDetailTableBody');
+    const titleEl = document.getElementById('selectedOrderTitle');
+    if(!masterTbody || !detailTbody) return;
+
+    masterTbody.innerHTML = '';
+    const ordersMap = {};
+    globalEntries.forEach(row => {
+        const key = row.pedido || 'PED-GEN';
+        if (!ordersMap[key]) {
+            ordersMap[key] = { pedido: key, fornecedor: row.fornecedor, data: row.data, itensCount: 0, valorTotalNota: 0, itens: [] };
+        }
+        ordersMap[key].itensCount += 1;
+        ordersMap[key].valorTotalNota += (row.qtd * row.precoUnit);
+        ordersMap[key].itens.push(row);
+    });
+
+    const ordersArray = Object.values(ordersMap);
+    if (ordersArray.length === 0) {
+        masterTbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">Nenhuma nota cadastrada.</td></tr>`;
+        detailTbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Nenhum pedido selecionado.</td></tr>`;
+        return;
+    }
+
+    if (!selectedOrderKey || !ordersMap[selectedOrderKey]) {
+        selectedOrderKey = ordersArray[0].pedido;
+    }
+
+    ordersArray.forEach(ord => {
+        const isSelected = ord.pedido === selectedOrderKey;
+        const tr = document.createElement('tr');
+        tr.className = `cursor-pointer transition-colors ${isSelected ? 'bg-amber-500/10 border-l-4 border-l-amber-400' : 'hover:bg-slate-800/50'}`;
+        
+        // Mantém a seleção dos itens ao clicar na linha
+        tr.onclick = () => { 
+            selectedOrderKey = ord.pedido; 
+            renderEntries(); 
+        };
+
+        tr.innerHTML = `
+            <td class="p-3 font-bold text-amber-400">${ord.pedido}</td>
+            <td class="p-3 font-semibold text-slate-100">${ord.fornecedor}</td>
+            <td class="p-3 text-slate-400">${ord.data}</td>
+            <td class="p-3 text-center text-slate-300">${ord.itensCount}</td>
+            <td class="p-3 text-right font-bold text-emerald-400">${formatCurrency(ord.valorTotalNota)}</td>
+            <td class="p-3 text-center">
+                <button onclick="excluirPedidoEntrada('${ord.pedido}', event)" class="px-2.5 py-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 mx-auto" title="Excluir Pedido">
+                    <i class="fa-solid fa-trash-can"></i> Excluir
+                </button>
+            </td>
+        `;
+        masterTbody.appendChild(tr);
+    });
+
+    // Renderiza os itens detalhados em baixo conforme o pedido selecionado
+    const activeOrder = ordersMap[selectedOrderKey];
+    if (activeOrder) {
+        titleEl.innerHTML = `<i class="fa-solid fa-boxes-stacked mr-2"></i>Itens do Pedido: <span class="text-amber-300 ml-1 font-bold">${activeOrder.pedido}</span>`;
+        detailTbody.innerHTML = '';
+        activeOrder.itens.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-800/50 transition-colors";
+            tr.innerHTML = `
+                <td class="p-3 font-medium text-amber-400">${item.produto}</td>
+                <td class="p-3 text-xs font-mono text-slate-400">${item.ean || '-'}</td>
+                <td class="p-3 text-center font-bold text-slate-100">${item.qtd}</td>
+                <td class="p-3 text-right text-slate-300">${formatCurrency(item.precoUnit)}</td>
+                <td class="p-3 text-right font-bold text-slate-100">${formatCurrency(item.qtd * item.precoUnit)}</td>
+            `;
+            detailTbody.appendChild(tr);
+        });
+    }
+}
+
+
+async function excluirPedidoEntrada(numPedido, e) {
+    if (e) e.stopPropagation();
+
+    if (usuarioLogado && usuarioLogado.perfil === 'convidado') {
+        alert("O perfil Convidado não possui permissão para excluir pedidos.");
+        return;
+    }
+
+    if (!confirm(`Deseja realmente excluir o Pedido/Nota #${numPedido}? Essa ação removerá o registro da nuvem.`)) {
+        return;
+    }
+
+    try {
+        const { data: cloudData, error } = await supabaseClient.from('nexxa_store').select('*');
+        if (error) throw error;
+
+        let regEntradas = cloudData.find(d => d.id === 'entradas');
+        if (!regEntradas || !regEntradas.data) {
+            alert("Nenhum registro de entrada encontrado.");
+            return;
+        }
+
+        let entradasData = regEntradas.data;
+
+        if (Array.isArray(entradasData)) {
+            entradasData = entradasData.filter(item => String(item.pedido || item.numeroPedido) !== String(numPedido));
+        } else if (typeof entradasData === 'object') {
+            for (let key in entradasData) {
+                if (String(entradasData[key].numeroPedido || entradasData[key].pedido || key) === String(numPedido)) {
+                    delete entradasData[key];
+                }
+            }
+        }
+
+        await salvarDadosNaNuvem('entradas', entradasData);
+
+        if (selectedOrderKey === numPedido) {
+            selectedOrderKey = null;
+        }
+
+        await carregarDadosDoPainel();
+        alert(`Pedido #${numPedido} excluído com sucesso!`);
+
+    } catch (err) {
+        console.error("Erro ao excluir pedido:", err);
+        alert("Erro ao excluir pedido: " + err.message);
+    }
+}
+
+
+/*
+function renderEntries() {
 const masterTbody = document.getElementById('entryMasterTableBody');
 const detailTbody = document.getElementById('entryDetailTableBody');
 const titleEl = document.getElementById('selectedOrderTitle');
@@ -2573,6 +2700,7 @@ detailTbody.appendChild(tr);
 });
 }
 }
+*/
 
 function exportToExcelFile(dataArray, fileName, sheetName) {
 if (!dataArray || dataArray.length === 0) { alert("Sem dados para exportar."); return; }
