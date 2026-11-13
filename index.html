@@ -290,7 +290,7 @@ html.dark input[type="date"]::-webkit-calendar-picker-indicator {
 </div>
 </div>
 
-<!-- NOVO CARD NO DASHBOARD: PRODUTOS COM VENDAS E SEM ESTOQUE (RUPTURA) -->
+<!-- CARD RUPTURA NO DASHBOARD -->
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-rose-500/30 overflow-hidden">
 <div class="p-3.5 md:p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
 <div>
@@ -947,7 +947,7 @@ function autenticarUsuario() {
         errorDiv.style.display = 'block';
     }
 }
-
+/*
 function aplicarRestricoesPerfil() {
     if (!usuarioLogado) return;
 
@@ -958,6 +958,29 @@ function aplicarRestricoesPerfil() {
             if (el) { el.value = hoje; el.disabled = true; }
         });
     } else {
+        ['startDate', 'endDate'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = false;
+        });
+    }
+}*/
+
+
+function aplicarRestricoesPerfil() {
+    if (!usuarioLogado) return;
+
+    // Detecta se é dispositivo móvel (ex: largura menor que 768px)
+    const isMobile = window.innerWidth < 768;
+
+    // Se for convidado E NÃO estiver no celular, aplica a restrição
+    if (usuarioLogado.perfil === 'convidado' && !isMobile) {
+        const hoje = new Date().toISOString().split('T')[0];
+        ['startDate', 'endDate', 'stockStartDate', 'stockEndDate', 'projStartDate', 'projEndDate'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.value = hoje; el.disabled = true; }
+        });
+    } else {
+        // Caso contrário (admin ou acesso via celular), libera os campos de data
         ['startDate', 'endDate'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.disabled = false;
@@ -1165,18 +1188,36 @@ let chartTopQtyInst = null;
 let chartCategoryInst = null;
 let chartClientsInst = null;
 
-function setDefaultCurrentDate() {
-const todayStr = new Date().toISOString().split('T')[0];
-const startDateInput = document.getElementById('startDate');
-if (startDateInput && !startDateInput.value) {
-    if (usuarioLogado && usuarioLogado.perfil === 'convidado') {
-        startDateInput.value = todayStr;
-    } else {
-        startDateInput.value = '';
-    }
+function formatLocalYYYYMMDD(dateObj) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const d = String(dateObj.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
-const compStartInput = document.getElementById('compStartDate');
-if (compStartInput && !compStartInput.value) compStartInput.value = todayStr;
+
+function setDefaultCurrentDate() {
+  const today = new Date();
+  const todayStr = formatLocalYYYYMMDD(today);
+  const startDateInput = document.getElementById('startDate');
+  if (startDateInput && !startDateInput.value) {
+    if (usuarioLogado && usuarioLogado.perfil === 'convidado') {
+      startDateInput.value = todayStr;
+    } else {
+      startDateInput.value = '';
+    }
+  }
+
+  // Sugestão automática para o Comparativo Semanal Personalizado: mês cheio anterior
+  const firstDayPrevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const lastDayPrevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+  const compStartInput = document.getElementById('compStartDate');
+  const compEndInput = document.getElementById('compEndDate');
+  if (compStartInput && !compStartInput.value) {
+    compStartInput.value = formatLocalYYYYMMDD(firstDayPrevMonth);
+  }
+  if (compEndInput && !compEndInput.value) {
+    compEndInput.value = formatLocalYYYYMMDD(lastDayPrevMonth);
+  }
 }
 
 function updateAllViews() {
@@ -1865,11 +1906,7 @@ badgeProjecao.innerText = `Projeção: R$ 0,00`;
 }
 }
 
-function renderCustomWeeklyComparison() {
-const container = document.getElementById('customWeeklyCardsContainer');
-const compTotalText = document.getElementById('compTotalText');
-if (!container) return;
-
+function getCustomWeeklyComparisonData() {
 const compStart = document.getElementById('compStartDate') ? document.getElementById('compStartDate').value : '';
 const compEnd = document.getElementById('compEndDate') ? document.getElementById('compEndDate').value : '';
 const selectedClient = document.getElementById('clientFilter') ? document.getElementById('clientFilter').value : 'all';
@@ -1905,6 +1942,16 @@ else if (dayOfMonth <= 14) weeklyTotals[2] += faturamento;
 else if (dayOfMonth <= 21) weeklyTotals[3] += faturamento;
 else weeklyTotals[4] += faturamento;
 });
+
+return { weeklyTotals, totalCompFat };
+}
+
+function renderCustomWeeklyComparison() {
+const container = document.getElementById('customWeeklyCardsContainer');
+const compTotalText = document.getElementById('compTotalText');
+if (!container) return;
+
+const { weeklyTotals, totalCompFat } = getCustomWeeklyComparisonData();
 
 if (compTotalText) compTotalText.innerText = `Faturamento Período: ${formatCurrency(totalCompFat)}`;
 
@@ -2884,7 +2931,16 @@ const exportData = [1,2,3,4].map(id => ({ "Semana": `Semana ${id}`, "Faturamento
 exportToExcelFile(exportData, "faturamento_4_semanas", "Semanas");
 }
 
-function exportCustomWeeklyToExcel() { exportFourWeeksToExcel(); }
+function exportCustomWeeklyToExcel() {
+const { weeklyTotals, totalCompFat } = getCustomWeeklyComparisonData();
+const exportData = [1,2,3,4].map(id => ({
+  "Semana": `Semana ${id}`,
+  "Faturamento": weeklyTotals[id],
+  "Participação (%)": totalCompFat > 0 ? Number(((weeklyTotals[id] / totalCompFat) * 100).toFixed(2)) : 0
+}));
+exportToExcelFile(exportData, "comparativo_semanal_personalizado", "Comparativo");
+}
+
 function exportTurnoverToExcel() { exportConsolidatedToExcel(); }
 function exportConsolidatedToExcel() {
 const { filteredData, selectedClient } = getFilteredDashboardData();
@@ -3015,7 +3071,10 @@ function inicializarDatasHoje() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', () => { inicializarDatasHoje(); });
+document.addEventListener('DOMContentLoaded', () => {
+  inicializarDatasHoje();
+  setDefaultCurrentDate();
+});
 
 function aplicarPeriodoGeral(valor, aba) {
   if (valor === 'custom') {
