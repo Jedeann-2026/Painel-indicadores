@@ -23,11 +23,90 @@ tailwind.config = {
   #tab-projection, #tab-stock { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; background: white !important; color: black !important; }
   .no-print { display: none !important; }
 }
+
+/* Ajustes automáticos para o Modo Claro (Dia) */
+html:not(.dark) body {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+html:not(.dark) header {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+html:not(.dark) .bg-slate-900 {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+html:not(.dark) .bg-slate-950 {
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+html:not(.dark) .bg-slate-800 {
+  background-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+html:not(.dark) .border-slate-800,
+html:not(.dark) .border-slate-700 {
+  border-color: #cbd5e1 !important;
+}
+html:not(.dark) .divide-slate-800 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e2e8f0 !important;
+}
+html:not(.dark) .text-white {
+  color: #0f172a !important;
+}
+html:not(.dark) .text-slate-100,
+html:not(.dark) .text-slate-200 {
+  color: #1e293b !important;
+}
+html:not(.dark) .text-slate-300,
+html:not(.dark) .text-slate-400 {
+  color: #475569 !important;
+}
+html:not(.dark) .text-amber-400 {
+  color: #d97706 !important;
+}
+html:not(.dark) .text-amber-300 {
+  color: #b45309 !important;
+}
+html:not(.dark) .text-emerald-400 {
+  color: #059669 !important;
+}
+html:not(.dark) .text-blue-400 {
+  color: #2563eb !important;
+}
+html:not(.dark) .text-rose-400 {
+  color: #e11d48 !important;
+}
+html:not(.dark) .text-indigo-400,
+html:not(.dark) .text-indigo-300 {
+  color: #4f46e5 !important;
+}
+html:not(.dark) .text-purple-400 {
+  color: #7c3aed !important;
+}
+html:not(.dark) tr:hover {
+  background-color: #f1f5f9 !important;
+}
+html:not(.dark) footer {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+html:not(.dark) input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0);
+}
+html.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
 </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col text-sm md:text-base" id="mainBody">
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col text-sm md:text-base transition-colors duration-200" id="mainBody">
 
-<header class="bg-slate-900 text-white shadow-md border-b border-slate-800 no-print sticky top-0 z-40">
+<header class="bg-slate-900 text-white shadow-md border-b border-slate-800 no-print sticky top-0 z-40 transition-colors duration-200">
 <div class="max-w-7xl mx-auto px-3 py-3 flex flex-col md:flex-row justify-between items-center gap-3">
 <div class="flex items-center justify-between w-full md:w-auto">
 <div class="flex items-center space-x-2.5">
@@ -35,13 +114,13 @@ tailwind.config = {
 <i class="fa-solid fa-chart-line text-xl text-amber-400"></i>
 </div>
 <div>
-
     <h1 class="text-base md:text-xl font-bold tracking-tight text-amber-400">AB conveniências</h1>
 <p class="text-[10px] md:text-xs text-slate-400">Gestão inteligente de estoque e vendas</p>
 </div>
 </div>
-<button onclick="toggleTheme()" class="md:hidden bg-slate-800 hover:bg-slate-700 text-amber-400 p-2 rounded-xl border border-slate-700 transition-all shadow-sm">
+<button onclick="toggleTheme()" title="Alternar Dia / Noite" class="md:hidden bg-slate-800 hover:bg-slate-700 text-amber-400 p-2 rounded-xl border border-slate-700 transition-all shadow-sm flex items-center gap-1.5 text-xs font-semibold">
 <i id="themeIconMobile" class="fa-solid fa-sun text-sm"></i>
+<span id="themeLabelMobile">Dia</span>
 </button>
 </div>
 
@@ -61,8 +140,9 @@ tailwind.config = {
 </button>
 </div>
 
-<button onclick="toggleTheme()" class="hidden md:block bg-slate-800 hover:bg-slate-700 text-amber-400 p-2.5 rounded-xl border border-slate-700 transition-all shadow-sm">
+<button onclick="toggleTheme()" title="Alternar Modo Dia / Noite" class="hidden md:flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 px-3 py-2 rounded-xl border border-slate-700 transition-all shadow-sm text-xs font-semibold shrink-0">
 <i id="themeIcon" class="fa-solid fa-sun text-sm"></i>
+<span id="themeLabel">Dia</span>
 </button>
 </div>
 </div>
@@ -208,6 +288,52 @@ tailwind.config = {
 <tbody id="storePerfTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
 </table>
 </div>
+</div>
+
+<!-- NOVO CARD NO DASHBOARD: PRODUTOS COM VENDAS E SEM ESTOQUE (RUPTURA) -->
+<div class="bg-slate-900 rounded-2xl shadow-sm border border-rose-500/30 overflow-hidden">
+<div class="p-3.5 md:p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+<div>
+<h2 class="font-bold text-rose-400 text-sm md:text-base flex items-center gap-2">
+<i class="fa-solid fa-triangle-exclamation"></i>Produtos com Vendas e Sem Estoque (Ruptura)
+</h2>
+<p class="text-[11px] md:text-xs text-slate-400 mt-0.5">Itens com saída nos filtros acima (Cliente, Período, Categoria, Produto) e estoque zerado na loja.</p>
+</div>
+<div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+<span id="dashOutOfStockCount" class="text-xs bg-rose-500/10 text-rose-400 font-bold px-2.5 py-1.5 rounded-xl border border-rose-500/20">0 itens</span>
+<button onclick="exportDashOutOfStockToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1">
+<i class="fa-solid fa-file-excel"></i>
+<span>Excel</span>
+</button>
+<div class="flex items-center space-x-1 bg-slate-950 px-2 py-1.5 rounded-xl border border-slate-800">
+<span class="text-[11px] font-medium text-slate-400">Exibir:</span>
+<select id="dashOutOfStockPageSize" onchange="currentPageDashOutOfStock=1; renderDashboard()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
+<option value="10" selected>10</option>
+<option value="30">30</option>
+<option value="50">50</option>
+<option value="all">Todos</option>
+</select>
+</div>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
+<thead>
+<tr class="bg-slate-950 text-slate-400 uppercase text-[10px] md:text-xs tracking-wider border-b border-slate-800">
+<th class="p-3 font-semibold">Cliente / Loja</th>
+<th class="p-3 font-semibold">Produto</th>
+<th class="p-3 font-semibold">EAN</th>
+<th class="p-3 font-semibold">Categoria</th>
+<th class="p-3 font-semibold text-center text-rose-400">Est. Loja</th>
+<th class="p-3 font-semibold text-center text-blue-400">Est. CD</th>
+<th class="p-3 font-semibold text-center">Qtd Vendida</th>
+<th class="p-3 font-semibold text-right">Faturamento</th>
+</tr>
+</thead>
+<tbody id="dashOutOfStockTableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
+</table>
+</div>
+<div id="dashOutOfStockPagination" class="p-3 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-400"></div>
 </div>
 
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
@@ -494,7 +620,7 @@ Projeção: R$ 0,00
 
         <input type="text" id="stockSearchInput" placeholder="Pesquisar produto/EAN..." onkeyup="resetStockPagesAndRender()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-900 text-slate-200 w-full sm:w-48">
 
-        <!-- NOVO: Seletor de Quantidade por Página na Aba Estoque -->
+        <!-- Seletor de Quantidade por Página na Aba Estoque -->
         <div class="flex items-center space-x-1 bg-slate-900 px-3 py-2 rounded-xl border border-slate-800 ml-auto">
           <span class="text-xs font-medium text-slate-400">Exibir/card:</span>
           <select id="stockPageSize" onchange="resetStockPagesAndRender()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
@@ -645,8 +771,6 @@ Projeção: R$ 0,00
 </div>
 
 <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
-
-<!-- Botão NOVO para Exportar Excel -->
   <button onclick="exportEntriesToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs md:text-sm font-medium shadow-sm transition-all flex items-center justify-center space-x-1.5 flex-1 sm:flex-none">
     <i class="fa-solid fa-file-excel"></i>
     <span>Exportar Notas</span>
@@ -855,9 +979,11 @@ let globalEntries = [];
 let globalOfficialStock = {};
 let selectedOrderKey = null;
 
-// Controle de Páginas para a Aba de Estoque
+// Controle de Páginas
 let currentPageConsolidatedStock = 1;
+let currentPageDashOutOfStock = 1;
 let storePages = {}; 
+let lastDashOutOfStockList = [];
 
 async function carregarDadosDoPainel() {
     try {
@@ -868,44 +994,40 @@ async function carregarDadosDoPainel() {
             const registroEstoque = cloudData.find(d => d.id === 'estoque' || d.id === 'ESTOQUE');
 
             if (registroVendas && registroVendas.data) { globalData = registroVendas.data; safeSetLocalStorage('nexxa_data', globalData); }
-       /*     if (registroEntradas && registroEntradas.data) { globalEntries = registroEntradas.data; safeSetLocalStorage('nexxa_entries', globalEntries); }*/
 
-       if (registroEntradas && registroEntradas.data) {
-    let entradasFormatadas = [];
-    const dadosEntradas = registroEntradas.data;
+            if (registroEntradas && registroEntradas.data) {
+                let entradasFormatadas = [];
+                const dadosEntradas = registroEntradas.data;
 
-    // Converte o formato de objeto do Supabase para o formato plano esperado pelo painel
-    if (typeof dadosEntradas === 'object' && !Array.isArray(dadosEntradas)) {
-        Object.keys(dadosEntradas).forEach(notaKey => {
-            const nota = dadosEntradas[notaKey];
-            if (nota && nota.itens && Array.isArray(nota.itens)) {
-                const pedido = nota.numeroPedido || notaKey;
-                const fornecedor = nota.fornecedor || 'Fornecedor';
-                const dataStr = nota.dataFinalizacao ? nota.dataFinalizacao.split('T')[0] : new Date().toISOString().split('T')[0];
-                
-                nota.itens.forEach(item => {
-                    entradasFormatadas.push({
-                        pedido: String(pedido),
-                        fornecedor: fornecedor,
-                        produto: item.descricao || 'Não informado',
-                        ean: String(item.codigo || '').trim(),
-                        data: dataStr,
-                        qtd: Number(item.qtd) || 0,
-                        precoUnit: Number(item.custo) || 0
+                if (typeof dadosEntradas === 'object' && !Array.isArray(dadosEntradas)) {
+                    Object.keys(dadosEntradas).forEach(notaKey => {
+                        const nota = dadosEntradas[notaKey];
+                        if (nota && nota.itens && Array.isArray(nota.itens)) {
+                            const pedido = nota.numeroPedido || notaKey;
+                            const fornecedor = nota.fornecedor || 'Fornecedor';
+                            const dataStr = nota.dataFinalizacao ? nota.dataFinalizacao.split('T')[0] : new Date().toISOString().split('T')[0];
+                            
+                            nota.itens.forEach(item => {
+                                entradasFormatadas.push({
+                                    pedido: String(pedido),
+                                    fornecedor: fornecedor,
+                                    produto: item.descricao || 'Não informado',
+                                    ean: String(item.codigo || '').trim(),
+                                    data: dataStr,
+                                    qtd: Number(item.qtd) || 0,
+                                    precoUnit: Number(item.custo) || 0
+                                });
+                            });
+                        }
                     });
-                });
+                    globalEntries = entradasFormatadas;
+                } else if (Array.isArray(dadosEntradas)) {
+                    globalEntries = dadosEntradas;
+                }
+                
+                safeSetLocalStorage('nexxa_entries', globalEntries);
             }
-        });
-        globalEntries = entradasFormatadas;
-    } else if (Array.isArray(dadosEntradas)) {
-        globalEntries = dadosEntradas;
-    }
-    
-    safeSetLocalStorage('nexxa_entries', globalEntries);
-}
-       
-       
-       
+
             if (registroEstoque && registroEstoque.data) { globalOfficialStock = registroEstoque.data; safeSetLocalStorage('nexxa_official_stock', globalOfficialStock); }
         } else {
             const savedData = localStorage.getItem('nexxa_data'); if (savedData) try { globalData = JSON.parse(savedData); } catch(e){}
@@ -920,9 +1042,8 @@ async function carregarDadosDoPainel() {
 }
 
 function exportSingleEntryToExcel(numPedido, event) {
-    if (event) event.stopPropagation(); // Evita alterar a seleção da linha ao clicar no botão
+    if (event) event.stopPropagation();
 
-    // Filtra os itens referentes apenas ao pedido clicado
     const singleOrderEntries = globalEntries.filter(item => String(item.pedido || '').trim() === String(numPedido).trim());
 
     if (!singleOrderEntries || singleOrderEntries.length === 0) {
@@ -930,7 +1051,6 @@ function exportSingleEntryToExcel(numPedido, event) {
         return;
     }
 
-    // Mapeia os dados dos itens do pedido para o formato da planilha Excel
     const exportData = singleOrderEntries.map(item => ({
         "Pedido": item.pedido || '',
         "Fornecedor": item.fornecedor || '',
@@ -942,7 +1062,6 @@ function exportSingleEntryToExcel(numPedido, event) {
         "Valor Total": (item.qtd || 0) * (item.precoUnit || 0)
     }));
 
-    // Cria a planilha e faz o download
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, `Pedido_${numPedido}`);
@@ -956,7 +1075,6 @@ function exportEntriesToExcel() {
         return;
     }
 
-    // Mapeia cada item do pedido para uma única linha com todas as colunas solicitadas
     const exportData = globalEntries.map(item => ({
         "Pedido": item.pedido || '',
         "Fornecedor": item.fornecedor || '',
@@ -968,15 +1086,12 @@ function exportEntriesToExcel() {
         "Valor": (item.qtd || 0) * (item.precoUnit || 0)
     }));
 
-    // Cria a planilha em formato tabular simples
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Notas de Entrada");
 
-    // Faz o download do arquivo Excel
     XLSX.writeFile(workbook, `notas_de_entrada_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
-
 
 function safeSetLocalStorage(key, value) {
     try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
@@ -1070,6 +1185,7 @@ currentPageTurnover = 1;
 currentPageConsolidated = 1;
 currentPageAnalytic = 1;
 currentPageProj = 1;
+currentPageDashOutOfStock = 1;
 renderDashboard();
 renderStockView();
 renderProjection();
@@ -1081,21 +1197,51 @@ storePages = {};
 renderStockView();
 }
 
-function toggleTheme() {
-const htmlEl = document.documentElement;
-if (htmlEl.classList.contains('dark')) {
-htmlEl.classList.remove('dark');
-localStorage.setItem('nexxa_theme', 'light');
-} else {
-htmlEl.classList.add('dark');
-localStorage.setItem('nexxa_theme', 'dark');
+function updateThemeUI(isDark) {
+  const iconDesktop = document.getElementById('themeIcon');
+  const labelDesktop = document.getElementById('themeLabel');
+  const iconMobile = document.getElementById('themeIconMobile');
+  const labelMobile = document.getElementById('themeLabelMobile');
+
+  if (isDark) {
+    if (iconDesktop) iconDesktop.className = "fa-solid fa-sun text-sm";
+    if (labelDesktop) labelDesktop.innerText = "Dia";
+    if (iconMobile) iconMobile.className = "fa-solid fa-sun text-sm";
+    if (labelMobile) labelMobile.innerText = "Dia";
+  } else {
+    if (iconDesktop) iconDesktop.className = "fa-solid fa-moon text-sm";
+    if (labelDesktop) labelDesktop.innerText = "Noite";
+    if (iconMobile) iconMobile.className = "fa-solid fa-moon text-sm";
+    if (labelMobile) labelMobile.innerText = "Noite";
+  }
 }
+
+function toggleTheme() {
+  const htmlEl = document.documentElement;
+  const isCurrentlyDark = htmlEl.classList.contains('dark');
+  if (isCurrentlyDark) {
+    htmlEl.classList.remove('dark');
+    localStorage.setItem('nexxa_theme', 'light');
+    updateThemeUI(false);
+  } else {
+    htmlEl.classList.add('dark');
+    localStorage.setItem('nexxa_theme', 'dark');
+    updateThemeUI(true);
+  }
+  if (typeof renderDashboard === 'function' && globalData.length > 0) {
+    renderDashboard();
+  }
 }
 
 function initTheme() {
-const savedTheme = localStorage.getItem('nexxa_theme');
-if (savedTheme === 'light') document.documentElement.classList.remove('dark');
-else document.documentElement.classList.add('dark');
+  const savedTheme = localStorage.getItem('nexxa_theme');
+  if (savedTheme === 'light') {
+    document.documentElement.classList.remove('dark');
+    updateThemeUI(false);
+  } else {
+    document.documentElement.classList.add('dark');
+    updateThemeUI(true);
+  }
 }
 
 function openClearModal() {
@@ -1285,89 +1431,6 @@ return obj[keyMatch];
 }
 return null;
 }
-/*
-function handleStockFile(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-        try {
-            const data = new Uint8Array(evt.target.result);
-            const workbook = XLSX.read(data, {type: 'array', cellDates: false});
-            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-            const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
-
-            if(json.length > 0) {
-                let count = 0;
-                let duplicadosIgnorados = 0;
-                const eanVistosPorCliente = new Set();
-                const produtoVistoPorCliente = new Set();
-
-                for (let k in globalOfficialStock) {
-                    const itemExistente = globalOfficialStock[k];
-                    if (itemExistente && itemExistente.cliente) {
-                        const cliUp = String(itemExistente.cliente).trim().toUpperCase();
-                        if (itemExistente.ean) {
-                            const eanExistenteLimpo = String(itemExistente.ean).replace(/\D/g, '').trim();
-                            if (eanExistenteLimpo) eanVistosPorCliente.add(`${cliUp}___${eanExistenteLimpo}`);
-                        }
-                        if (itemExistente.produto) produtoVistoPorCliente.add(`${cliUp}___${String(itemExistente.produto).trim().toUpperCase()}`);
-                    }
-                }
-
-                json.forEach(item => {
-                    const rawClient = getObjectValueIgnoreCase(item, ['cliente', 'loja', 'filial']) || 'Geral';
-                    const rawEan = getObjectValueIgnoreCase(item, ['ean', 'codigo', 'cod']);
-                    const rawNome = getObjectValueIgnoreCase(item, ['nome', 'produto', 'nome do produto', 'descricao']);
-                    const rawCategoria = getObjectValueIgnoreCase(item, ['categoria', 'cat', 'grupo']) || 'GERAL';
-                    const rawEstoque = getObjectValueIgnoreCase(item, ['estoque', 'quantidade', 'qtd', 'saldo']);
-
-                    const cliente = String(rawClient).trim();
-                    const clienteUp = cliente.toUpperCase();
-                    const eanLimpo = rawEan ? String(rawEan).replace(/\D/g, '').trim() : '';
-                    const nome = rawNome ? String(rawNome).trim() : '';
-                    const nomeUp = nome.toUpperCase();
-                    const categoria = String(rawCategoria).trim();
-                    const estoque = parseDecimal(rawEstoque);
-
-                    if (cliente && (eanLimpo || nomeUp)) {
-                        const chaveEanCliente = eanLimpo ? `${clienteUp}___${eanLimpo}` : null;
-                        const chaveProdCliente = nomeUp ? `${clienteUp}___${nomeUp}` : null;
-
-                        if ((chaveEanCliente && eanVistosPorCliente.has(chaveEanCliente)) || (chaveProdCliente && produtoVistoPorCliente.has(chaveProdCliente))) {
-                            duplicadosIgnorados++;
-                            return;
-                        }
-
-                        if (chaveEanCliente) eanVistosPorCliente.add(chaveEanCliente);
-                        if (chaveProdCliente) produtoVistoPorCliente.add(chaveProdCliente);
-
-                        const identifier = eanLimpo ? eanLimpo : nomeUp;
-                        const key = `${clienteUp}___${identifier}`;
-
-                        globalOfficialStock[key] = {
-                            cliente: cliente,
-                            produto: nome || identifier,
-                            ean: eanLimpo,
-                            categoria: categoria,
-                            estoque: estoque
-                        };
-                        count++;
-                    }
-                });
-
-                if(count > 0) {
-                    salvarDadosNaNuvem('estoque', globalOfficialStock);
-                    populateFilterDropdowns();
-                    updateAllViews();
-                    alert(`Estoque importado com sucesso!\n• Registros novos: ${count}\n• Duplicados ignorados: ${duplicadosIgnorados}`);
-                } else { alert("Nenhum registro novo importado."); }
-            } else { alert("Planilha de estoque vazia."); }
-        } catch(err) { alert("Erro ao ler arquivo de estoque."); }
-    };
-    reader.readAsArrayBuffer(file);
-}
-*/ 
 
 function handleStockFile(e) {
     const file = e.target.files[0];
@@ -1383,7 +1446,6 @@ function handleStockFile(e) {
             if(json.length > 0) {
                 let count = 0;
 
-                // 1. Identifica quais clientes estão presentes no arquivo que está sendo importado
                 const clientesNoArquivo = new Set();
                 json.forEach(item => {
                     const rawClient = getObjectValueIgnoreCase(item, ['cliente', 'loja', 'filial']);
@@ -1392,20 +1454,18 @@ function handleStockFile(e) {
                     }
                 });
 
-                // 2. Remove do estoque oficial existente todos os registros pertencentes a esses clientes
                 if (clientesNoArquivo.size > 0) {
                     for (let k in globalOfficialStock) {
                         const itemEstoque = globalOfficialStock[k];
                         if (itemEstoque && itemEstoque.cliente) {
                             const cliEstoqueUp = String(itemEstoque.cliente).trim().toUpperCase();
                             if (clientesNoArquivo.has(cliEstoqueUp)) {
-                                delete globalOfficialStock[k]; // Exclui os dados antigos do cliente presentes no arquivo
+                                delete globalOfficialStock[k];
                             }
                         }
                     }
                 }
 
-                // 3. Importa todos os dados novos da planilha limpinho
                 json.forEach(item => {
                     const rawClient = getObjectValueIgnoreCase(item, ['cliente', 'loja', 'filial']) || 'Geral';
                     const rawEan = getObjectValueIgnoreCase(item, ['ean', 'codigo', 'cod']);
@@ -1447,8 +1507,6 @@ function handleStockFile(e) {
     };
     reader.readAsArrayBuffer(file);
 }
-
-
 
 function downloadStockTemplateCSV() {
 const csvContent = "data:text/csv;charset=utf-8,\uFEFFcliente;ean;nome;categoria;estoque\nANNA BEATRIZ (MARINHA);78944880;ALGODAO;PERFUM;86";
@@ -1537,6 +1595,7 @@ function changeTurnoverPage(newPage) { currentPageTurnover = newPage; renderDash
 function changeConsolidatedPage(newPage) { currentPageConsolidated = newPage; renderDashboard(); }
 function changeAnalyticPage(newPage) { currentPageAnalytic = newPage; renderDashboard(); }
 function changeProjPage(newPage) { currentPageProj = newPage; renderProjection(); }
+function changeDashOutOfStockPage(newPage) { currentPageDashOutOfStock = newPage; renderDashboard(); }
 
 function getFilteredDashboardData() {
 const startDateVal = document.getElementById('startDate') ? document.getElementById('startDate').value : '';
@@ -1577,6 +1636,19 @@ const catValueMap = {};
 const clientValueMap = {};
 const consolidatedProdMap = {};
 
+// Mapa de CD para exibir no card de ruptura
+const cdStockMap = {};
+for (let k in globalOfficialStock) {
+  let item = globalOfficialStock[k];
+  if (item && item.cliente && item.cliente.trim().toUpperCase().startsWith('CD')) {
+    let eanKey = item.ean ? String(item.ean).trim().toUpperCase() : (item.produto || '').trim().toUpperCase();
+    cdStockMap[eanKey] = (cdStockMap[eanKey] || 0) + (Number(item.estoque) || 0);
+  }
+}
+
+// Agrupa vendas por Cliente + Produto para detectar itens vendidos sem estoque no cliente
+const clientProdSalesMap = {};
+
 filteredData.sort((a, b) => b.qtd - a.qtd);
 
 filteredData.forEach(row => {
@@ -1608,7 +1680,28 @@ consolidatedProdMap[row.produto].faturamentoTotal += faturamento;
 consolidatedProdMap[row.produto].estoque = officialStock;
 consolidatedProdMap[row.produto].custoUnit = row.custoUnit;
 if(row.ean) consolidatedProdMap[row.produto].ean = row.ean;
+
+// Acumula para o card de Ruptura (Cliente + Produto)
+const cpKey = `${(row.cliente || 'Geral').trim().toUpperCase()}___${(row.ean || row.produto || '').trim().toUpperCase()}`;
+if (!clientProdSalesMap[cpKey]) {
+  const eanLookup = row.ean ? String(row.ean).trim().toUpperCase() : (row.produto || '').trim().toUpperCase();
+  clientProdSalesMap[cpKey] = {
+    cliente: row.cliente || 'Geral',
+    produto: row.produto,
+    ean: row.ean || '',
+    categoria: row.categoria || 'Geral',
+    estoqueLoja: officialStock,
+    estCd: cdStockMap[eanLookup] || 0,
+    qtdVendida: 0,
+    faturamento: 0
+  };
+}
+clientProdSalesMap[cpKey].qtdVendida += row.qtd;
+clientProdSalesMap[cpKey].faturamento += faturamento;
 });
+
+// Renderiza o Card de Produtos com Vendas e Sem Estoque (Ruptura)
+renderDashOutOfStockCard(clientProdSalesMap);
 
 let totalEstoqueVal = 0;
 for (let k in globalOfficialStock) {
@@ -1658,6 +1751,62 @@ renderCustomWeeklyComparison();
 renderCharts(prodValueMap, prodQtyMap, catValueMap, clientValueMap, filteredData);
 renderTurnoverTable(consolidatedProdMap);
 renderConsolidatedProducts(consolidatedProdMap);
+}
+
+function renderDashOutOfStockCard(clientProdSalesMap) {
+  const tbody = document.getElementById('dashOutOfStockTableBody');
+  const countBadge = document.getElementById('dashOutOfStockCount');
+  if (!tbody) return;
+
+  const outOfStockList = Object.values(clientProdSalesMap)
+    .filter(item => !item.cliente.trim().toUpperCase().startsWith('CD') && item.qtdVendida > 0 && item.estoqueLoja <= 0)
+    .sort((a, b) => b.qtdVendida - a.qtdVendida);
+
+  lastDashOutOfStockList = outOfStockList;
+  if (countBadge) countBadge.innerText = `${outOfStockList.length} ${outOfStockList.length === 1 ? 'item' : 'itens'}`;
+
+  const pageSizeVal = document.getElementById('dashOutOfStockPageSize') ? document.getElementById('dashOutOfStockPageSize').value : '10';
+  const { pageItems } = renderPaginationControls('dashOutOfStockPagination', outOfStockList, pageSizeVal, currentPageDashOutOfStock, 'changeDashOutOfStockPage');
+
+  tbody.innerHTML = '';
+  if (pageItems.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Nenhum produto vendido e sem estoque nos filtros selecionados.</td></tr>`;
+    return;
+  }
+
+  pageItems.forEach(item => {
+    const tr = document.createElement('tr');
+    tr.className = "hover:bg-slate-800/50 transition-colors";
+    tr.innerHTML = `
+      <td class="p-3 font-semibold text-slate-100"><i class="fa-solid fa-shop text-rose-400 mr-1.5 text-xs"></i>${item.cliente}</td>
+      <td class="p-3 font-bold text-amber-400">${item.produto}</td>
+      <td class="p-3 text-xs font-mono text-slate-400">${item.ean || '-'}</td>
+      <td class="p-3"><span class="px-2 py-0.5 bg-slate-800 text-slate-300 rounded text-[11px] border border-slate-700">${item.categoria}</span></td>
+      <td class="p-3 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">0</span></td>
+      <td class="p-3 text-center font-bold text-blue-400">${item.estCd}</td>
+      <td class="p-3 text-center font-bold text-slate-100">${item.qtdVendida}</td>
+      <td class="p-3 text-right font-bold text-slate-100">${formatCurrency(item.faturamento)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function exportDashOutOfStockToExcel() {
+  if (!lastDashOutOfStockList || lastDashOutOfStockList.length === 0) {
+    alert("Nenhum produto vendido e sem estoque nos filtros atuais.");
+    return;
+  }
+  const exportData = lastDashOutOfStockList.map(item => ({
+    "Cliente / Loja": item.cliente,
+    "Produto": item.produto,
+    "EAN": item.ean || '',
+    "Categoria": item.categoria,
+    "Estoque Loja": item.estoqueLoja,
+    "Estoque CD": item.estCd,
+    "Qtd Vendida": item.qtdVendida,
+    "Faturamento": item.faturamento
+  }));
+  exportToExcelFile(exportData, "produtos_vendidos_sem_estoque", "Ruptura");
 }
 
 function renderWeeklyPerformanceFourWeeks(filteredData, totalFaturamentoFiltrado) {
@@ -1788,7 +1937,7 @@ container.appendChild(card);
 }
 
 // ==========================================
-// RENDERIZAÇÃO REFORMULADA DA ABA DE ESTOQUE COM PAGINAÇÃO
+// RENDERIZAÇÃO DA ABA DE ESTOQUE COM PAGINAÇÃO
 // ==========================================
 function renderTableWithPagination(tbodyId, pagId, itemsList, page, onPageChange) {
   const tbody = document.getElementById(tbodyId);
@@ -1801,7 +1950,11 @@ function renderTableWithPagination(tbodyId, pagId, itemsList, page, onPageChange
   const stockPageSizeVal = document.getElementById('stockPageSize') ? document.getElementById('stockPageSize').value : '30';
   
   if (stockPageSizeVal === 'all') {
-    itemsList.forEach(item => renderStockRow(tbody, item));
+    if (itemsList.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="10" class="p-4 text-center text-slate-500 text-xs">Nenhum registro encontrado.</td></tr>`;
+    } else {
+      itemsList.forEach(item => renderStockRow(tbody, item));
+    }
     if (pag) pag.innerHTML = `<div>Mostrando <b>${itemsList.length}</b> de <b>${itemsList.length}</b></div><div>Página 1/1</div>`;
     return;
   }
@@ -2197,8 +2350,10 @@ tbody.appendChild(tr);
 }
 
 function renderCharts(prodVal, prodQty, catVal, clientVal, filteredData) {
-Chart.defaults.color = '#94a3b8';
-Chart.defaults.borderColor = '#1e293b';
+const isDark = document.documentElement.classList.contains('dark');
+Chart.defaults.color = isDark ? '#94a3b8' : '#475569';
+Chart.defaults.borderColor = isDark ? '#1e293b' : '#cbd5e1';
+const gridLineColor = isDark ? '#1e293b' : '#e2e8f0';
 
 const selectedClient = document.getElementById('clientFilter') ? document.getElementById('clientFilter').value : 'all';
 const selectedCat = document.getElementById('catFilter') ? document.getElementById('catFilter').value : 'all';
@@ -2257,7 +2412,7 @@ if (chartMonthlyRevenueInst) chartMonthlyRevenueInst.destroy();
 chartMonthlyRevenueInst = new Chart(ctxMonthly, {
 type: 'bar',
 data: { labels: monthlyLabels, datasets: [{ label: 'Faturamento Mensal (R$)', data: monthlyValues, backgroundColor: '#10b981', borderRadius: 6 }] },
-options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#1e293b' } } } }
+options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: gridLineColor } } } }
 });
 
 let dailyFilteredData = globalData;
@@ -2302,7 +2457,7 @@ if(chartLast30DaysInst) chartLast30DaysInst.destroy();
 chartLast30DaysInst = new Chart(ctx30Days, {
 type: 'bar',
 data: { labels: last30DaysLabels, datasets: [{ label: 'Faturamento (R$)', data: last30DaysValues, backgroundColor: '#fbbf24', borderRadius: 4 }] },
-options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: '#1e293b' } } } }
+options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { grid: { color: gridLineColor } } } }
 });
 
 const topVal = Object.entries(prodVal).sort((a,b) => b[1] - a[1]).slice(0, 10);
@@ -2311,7 +2466,7 @@ if(chartTopValueInst) chartTopValueInst.destroy();
 chartTopValueInst = new Chart(ctxVal, {
 type: 'bar',
 data: { labels: topVal.map(i => i[0]), datasets: [{ label: 'Faturamento (R$)', data: topVal.map(i => i[1]), backgroundColor: '#fbbf24', borderRadius: 6 }] },
-options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gridLineColor } }, y: { grid: { display: false } } } }
 });
 
 const topQty = Object.entries(prodQty).sort((a,b) => b[1] - a[1]).slice(0, 10);
@@ -2320,7 +2475,7 @@ if(chartTopQtyInst) chartTopQtyInst.destroy();
 chartTopQtyInst = new Chart(ctxQty, {
 type: 'bar',
 data: { labels: topQty.map(i => i[0]), datasets: [{ label: 'Unidades', data: topQty.map(i => i[1]), backgroundColor: '#818cf8', borderRadius: 6 }] },
-options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gridLineColor } }, y: { grid: { display: false } } } }
 });
 
 const topCat = Object.entries(catVal).sort((a,b) => b[1] - a[1]);
@@ -2545,7 +2700,6 @@ link.click();
 link.remove();
 }
 
-
 function renderEntries() {
     const masterTbody = document.getElementById('entryMasterTableBody');
     const detailTbody = document.getElementById('entryDetailTableBody');
@@ -2575,7 +2729,6 @@ function renderEntries() {
         selectedOrderKey = ordersArray[0].pedido;
     }
 
-
     ordersArray.forEach(ord => {
         const isSelected = ord.pedido === selectedOrderKey;
         const tr = document.createElement('tr');
@@ -2594,11 +2747,9 @@ function renderEntries() {
             <td class="p-3 text-right font-bold text-emerald-400">${formatCurrency(ord.valorTotalNota)}</td>
             <td class="p-3 text-center">
                 <div class="flex items-center justify-center gap-1.5">
-                    <!-- BOTÃO EXPORTAR PEDIDO ÚNICO -->
                     <button onclick="exportSingleEntryToExcel('${ord.pedido}', event)" class="px-2 py-1 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-lg text-xs font-semibold transition flex items-center gap-1" title="Exportar este pedido">
                         <i class="fa-solid fa-file-excel"></i> Exportar
                     </button>
-                    <!-- BOTÃO EXCLUIR -->
                     <button onclick="excluirPedidoEntrada('${ord.pedido}', event)" class="px-2 py-1 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 rounded-lg text-xs font-semibold transition flex items-center gap-1" title="Excluir Pedido">
                         <i class="fa-solid fa-trash-can"></i> Excluir
                     </button>
@@ -2608,7 +2759,6 @@ function renderEntries() {
         masterTbody.appendChild(tr);
     });
     
-    // Renderiza os itens detalhados em baixo conforme o pedido selecionado
     const activeOrder = ordersMap[selectedOrderKey];
     if (activeOrder) {
         titleEl.innerHTML = `<i class="fa-solid fa-boxes-stacked mr-2"></i>Itens do Pedido: <span class="text-amber-300 ml-1 font-bold">${activeOrder.pedido}</span>`;
@@ -2627,7 +2777,6 @@ function renderEntries() {
         });
     }
 }
-
 
 async function excluirPedidoEntrada(numPedido, e) {
     if (e) e.stopPropagation();
@@ -2677,71 +2826,6 @@ async function excluirPedidoEntrada(numPedido, e) {
         alert("Erro ao excluir pedido: " + err.message);
     }
 }
-
-
-/*
-function renderEntries() {
-const masterTbody = document.getElementById('entryMasterTableBody');
-const detailTbody = document.getElementById('entryDetailTableBody');
-const titleEl = document.getElementById('selectedOrderTitle');
-if(!masterTbody || !detailTbody) return;
-
-masterTbody.innerHTML = '';
-const ordersMap = {};
-globalEntries.forEach(row => {
-const key = row.pedido || 'PED-GEN';
-if (!ordersMap[key]) {
-ordersMap[key] = { pedido: key, fornecedor: row.fornecedor, data: row.data, itensCount: 0, valorTotalNota: 0, itens: [] };
-}
-ordersMap[key].itensCount += 1;
-ordersMap[key].valorTotalNota += (row.qtd * row.precoUnit);
-ordersMap[key].itens.push(row);
-});
-
-const ordersArray = Object.values(ordersMap);
-if (ordersArray.length === 0) {
-masterTbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">Nenhuma nota cadastrada.</td></tr>`;
-detailTbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Nenhum pedido selecionado.</td></tr>`;
-return;
-}
-
-if (!selectedOrderKey || !ordersMap[selectedOrderKey]) selectedOrderKey = ordersArray[0].pedido;
-
-ordersArray.forEach(ord => {
-const isSelected = ord.pedido === selectedOrderKey;
-const tr = document.createElement('tr');
-tr.className = `cursor-pointer transition-colors ${isSelected ? 'bg-amber-500/10 border-l-4 border-l-amber-400' : 'hover:bg-slate-800/50'}`;
-tr.onclick = () => { selectedOrderKey = ord.pedido; renderEntries(); };
-tr.innerHTML = `
-<td class="p-3 font-bold text-amber-400">${ord.pedido}</td>
-<td class="p-3 font-semibold text-slate-100">${ord.fornecedor}</td>
-<td class="p-3 text-slate-400">${ord.data}</td>
-<td class="p-3 text-center text-slate-300">${ord.itensCount}</td>
-<td class="p-3 text-right font-bold text-emerald-400">${formatCurrency(ord.valorTotalNota)}</td>
-<td class="p-3 text-center"><button class="px-2 py-1 bg-slate-800 text-amber-400 rounded text-xs">Ver</button></td>
-`;
-masterTbody.appendChild(tr);
-});
-
-const activeOrder = ordersMap[selectedOrderKey];
-if (activeOrder) {
-titleEl.innerHTML = `<i class="fa-solid fa-boxes-stacked mr-2"></i>Itens do Pedido: <span class="text-amber-300 ml-1 font-bold">${activeOrder.pedido}</span>`;
-detailTbody.innerHTML = '';
-activeOrder.itens.forEach(item => {
-const tr = document.createElement('tr');
-tr.className = "hover:bg-slate-800/50 transition-colors";
-tr.innerHTML = `
-<td class="p-3 font-medium text-amber-400">${item.produto}</td>
-<td class="p-3 text-xs font-mono text-slate-400">${item.ean || '-'}</td>
-<td class="p-3 text-center font-bold text-slate-100">${item.qtd}</td>
-<td class="p-3 text-right text-slate-300">${formatCurrency(item.precoUnit)}</td>
-<td class="p-3 text-right font-bold text-slate-100">${formatCurrency(item.qtd * item.precoUnit)}</td>
-`;
-detailTbody.appendChild(tr);
-});
-}
-}
-*/
 
 function exportToExcelFile(dataArray, fileName, sheetName) {
 if (!dataArray || dataArray.length === 0) { alert("Sem dados para exportar."); return; }
@@ -2939,7 +3023,7 @@ function aplicarPeriodoGeral(valor, aba) {
     if (aba === 'stock') {
       document.getElementById('stockStartDate').value = hoje;
       document.getElementById('stockEndDate').value = hoje;
-      renderStockView();
+      resetStockPagesAndRender();
     } else if (aba === 'proj') {
       document.getElementById('projStartDate').value = hoje;
       document.getElementById('projEndDate').value = hoje;
@@ -2948,6 +3032,33 @@ function aplicarPeriodoGeral(valor, aba) {
       document.getElementById('startDate').value = hoje;
       document.getElementById('endDate').value = hoje;
       renderDashboard();
+    }
+  } else if (valor === 'all') {
+    if (aba === 'stock') {
+      document.getElementById('stockStartDate').value = '';
+      document.getElementById('stockEndDate').value = '';
+      resetStockPagesAndRender();
+    } else if (aba === 'proj') {
+      document.getElementById('projStartDate').value = '';
+      document.getElementById('projEndDate').value = '';
+      renderProjection();
+    }
+  } else if (['7', '15', '30'].includes(valor)) {
+    const days = parseInt(valor);
+    const today = new Date();
+    const startDate = new Date();
+    startDate.setDate(today.getDate() - days);
+    const todayStr = today.toISOString().split('T')[0];
+    const startStr = startDate.toISOString().split('T')[0];
+
+    if (aba === 'stock') {
+      document.getElementById('stockEndDate').value = todayStr;
+      document.getElementById('stockStartDate').value = startStr;
+      resetStockPagesAndRender();
+    } else if (aba === 'proj') {
+      document.getElementById('projEndDate').value = todayStr;
+      document.getElementById('projStartDate').value = startStr;
+      renderProjection();
     }
   }
 }
