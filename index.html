@@ -24,6 +24,13 @@ tailwind.config = {
   .no-print { display: none !important; }
 }
 
+/* Ajustes para inputs de data no iOS / Celular */
+input[type="date"] {
+  min-width: 0;
+  max-width: 100%;
+  -webkit-appearance: none;
+}
+
 /* Ajustes automáticos para o Modo Claro (Dia) */
 html:not(.dark) body {
   background-color: #f1f5f9 !important;
@@ -206,19 +213,23 @@ html.dark input[type="date"]::-webkit-calendar-picker-indicator {
 </div>
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap items-center gap-2">
-<div class="flex items-center space-x-1 bg-slate-950 border border-slate-800 rounded-xl px-2 py-1.5 shadow-sm col-span-full">
-<select id="dateRangePreset" onchange="applyDatePreset()" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer">
+<div class="flex flex-col sm:flex-row sm:items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 shadow-sm col-span-full">
+<select id="dateRangePreset" onchange="applyDatePreset()" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer w-full sm:w-auto">
 <option value="all">Todo o Período</option>
 <option value="7">Últimos 7 dias</option>
 <option value="15">Últimos 15 dias</option>
 <option value="30">Últimos 30 dias</option>
 <option value="custom" selected>Personalizado</option>
 </select>
-<div class="flex items-center space-x-1 border-l border-slate-800 pl-2 overflow-x-auto">
-<span class="text-[11px] text-slate-400 font-medium">De:</span>
-<input type="date" id="startDate" onchange="onCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
-<span class="text-[11px] text-slate-400 font-medium ml-1">Até:</span>
-<input type="date" id="endDate" onchange="onCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+<div class="grid grid-cols-2 sm:flex sm:items-center gap-2 border-t sm:border-t-0 sm:border-l border-slate-800 pt-2 sm:pt-0 sm:pl-2 w-full sm:w-auto">
+<div class="flex items-center space-x-1 min-w-0">
+<span class="text-[11px] text-slate-400 font-medium shrink-0">De:</span>
+<input type="date" id="startDate" onchange="onCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200 w-full min-w-0">
+</div>
+<div class="flex items-center space-x-1 min-w-0">
+<span class="text-[11px] text-slate-400 font-medium shrink-0">Até:</span>
+<input type="date" id="endDate" onchange="onCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200 w-full min-w-0">
+</div>
 </div>
 </div>
 <select id="clientFilter" onchange="updateAllViews()" class="px-3 py-2 text-xs md:text-sm border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-950 font-medium text-slate-200 w-full lg:w-auto">
@@ -367,12 +378,21 @@ Projeção: R$ 0,00
 </div>
 
 <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-between">
-<div class="flex items-center space-x-1 bg-slate-950 border border-slate-800 rounded-xl px-2 py-1.5 shadow-sm overflow-x-auto">
+<div class="flex flex-col sm:flex-row sm:items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 shadow-sm w-full md:w-auto">
+<div class="flex items-center space-x-1.5 shrink-0">
 <i class="fa-solid fa-calendar-days text-indigo-400 text-xs"></i>
-<span class="text-[11px] text-slate-400 font-medium">De:</span>
-<input type="date" id="compStartDate" onchange="renderCustomWeeklyComparison()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
-<span class="text-[11px] text-slate-400 font-medium ml-1">Até:</span>
-<input type="date" id="compEndDate" onchange="renderCustomWeeklyComparison()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200">
+<span class="text-xs font-semibold text-indigo-300">Período:</span>
+</div>
+<div class="grid grid-cols-2 sm:flex sm:items-center gap-2 border-t sm:border-t-0 sm:border-l border-slate-800 pt-2 sm:pt-0 sm:pl-2 w-full sm:w-auto">
+<div class="flex items-center space-x-1 min-w-0">
+<span class="text-[11px] text-slate-400 font-medium shrink-0">De:</span>
+<input type="date" id="compStartDate" onchange="renderCustomWeeklyComparison()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200 w-full min-w-0">
+</div>
+<div class="flex items-center space-x-1 min-w-0">
+<span class="text-[11px] text-slate-400 font-medium shrink-0">Até:</span>
+<input type="date" id="compEndDate" onchange="renderCustomWeeklyComparison()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200 w-full min-w-0">
+</div>
+</div>
 </div>
 <button onclick="exportCustomWeeklyToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center space-x-1">
 <i class="fa-solid fa-file-excel"></i>
@@ -598,19 +618,23 @@ Projeção: R$ 0,00
     <!-- Filtros -->
     <div class="bg-slate-950 p-3 md:p-4 rounded-xl border border-slate-800 mb-2 flex flex-col lg:flex-row items-center justify-between gap-3 no-print">
       <div class="flex flex-wrap items-center gap-2 w-full">
-        <div class="flex items-center space-x-1 bg-slate-900 border border-slate-800 rounded-xl px-2 py-1.5 shadow-sm w-full sm:w-auto overflow-x-auto">
-          <select id="stockDatePreset" onchange="aplicarPeriodoGeral(this.value, 'stock')" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer shrink-0">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 shadow-sm w-full sm:w-auto">
+          <select id="stockDatePreset" onchange="aplicarPeriodoGeral(this.value, 'stock')" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer w-full sm:w-auto shrink-0">
             <option value="all">Todo o Período</option>
             <option value="7">Últimos 7 dias</option>
             <option value="15">Últimos 15 dias</option>
             <option value="30">Últimos 30 dias</option>
             <option value="custom" selected>Personalizado</option>
           </select>
-          <div class="flex items-center space-x-1 border-l border-slate-800 pl-2 shrink-0">
-            <span class="text-[11px] text-slate-400 font-medium">De:</span>
-            <input type="date" id="stockStartDate" onchange="onStockCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200 w-28">
-            <span class="text-[11px] text-slate-400 font-medium ml-1">Até:</span>
-            <input type="date" id="stockEndDate" onchange="onStockCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200 w-28">
+          <div class="grid grid-cols-2 sm:flex sm:items-center gap-2 border-t sm:border-t-0 sm:border-l border-slate-800 pt-2 sm:pt-0 sm:pl-2 w-full sm:w-auto">
+            <div class="flex items-center space-x-1 min-w-0">
+              <span class="text-[11px] text-slate-400 font-medium shrink-0">De:</span>
+              <input type="date" id="stockStartDate" onchange="onStockCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200 w-full sm:w-28 min-w-0">
+            </div>
+            <div class="flex items-center space-x-1 min-w-0">
+              <span class="text-[11px] text-slate-400 font-medium shrink-0">Até:</span>
+              <input type="date" id="stockEndDate" onchange="onStockCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200 w-full sm:w-28 min-w-0">
+            </div>
           </div>
         </div>
 
@@ -682,19 +706,23 @@ Projeção: R$ 0,00
 
     <div class="bg-slate-950 p-3 md:p-4 rounded-xl border border-slate-800 mb-4 flex flex-col lg:flex-row items-center justify-between gap-3 no-print">
       <div class="flex flex-wrap items-center gap-2 w-full">
-        <div class="flex items-center space-x-1 bg-slate-900 border border-slate-800 rounded-xl px-2 py-1.5 shadow-sm w-full sm:w-auto overflow-x-auto">
-          <select id="projDatePreset" onchange="aplicarPeriodoGeral(this.value, 'proj')" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer shrink-0">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 shadow-sm w-full sm:w-auto">
+          <select id="projDatePreset" onchange="aplicarPeriodoGeral(this.value, 'proj')" class="text-xs border-0 focus:outline-none bg-transparent font-semibold text-amber-400 cursor-pointer w-full sm:w-auto shrink-0">
             <option value="all">Todo o Período</option>
             <option value="7">Últimos 7 dias</option>
             <option value="15">Últimos 15 dias</option>
             <option value="30">Últimos 30 dias</option>
             <option value="custom" selected>Personalizado</option>
           </select>
-          <div class="flex items-center space-x-1 border-l border-slate-800 pl-2 shrink-0">
-            <span class="text-[11px] text-slate-400 font-medium">De:</span>
-            <input type="date" id="projStartDate" onchange="onProjCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200 w-28">
-            <span class="text-[11px] text-slate-400 font-medium ml-1">Até:</span>
-            <input type="date" id="projEndDate" onchange="onProjCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200 w-28">
+          <div class="grid grid-cols-2 sm:flex sm:items-center gap-2 border-t sm:border-t-0 sm:border-l border-slate-800 pt-2 sm:pt-0 sm:pl-2 w-full sm:w-auto">
+            <div class="flex items-center space-x-1 min-w-0">
+              <span class="text-[11px] text-slate-400 font-medium shrink-0">De:</span>
+              <input type="date" id="projStartDate" onchange="onProjCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200 w-full sm:w-28 min-w-0">
+            </div>
+            <div class="flex items-center space-x-1 min-w-0">
+              <span class="text-[11px] text-slate-400 font-medium shrink-0">Até:</span>
+              <input type="date" id="projEndDate" onchange="onProjCustomDateChange()" class="text-xs border-0 focus:outline-none bg-transparent font-medium text-slate-200 w-full sm:w-28 min-w-0">
+            </div>
           </div>
         </div>
 
@@ -947,24 +975,6 @@ function autenticarUsuario() {
         errorDiv.style.display = 'block';
     }
 }
-/*
-function aplicarRestricoesPerfil() {
-    if (!usuarioLogado) return;
-
-    if (usuarioLogado.perfil === 'convidado') {
-        const hoje = new Date().toISOString().split('T')[0];
-        ['startDate', 'endDate', 'stockStartDate', 'stockEndDate', 'projStartDate', 'projEndDate'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) { el.value = hoje; el.disabled = true; }
-        });
-    } else {
-        ['startDate', 'endDate'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.disabled = false;
-        });
-    }
-}*/
-
 
 function aplicarRestricoesPerfil() {
     if (!usuarioLogado) return;
@@ -1207,7 +1217,6 @@ function setDefaultCurrentDate() {
     }
   }
 
-  // Sugestão automática para o Comparativo Semanal Personalizado: mês cheio anterior
   const firstDayPrevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
   const lastDayPrevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
   const compStartInput = document.getElementById('compStartDate');
@@ -1677,7 +1686,6 @@ const catValueMap = {};
 const clientValueMap = {};
 const consolidatedProdMap = {};
 
-// Mapa de CD para exibir no card de ruptura
 const cdStockMap = {};
 for (let k in globalOfficialStock) {
   let item = globalOfficialStock[k];
@@ -1687,7 +1695,6 @@ for (let k in globalOfficialStock) {
   }
 }
 
-// Agrupa vendas por Cliente + Produto para detectar itens vendidos sem estoque no cliente
 const clientProdSalesMap = {};
 
 filteredData.sort((a, b) => b.qtd - a.qtd);
@@ -1722,7 +1729,6 @@ consolidatedProdMap[row.produto].estoque = officialStock;
 consolidatedProdMap[row.produto].custoUnit = row.custoUnit;
 if(row.ean) consolidatedProdMap[row.produto].ean = row.ean;
 
-// Acumula para o card de Ruptura (Cliente + Produto)
 const cpKey = `${(row.cliente || 'Geral').trim().toUpperCase()}___${(row.ean || row.produto || '').trim().toUpperCase()}`;
 if (!clientProdSalesMap[cpKey]) {
   const eanLookup = row.ean ? String(row.ean).trim().toUpperCase() : (row.produto || '').trim().toUpperCase();
@@ -1741,7 +1747,6 @@ clientProdSalesMap[cpKey].qtdVendida += row.qtd;
 clientProdSalesMap[cpKey].faturamento += faturamento;
 });
 
-// Renderiza o Card de Produtos com Vendas e Sem Estoque (Ruptura)
 renderDashOutOfStockCard(clientProdSalesMap);
 
 let totalEstoqueVal = 0;
@@ -1983,9 +1988,6 @@ container.appendChild(card);
 });
 }
 
-// ==========================================
-// RENDERIZAÇÃO DA ABA DE ESTOQUE COM PAGINAÇÃO
-// ==========================================
 function renderTableWithPagination(tbodyId, pagId, itemsList, page, onPageChange) {
   const tbody = document.getElementById(tbodyId);
   const pag = document.getElementById(pagId);
