@@ -1516,7 +1516,7 @@ function handleStockFile(e) {
                     }
                 }
 
-                json.forEach(item => {
+           /*     json.forEach(item => {
                     const rawClient = getObjectValueIgnoreCase(item, ['cliente', 'loja', 'filial']) || 'Geral';
                     const rawEan = getObjectValueIgnoreCase(item, ['ean', 'codigo', 'cod']);
                     const rawNome = getObjectValueIgnoreCase(item, ['nome', 'produto', 'nome do produto', 'descricao']);
@@ -1545,6 +1545,42 @@ function handleStockFile(e) {
                         count++;
                     }
                 });
+*/
+                json.forEach(item => {
+                    const rawClient = getObjectValueIgnoreCase(item, ['cliente', 'loja', 'filial']) || 'Geral';
+                    const rawEan = getObjectValueIgnoreCase(item, ['ean', 'codigo', 'cod']);
+                    const rawNome = getObjectValueIgnoreCase(item, ['nome', 'produto', 'nome do produto', 'descricao']);
+                    const rawCategoria = getObjectValueIgnoreCase(item, ['categoria', 'cat', 'grupo']) || 'GERAL';
+                    const rawEstoque = getObjectValueIgnoreCase(item, ['estoque', 'quantidade', 'qtd', 'saldo']);
+                    
+                    // CAPTURA DA NOVA COLUNA DE PREÇO (ajuste os nomes conforme o cabeçalho da sua planilha/base)
+                    const rawPreco = getObjectValueIgnoreCase(item, ['preco', 'preco_venda', 'pvenda', 'vlr_unit', 'valor']);
+
+                    const cliente = String(rawClient).trim();
+                    const clienteUp = cliente.toUpperCase();
+                    const eanLimpo = rawEan ? String(rawEan).replace(/\D/g, '').trim() : '';
+                    const nome = rawNome ? String(rawNome).trim() : '';
+                    const nomeUp = nome.toUpperCase();
+                    const categoria = String(rawCategoria).trim();
+                    const estoque = parseDecimal(rawEstoque);
+                    const precoVenda = parseDecimal(rawPreco); // Converte o preço lido
+
+                    if (cliente && (eanLimpo || nomeUp)) {
+                        const identifier = eanLimpo ? eanLimpo : nomeUp;
+                        const key = `${clienteUp}___${identifier}`;
+
+                        globalOfficialStock[key] = {
+                            cliente: cliente,
+                            produto: nome || identifier,
+                            ean: eanLimpo,
+                            categoria: categoria,
+                            estoque: estoque,
+                            preco: precoVenda // Salva o preço oficial da nova coluna
+                        };
+                        count++;
+                    }
+                });
+
 
                 if(count > 0) {
                     salvarDadosNaNuvem('estoque', globalOfficialStock);
