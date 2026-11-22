@@ -853,11 +853,15 @@ Projeção: R$ 0,00
 <tr class="bg-slate-950 text-slate-400 uppercase text-[10px] md:text-xs tracking-wider border-b border-slate-800">
 <th class="p-3 font-semibold">Produto</th>
 <th class="p-3 font-semibold">EAN</th>
+<th class="p-3 font-semibold text-left text-emerald-400">Loja Destino</th>
 <th class="p-3 font-semibold text-center">Quantidade</th>
 <th class="p-3 font-semibold text-right">Preço Unitário</th>
 <th class="p-3 font-semibold text-right">Valor Total</th>
 </tr>
 </thead>
+<tbody id="entryDetailTableBody" class="divide-y divide-slate-800 text-slate-200">
+<tr><td colspan="6" class="p-4 text-center text-slate-500">Selecione uma nota/pedido.</td></tr>
+</tbody>
 <tbody id="entryDetailTableBody" class="divide-y divide-slate-800 text-slate-200">
 <tr><td colspan="5" class="p-4 text-center text-slate-500">Selecione uma nota/pedido.</td></tr>
 </tbody>
@@ -1045,17 +1049,18 @@ async function carregarDadosDoPainel() {
                             const fornecedor = nota.fornecedor || 'Fornecedor';
                             const dataStr = nota.dataFinalizacao ? nota.dataFinalizacao.split('T')[0] : new Date().toISOString().split('T')[0];
                             
-                            nota.itens.forEach(item => {
-                                entradasFormatadas.push({
-                                    pedido: String(pedido),
-                                    fornecedor: fornecedor,
-                                    produto: item.descricao || 'Não informado',
-                                    ean: String(item.codigo || '').trim(),
-                                    data: dataStr,
-                                    qtd: Number(item.qtd) || 0,
-                                    precoUnit: Number(item.custo) || 0
-                                });
-                            });
+                       nota.itens.forEach(item => {
+                              entradasFormatadas.push({
+                                  pedido: String(pedido),
+                                  fornecedor: fornecedor,
+                                  lojaDestino: normalizarLojaDestino(item.lojaDestino || nota.lojaDestino),
+                                  produto: item.descricao || 'Não informado',
+                                  ean: String(item.codigo || '').trim(),
+                                  data: dataStr,
+                                  qtd: Number(item.qtd) || 0,
+                                  precoUnit: Number(item.custo) || 0
+                              });
+                          });
                         }
                     });
                     globalEntries = entradasFormatadas;
@@ -1092,6 +1097,7 @@ function exportSingleEntryToExcel(numPedido, event) {
     const exportData = singleOrderEntries.map(item => ({
         "Pedido": item.pedido || '',
         "Fornecedor": item.fornecedor || '',
+        "Loja Destino": (item.lojaDestino || '').trim() || '-',
         "Data": item.data || '',
         "EAN": item.ean || '',
         "Nome": item.produto || '',
@@ -1116,6 +1122,7 @@ function exportEntriesToExcel() {
     const exportData = globalEntries.map(item => ({
         "Pedido": item.pedido || '',
         "Fornecedor": item.fornecedor || '',
+        "Loja Destino": (item.lojaDestino || '').trim() || '-',
         "Data": item.data || '',
         "EAN": item.ean || '',
         "Nome": item.produto || '',
@@ -1129,6 +1136,14 @@ function exportEntriesToExcel() {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Notas de Entrada");
 
     XLSX.writeFile(workbook, `notas_de_entrada_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
+function normalizarLojaDestino(valor) {
+    const limpo = String(valor || '').trim();
+    if (!limpo || limpo === '-' || limpo.toUpperCase() === 'GERAL') {
+        return 'CD';
+    }
+    return limpo;
 }
 
 function safeSetLocalStorage(key, value) {
@@ -2844,7 +2859,7 @@ function renderEntries() {
     const ordersArray = Object.values(ordersMap);
     if (ordersArray.length === 0) {
         masterTbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">Nenhuma nota cadastrada.</td></tr>`;
-        detailTbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Nenhum pedido selecionado.</td></tr>`;
+        detailTbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">Nenhum pedido selecionado.</td></tr>`;
         return;
     }
 
@@ -2887,11 +2902,13 @@ function renderEntries() {
         titleEl.innerHTML = `<i class="fa-solid fa-boxes-stacked mr-2"></i>Itens do Pedido: <span class="text-amber-300 ml-1 font-bold">${activeOrder.pedido}</span>`;
         detailTbody.innerHTML = '';
         activeOrder.itens.forEach(item => {
+            const destino = (item.lojaDestino || '').trim() || '-';
             const tr = document.createElement('tr');
             tr.className = "hover:bg-slate-800/50 transition-colors";
             tr.innerHTML = `
                 <td class="p-3 font-medium text-amber-400">${item.produto}</td>
                 <td class="p-3 text-xs font-mono text-slate-400">${item.ean || '-'}</td>
+                <td class="p-3 font-medium text-emerald-400">${destino}</td>
                 <td class="p-3 text-center font-bold text-slate-100">${item.qtd}</td>
                 <td class="p-3 text-right text-slate-300">${formatCurrency(item.precoUnit)}</td>
                 <td class="p-3 text-right font-bold text-slate-100">${formatCurrency(item.qtd * item.precoUnit)}</td>
