@@ -1426,49 +1426,137 @@ function apagarEstoqueOficialApenas() {
     }
 }
 
+
+
 function handleFile(e) {
-const file = e.target.files[0];
-if (!file) return;
-const reader = new FileReader();
-reader.onload = function(evt) {
-try {
-const data = new Uint8Array(evt.target.result);
-const workbook = XLSX.read(data, {type: 'array', cellDates: false});
-const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        try {
+            const data = new Uint8Array(evt.target.result);
+            const workbook = XLSX.read(data, { type: 'array', cellDates: false });
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
-if(json.length > 0) {
-const importedRows = json.map(item => {
-const qtd = parseDecimal(item['Quantidade'] || item['quantidade'] || item['Qtd'] || 0);
-const vlrTotal = parseDecimal(item['Valor'] || item['Valor Total'] || item['valor'] || item['total'] || 0);
-const vlrUnit = qtd > 0 ? vlrTotal / qtd : 0;
-const custoUnit = vlrUnit * 0.40;
+            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "", raw: false });
+            if (!rows || rows.length === 0) {
+                alert("Planilha vazia.");
+                return;
+            }
 
-return {
-cliente: item['Cliente'] || item['cliente'] || item['Filial'] || item['filial'] || 'Geral',
-categoria: item['Categoria'] || item['categoria'] || 'Geral',
-produto: item['Nome do Produto'] || item['produto'] || item['Produto'] || 'Não informado',
-ean: String(item['Canaleta'] || item['EAN'] || item['ean'] || '').trim(),
-data: parseExcelDate(item['Dia'] || item['Data'] || item['data']),
-qtd: qtd,
-vlrUnit: vlrUnit,
-custoUnit: custoUnit
-};
-}).filter(row => row.produto !== 'Não informado' && row.produto !== '');
+            // Localiza automaticamente a linha onde está o cabeçalho das colunas de vendas
+            let headerRowIndex = -1;
+            for (let r = 0; r < rows.length; r++) {
+                const normalizedCells = rows[r].map(c => String(c ?? '').trim().toLowerCase());
+                const hasProduto = normalizedCells.includes('produto') || normalizedCells.includes('nome do produto');
+                const hasQtd = normalizedCells.includes('quantidade') || normalizedCells.includes('qtd');
+                const hasValor = normalizedCells.includes('valor') || normalizedCells.includes('valor total');
+                if (hasProduto && hasQtd && hasValor) {
+                    headerRowIndex = r;
+                    break;
+                }
+            }
 
-if(importedRows.length > 0) {
-const importedKeys = new Set(importedRows.map(r => `${r.cliente}___${r.data}`));
-globalData = [...globalData.filter(r => !importedKeys.has(`${r.cliente}___${r.data}`)), ...importedRows];
-salvarDadosNaNuvem('vendas', globalData);
-populateFilterDropdowns();
-updateAllViews();
-alert("Planilha de vendas importada com sucesso!");
-} else { alert("Nenhum dado válido."); }
-} else { alert("Planilha vazia."); }
-} catch(err) { alert("Erro ao ler o arquivo de vendas."); }
-};
-reader.readAsArrayBuffer(file);
+            let json = [];
+            if (headerRowIndex !== -1) {
+                const headers = rows[headerRowIndex].map((h, idx) => String(h ?? '').trim() || `col_${idx}`);
+                for (let r = headerRowIndex + 1; r < rows.length; r++) {
+                    const row = rows[r];
+                    const firstColUpper = String(row[0] ?? '').trim().toUpperCase();
+                    if (firstColUpper === 'TOTAL') continue;
+
+                    const obj = {};
+                    let hasAnyValue = false;
+                    headers.forEach((h, idx) => {
+                        const val = row[idx] ?? '';
+                        if (String(val).trim() !== '') hasAnyValue = true;
+                        obj[h] = val;
+                    });
+                    if (hasAnyValue) json.push(obj);
+                }
+            } else {
+                json = XLSX.utils.sheet_to_json(worksheet, { defval: "", raw: false });
+            }
+
+            if (json.length > 0) {
+                const importedRows = json.map(item => {
+                    const rawCliente = getObjectValueIgnoreCase(item, ['cliente', 'loja', 'filial']);
+                    const rawCategoria = getObjectValueIgnoreCase(item, ['categoria', 'cat', 'grupo']);
+                    const rawProduto = getObjectValueIgnoreCase(item, ['produto', 'nome do produto', 'nome', 'descricao', 'descrição']);
+                    const rawEan = getObjectValueIgnoreCase(item, ['canaleta', 'ean', 'codigo', 'código', 'cod']);
+                    const rawDia = getObjectValueIgnoreCase(item, ['dia', 'data']);
+                    const rawQtd = getObjectValueIgnoreCase(item, ['quantidade', 'qtd', 'qtde']);
+                    const rawValor = getObjectValueIgnoreCase(item, ['valor', 'valor total', 'total']);
+
+                    const cliente = String(rawCliente || 'Geral').trim();
+                    const categoria = String(rawCategoria || 'Geral').trim();
+                    const produto = String(rawProduto || 'Não informado').trim();
+                    const ean = rawEan ? String(rawEan).replace(/\D/g, '').trim() : '';
+                    const dataStr = parseExcelDate(rawDia);
+                    const qtd = parseDecimal(rawQtd);
+                    const vlrTotal = parseDecimal(rawValor);
+                    const vlrUnit = qtd > 0 ? vlrTotal / qtd : 0;
+                    const custoUnit = vlrUnit * 0.40;
+
+                    return {
+                        cliente: cliente || 'Geral',
+                        categoria: categoria || 'Geral',
+                        produto: produto || 'Não informado',
+                        ean: ean,
+                        data: dataStr,
+                        qtd: qtd,
+                        vlrUnit: vlrUnit,
+                        custoUnit: custoUnit
+                    };
+                }).filter(row =>
+                    row.produto !== 'Não informado' &&
+                    row.produto !== '' &&
+                    row.produto.toUpperCase() !== 'TOTAL'
+                );
+
+                if (importedRows.length > 0) {
+                    const importedKeys = new Set(importedRows.map(r => `${r.cliente}___${r.data}`));
+                    globalData = [
+                        ...globalData.filter(r => !importedKeys.has(`${r.cliente}___${r.data}`)),
+                        ...importedRows
+                    ];
+                    salvarDadosNaNuvem('vendas', globalData);
+
+                    // Atualiza categorias no estoque oficial caso algum item estivesse como GERAL
+                    if (typeof buscarCategoriaExistente === 'function' && globalOfficialStock) {
+                        let estoqueAtualizado = false;
+                        Object.keys(globalOfficialStock).forEach(key => {
+                            const stItem = globalOfficialStock[key];
+                            if (stItem && (!stItem.categoria || stItem.categoria.trim().toUpperCase() === 'GERAL')) {
+                                const novaCat = buscarCategoriaExistente(stItem.ean, stItem.produto, stItem.categoria || 'GERAL');
+                                if (novaCat && novaCat.toUpperCase() !== 'GERAL') {
+                                    stItem.categoria = novaCat;
+                                    estoqueAtualizado = true;
+                                }
+                            }
+                        });
+                        if (estoqueAtualizado) {
+                            salvarDadosNaNuvem('estoque', globalOfficialStock);
+                        }
+                    }
+
+                    populateFilterDropdowns();
+                    updateAllViews();
+                    alert(`Planilha de vendas importada com sucesso! (${importedRows.length} registros)`);
+                } else {
+                    alert("Nenhum dado válido encontrado na planilha.");
+                }
+            } else {
+                alert("Planilha vazia.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Erro ao ler o arquivo de vendas.");
+        }
+    };
+    reader.readAsArrayBuffer(file);
 }
+
 
 function getObjectValueIgnoreCase(obj, candidates) {
 if (!obj) return null;
@@ -1485,111 +1573,180 @@ return null;
 function handleStockFile(e) {
     const file = e.target.files[0];
     if (!file) return;
+    const fileNameUpper = String(file.name || '').toUpperCase();
     const reader = new FileReader();
+
     reader.onload = function(evt) {
         try {
             const data = new Uint8Array(evt.target.result);
-            const workbook = XLSX.read(data, {type: 'array', cellDates: false});
+            const workbook = XLSX.read(data, { type: 'array', cellDates: false });
             const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-            const json = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
 
-            if(json.length > 0) {
-                let count = 0;
+            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "", raw: false });
+            if (!rows || rows.length === 0) {
+                alert("Planilha de estoque vazia.");
+                return;
+            }
 
-                const clientesNoArquivo = new Set();
+            let headerClienteCabecalho = '';
+            let headerRowIndex = -1;
+
+            for (let r = 0; r < rows.length; r++) {
+                const row = rows[r];
+                const col0 = String(row[0] ?? '').trim().toLowerCase();
+                const col1 = String(row[1] ?? '').trim();
+
+                if ((col0 === 'cliente' || col0 === 'loja' || col0 === 'depósito' || col0 === 'deposito' || col0 === 'cd') && col1) {
+                    headerClienteCabecalho = col1.trim();
+                }
+
+                const normalizedCells = row.map(c => String(c ?? '').trim().toLowerCase());
+                const hasProdCol = normalizedCells.some(c => ['produto', 'nome', 'nome do produto', 'descricao', 'descrição'].includes(c));
+                const hasQtdCol = normalizedCells.some(c => ['quantidade', 'estoque', 'qtd', 'saldo', 'estoque atual', 'est. atual'].includes(c));
+                if (hasProdCol && hasQtdCol) {
+                    headerRowIndex = r;
+                    break;
+                }
+            }
+
+            // Verifica se a planilha é de CD sem cabeçalho (ex: row[0] começa com "CD" e não há linha de cabeçalho)
+            const firstRowCol0 = String(rows[0]?.[0] ?? '').trim().toUpperCase();
+            const isSemCabecalhoCD = headerRowIndex === -1 && (firstRowCol0.startsWith('CD') || /\bCD\b/.test(fileNameUpper));
+
+            let json = [];
+            if (isSemCabecalhoCD) {
+                json = rows
+                    .filter(row => {
+                        const c0 = String(row[0] ?? '').trim();
+                        const c2 = String(row[2] ?? '').trim();
+                        return c0 !== '' && c0.toUpperCase() !== 'TOTAL' && c2 !== '';
+                    })
+                    .map(row => ({
+                        cliente: String(row[0] ?? 'CD').trim(),
+                        ean: String(row[1] ?? '').trim(),
+                        produto: String(row[2] ?? '').trim(),
+                        categoria: String(row[3] ?? '').trim(),
+                        estoque: row[4] ?? 0,
+                        preco_venda: row[5] ?? 0,
+                        minimo: row[6] ?? 0,
+                        maximo: row[7] ?? 0
+                    }));
+            } else if (headerRowIndex !== -1) {
+                const headers = rows[headerRowIndex].map((h, idx) => String(h ?? '').trim() || `col_${idx}`);
+                for (let r = headerRowIndex + 1; r < rows.length; r++) {
+                    const row = rows[r];
+                    const firstColUpper = String(row[0] ?? '').trim().toUpperCase();
+                    if (firstColUpper === 'TOTAL') continue;
+
+                    const obj = {};
+                    let hasAnyValue = false;
+                    headers.forEach((h, idx) => {
+                        const val = row[idx] ?? '';
+                        if (String(val).trim() !== '') hasAnyValue = true;
+                        obj[h] = val;
+                    });
+                    if (hasAnyValue) json.push(obj);
+                }
+            } else {
+                json = XLSX.utils.sheet_to_json(worksheet, { defval: "", raw: false });
+            }
+
+            if (json.length === 0) {
+                alert("Nenhum registro válido encontrado na planilha.");
+                return;
+            }
+
+            const cabecalhoEhCd = isSemCabecalhoCD || headerClienteCabecalho.toUpperCase().startsWith('CD') || /\bCD\b/.test(fileNameUpper);
+            const linhaTemCd = json.some(item => {
+                const c = String(getObjectValueIgnoreCase(item, ['cliente', 'loja', 'filial', 'cd', 'deposito', 'depósito']) || '').trim().toUpperCase();
+                return c.startsWith('CD');
+            });
+            const isLayoutCD = cabecalhoEhCd || linhaTemCd;
+
+            let count = 0;
+
+            const clientesNoArquivo = new Set();
+            if (isLayoutCD) {
+                json.forEach(item => {
+                    const c = String(getObjectValueIgnoreCase(item, ['cliente', 'cd', 'deposito', 'depósito', 'loja', 'filial']) || headerClienteCabecalho || 'CD').trim().toUpperCase();
+                    if (c) clientesNoArquivo.add(c);
+                });
+            } else {
+                if (headerClienteCabecalho) clientesNoArquivo.add(headerClienteCabecalho.toUpperCase());
                 json.forEach(item => {
                     const rawClient = getObjectValueIgnoreCase(item, ['cliente', 'loja', 'filial']);
-                    if (rawClient) {
-                        clientesNoArquivo.add(String(rawClient).trim().toUpperCase());
-                    }
+                    if (rawClient) clientesNoArquivo.add(String(rawClient).trim().toUpperCase());
                 });
+            }
 
-                if (clientesNoArquivo.size > 0) {
-                    for (let k in globalOfficialStock) {
-                        const itemEstoque = globalOfficialStock[k];
-                        if (itemEstoque && itemEstoque.cliente) {
-                            const cliEstoqueUp = String(itemEstoque.cliente).trim().toUpperCase();
-                            if (clientesNoArquivo.has(cliEstoqueUp)) {
-                                delete globalOfficialStock[k];
-                            }
+            if (clientesNoArquivo.size > 0) {
+                for (let k in globalOfficialStock) {
+                    const itemEstoque = globalOfficialStock[k];
+                    if (itemEstoque && itemEstoque.cliente) {
+                        const cliEstoqueUp = String(itemEstoque.cliente).trim().toUpperCase();
+                        if (clientesNoArquivo.has(cliEstoqueUp)) {
+                            delete globalOfficialStock[k];
                         }
                     }
                 }
+            }
 
-           /*     json.forEach(item => {
-                    const rawClient = getObjectValueIgnoreCase(item, ['cliente', 'loja', 'filial']) || 'Geral';
-                    const rawEan = getObjectValueIgnoreCase(item, ['ean', 'codigo', 'cod']);
-                    const rawNome = getObjectValueIgnoreCase(item, ['nome', 'produto', 'nome do produto', 'descricao']);
-                    const rawCategoria = getObjectValueIgnoreCase(item, ['categoria', 'cat', 'grupo']) || 'GERAL';
-                    const rawEstoque = getObjectValueIgnoreCase(item, ['estoque', 'quantidade', 'qtd', 'saldo']);
+            json.forEach(item => {
+                const rawClient = getObjectValueIgnoreCase(item, ['cliente', 'cd', 'deposito', 'depósito', 'loja', 'filial'])
+                    || headerClienteCabecalho
+                    || (isLayoutCD ? 'CD' : 'Geral');
+                const rawEan = getObjectValueIgnoreCase(item, ['ean', 'canaleta', 'codigo', 'código', 'cod']);
+                const rawNome = getObjectValueIgnoreCase(item, ['produto', 'nome', 'nome do produto', 'descricao', 'descrição']);
+                const rawCategoria = getObjectValueIgnoreCase(item, ['categoria', 'cat', 'grupo']) || 'GERAL';
+                const rawEstoque = getObjectValueIgnoreCase(item, ['estoque', 'quantidade', 'qtd', 'saldo', 'estoque atual', 'est. atual']);
+                const rawPreco = getObjectValueIgnoreCase(item, ['preco_venda', 'preço (r$)', 'preco (r$)', 'preco', 'preço', 'pvenda', 'vlr_unit', 'valor']);
+                const rawMinimo = getObjectValueIgnoreCase(item, ['minimo', 'mínimo', 'estoque minimo', 'estoque mínimo', 'nível mínimo', 'nivel minimo', 'min']);
+                const rawMaximo = getObjectValueIgnoreCase(item, ['maximo', 'máximo', 'estoque maximo', 'estoque máximo', 'nível de par', 'nivel de par', 'capacidade', 'max']);
 
-                    const cliente = String(rawClient).trim();
-                    const clienteUp = cliente.toUpperCase();
-                    const eanLimpo = rawEan ? String(rawEan).replace(/\D/g, '').trim() : '';
-                    const nome = rawNome ? String(rawNome).trim() : '';
-                    const nomeUp = nome.toUpperCase();
-                    const categoria = String(rawCategoria).trim();
-                    const estoque = parseDecimal(rawEstoque);
+                const cliente = String(rawClient).trim();
+                const clienteUp = cliente.toUpperCase();
+                const eanLimpo = rawEan ? String(rawEan).replace(/\D/g, '').trim() : '';
+                const nome = rawNome ? String(rawNome).trim() : '';
+                const nomeUp = nome.toUpperCase();
+                const categoria = typeof buscarCategoriaExistente === 'function'
+                    ? buscarCategoriaExistente(eanLimpo, nome, rawCategoria)
+                    : (String(rawCategoria).trim() || 'GERAL');
 
-                    if (cliente && (eanLimpo || nomeUp)) {
-                        const identifier = eanLimpo ? eanLimpo : nomeUp;
-                        const key = `${clienteUp}___${identifier}`;
+                const estoque = parseDecimal(rawEstoque);
+                const precoVenda = parseDecimal(rawPreco);
+                const minimo = parseDecimal(rawMinimo);
+                const maximo = parseDecimal(rawMaximo);
 
-                        globalOfficialStock[key] = {
-                            cliente: cliente,
-                            produto: nome || identifier,
-                            ean: eanLimpo,
-                            categoria: categoria,
-                            estoque: estoque
-                        };
-                        count++;
-                    }
-                });
-*/
-                json.forEach(item => {
-                    const rawClient = getObjectValueIgnoreCase(item, ['cliente', 'loja', 'filial']) || 'Geral';
-                    const rawEan = getObjectValueIgnoreCase(item, ['ean', 'codigo', 'cod']);
-                    const rawNome = getObjectValueIgnoreCase(item, ['nome', 'produto', 'nome do produto', 'descricao']);
-                    const rawCategoria = getObjectValueIgnoreCase(item, ['categoria', 'cat', 'grupo']) || 'GERAL';
-                    const rawEstoque = getObjectValueIgnoreCase(item, ['estoque', 'quantidade', 'qtd', 'saldo']);
-                    
-                    // CAPTURA DA NOVA COLUNA DE PREÇO (ajuste os nomes conforme o cabeçalho da sua planilha/base)
-                    const rawPreco = getObjectValueIgnoreCase(item, ['preco', 'preco_venda', 'pvenda', 'vlr_unit', 'valor']);
+                if (cliente && (eanLimpo || nomeUp)) {
+                    const identifier = eanLimpo ? eanLimpo : nomeUp;
+                    const key = `${clienteUp}___${identifier}`;
 
-                    const cliente = String(rawClient).trim();
-                    const clienteUp = cliente.toUpperCase();
-                    const eanLimpo = rawEan ? String(rawEan).replace(/\D/g, '').trim() : '';
-                    const nome = rawNome ? String(rawNome).trim() : '';
-                    const nomeUp = nome.toUpperCase();
-                    const categoria = String(rawCategoria).trim();
-                    const estoque = parseDecimal(rawEstoque);
-                    const precoVenda = parseDecimal(rawPreco); // Converte o preço lido
+                    globalOfficialStock[key] = {
+                        cliente: cliente,
+                        produto: nome || identifier,
+                        ean: eanLimpo,
+                        categoria: categoria,
+                        estoque: estoque,
+                        preco: precoVenda,
+                        minimo: minimo,
+                        maximo: maximo
+                    };
+                    count++;
+                }
+            });
 
-                    if (cliente && (eanLimpo || nomeUp)) {
-                        const identifier = eanLimpo ? eanLimpo : nomeUp;
-                        const key = `${clienteUp}___${identifier}`;
-
-                        globalOfficialStock[key] = {
-                            cliente: cliente,
-                            produto: nome || identifier,
-                            ean: eanLimpo,
-                            categoria: categoria,
-                            estoque: estoque,
-                            preco: precoVenda // Salva o preço oficial da nova coluna
-                        };
-                        count++;
-                    }
-                });
-
-
-                if(count > 0) {
-                    salvarDadosNaNuvem('estoque', globalOfficialStock);
-                    populateFilterDropdowns();
-                    updateAllViews();
-                    alert(`Estoque importado com sucesso!\n• Dados anteriores dos clientes do arquivo foram limpos.\n• Novos registros importados: ${count}`);
-                } else { alert("Nenhum registro válido encontrado na planilha."); }
-            } else { alert("Planilha de estoque vazia."); }
-        } catch(err) { alert("Erro ao ler arquivo de estoque."); }
+            if (count > 0) {
+                salvarDadosNaNuvem('estoque', globalOfficialStock);
+                populateFilterDropdowns();
+                updateAllViews();
+                alert(`Estoque (${isLayoutCD ? 'CD' : 'Loja'}) importado com sucesso!\n• Novos registros importados: ${count}`);
+            } else {
+                alert("Nenhum registro válido encontrado na planilha.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Erro ao ler arquivo de estoque.");
+        }
     };
     reader.readAsArrayBuffer(file);
 }
