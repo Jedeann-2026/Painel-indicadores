@@ -547,6 +547,45 @@ html.dark input[type="date"]::-webkit-calendar-picker-indicator {
 <div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
 <div class="p-3.5 md:p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
 <div>
+<h2 class="font-bold text-white text-sm md:text-base"><i class="fa-solid fa-trophy text-amber-400 mr-2"></i>Top 10 Produtos (Consolidado e por Loja)</h2>
+<p class="text-[11px] md:text-xs text-slate-400 mt-0.5">Clique em um produto para expandir o detalhamento por loja.</p>
+</div>
+<div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+<button onclick="exportDashTop10ProductsToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center space-x-1">
+<i class="fa-solid fa-file-excel"></i>
+<span>Excel</span>
+</button>
+<div class="flex items-center space-x-1 bg-slate-950 px-2 py-1.5 rounded-xl border border-slate-800">
+<span class="text-[11px] font-medium text-slate-400">Ranking:</span>
+<select id="dashTop10SortBy" onchange="renderDashTop10ProductsCard()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
+<option value="qtd" selected>Qtd Vendida</option>
+<option value="faturamento">Faturamento (R$)</option>
+</select>
+</div>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse text-xs md:text-sm whitespace-nowrap">
+<thead>
+<tr class="bg-slate-950 text-slate-400 uppercase text-[10px] md:text-xs tracking-wider border-b border-slate-800">
+<th class="p-3 font-semibold w-8 text-center">#</th>
+<th class="p-3 font-semibold">EAN</th>
+<th class="p-3 font-semibold">Descrição</th>
+<th class="p-3 font-semibold text-center text-emerald-400">Est. Lj</th>
+<th class="p-3 font-semibold text-center text-blue-400">Est. CD</th>
+<th class="p-3 font-semibold text-center">Qtd Vendida</th>
+<th class="p-3 font-semibold text-center">Mín</th>
+<th class="p-3 font-semibold text-center">Máx</th>
+</tr>
+</thead>
+<tbody id="dashTop10TableBody" class="divide-y divide-slate-800 text-slate-200"></tbody>
+</table>
+</div>
+</div>
+
+<div class="bg-slate-900 rounded-2xl shadow-sm border border-slate-800 overflow-hidden">
+<div class="p-3.5 md:p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+<div>
 <h2 class="font-bold text-white text-sm md:text-base"><i class="fa-solid fa-rotate text-amber-400 mr-2"></i>Indicador de Giro de Produto</h2>
 <p class="text-[11px] md:text-xs text-slate-400 mt-0.5">Velocidade de saída e volume.</p>
 </div>
@@ -2327,6 +2366,7 @@ clientProdSalesMap[cpKey].faturamento += faturamento;
 });
 
 renderDashOutOfStockCard(clientProdSalesMap);
+renderDashTop10ProductsCard();
 
 let totalEstoqueVal = 0;
 for (let k in globalOfficialStock) {
@@ -2415,6 +2455,260 @@ function renderDashOutOfStockCard(clientProdSalesMap) {
     `;
     tbody.appendChild(tr);
   });
+}
+
+let lastDashTop10List = [];
+let expandedDashTop10Keys = {};
+
+function toggleDashTop10Row(prodKey) {
+  expandedDashTop10Keys[prodKey] = !expandedDashTop10Keys[prodKey];
+  renderDashTop10ProductsCard();
+}
+
+function renderDashTop10ProductsCard() {
+  const tbody = document.getElementById('dashTop10TableBody');
+  if (!tbody) return;
+
+  const { filteredData, selectedClient } = getFilteredDashboardData();
+  const sortBy = document.getElementById('dashTop10SortBy') ? document.getElementById('dashTop10SortBy').value : 'qtd';
+
+  // Estoque CD por EAN ou Produto
+  const cdStockMap = {};
+  for (let k in globalOfficialStock) {
+    const item = globalOfficialStock[k];
+    if (item && item.cliente && ehCdCliente(item.cliente)) {
+      const eanKey = item.ean ? String(item.ean).trim().toUpperCase() : String(item.produto || '').trim().toUpperCase();
+      if (eanKey) {
+        cdStockMap[eanKey] = (cdStockMap[eanKey] || 0) + (Number(item.estoque) || 0);
+      }
+    }
+  }
+
+  // Mapa de estoque, preço de venda, mín e máx por loja e produto
+  const storeStockByProdAndClient = {};
+  const allStoresForProd = {};
+
+  for (let k in globalOfficialStock) {
+    const item = globalOfficialStock[k];
+    if (!item || !item.cliente || ehCdCliente(item.cliente)) continue;
+    const clientName = String(item.cliente).trim();
+    const clientUp = clientName.toUpperCase();
+    if (selectedClient !== 'all' && clientUp !== selectedClient.trim().toUpperCase()) continue;
+
+    const prodKey = item.ean ? String(item.ean).trim().toUpperCase() : String(item.produto || '').trim().toUpperCase();
+    if (!prodKey) continue;
+
+    if (!storeStockByProdAndClient[prodKey]) storeStockByProdAndClient[prodKey] = {};
+    if (!storeStockByProdAndClient[prodKey][clientUp]) {
+      storeStockByProdAndClient[prodKey][clientUp] = {
+        cliente: clientName,
+        estoqueLoja: 0,
+        precoVenda: 0,
+        minimo: 0,
+        maximo: 0,
+        qtdVendida: 0,
+        faturamento: 0
+      };
+    }
+    const precoItem = Number(item.preco) || 0;
+    if (precoItem > 0) {
+      storeStockByProdAndClient[prodKey][clientUp].precoVenda = precoItem;
+    }
+
+    storeStockByProdAndClient[prodKey][clientUp].estoqueLoja += Number(item.estoque) || 0;
+    storeStockByProdAndClient[prodKey][clientUp].minimo += Number(item.minimo) || 0;
+    storeStockByProdAndClient[prodKey][clientUp].maximo += Number(item.maximo) || 0;
+
+    if (!allStoresForProd[prodKey]) allStoresForProd[prodKey] = new Set();
+    allStoresForProd[prodKey].add(clientUp);
+  }
+
+  // Consolida vendas filtradas
+  const consolidatedMap = {};
+  filteredData.forEach(row => {
+    const clientName = String(row.cliente || 'Geral').trim();
+    const clientUp = clientName.toUpperCase();
+    if (ehCdCliente(clientUp)) return;
+
+    const prodKey = row.ean ? String(row.ean).trim().toUpperCase() : String(row.produto || '').trim().toUpperCase();
+    if (!prodKey) return;
+
+    if (!consolidatedMap[prodKey]) {
+      consolidatedMap[prodKey] = {
+        key: prodKey,
+        ean: row.ean ? String(row.ean).trim() : '',
+        produto: row.produto || 'Não informado',
+        qtdVendida: 0,
+        faturamento: 0
+      };
+    }
+    consolidatedMap[prodKey].qtdVendida += Number(row.qtd) || 0;
+    consolidatedMap[prodKey].faturamento += (Number(row.qtd) || 0) * (Number(row.vlrUnit) || 0);
+    if (row.ean && !consolidatedMap[prodKey].ean) consolidatedMap[prodKey].ean = String(row.ean).trim();
+
+    if (!storeStockByProdAndClient[prodKey]) storeStockByProdAndClient[prodKey] = {};
+    if (!storeStockByProdAndClient[prodKey][clientUp]) {
+      storeStockByProdAndClient[prodKey][clientUp] = {
+        cliente: clientName,
+        estoqueLoja: getOfficialStock(clientName, row.ean, row.produto),
+        precoVenda: 0,
+        minimo: 0,
+        maximo: 0,
+        qtdVendida: 0,
+        faturamento: 0
+      };
+    }
+    storeStockByProdAndClient[prodKey][clientUp].qtdVendida += Number(row.qtd) || 0;
+    storeStockByProdAndClient[prodKey][clientUp].faturamento += (Number(row.qtd) || 0) * (Number(row.vlrUnit) || 0);
+
+    if (!allStoresForProd[prodKey]) allStoresForProd[prodKey] = new Set();
+    allStoresForProd[prodKey].add(clientUp);
+  });
+
+  // Calcula totais consolidados de Est Lj, Est CD, Mín e Máx para cada produto
+  const productList = Object.values(consolidatedMap).map(prod => {
+    const storesMap = storeStockByProdAndClient[prod.key] || {};
+    const storesList = Object.values(storesMap)
+      .map(st => {
+        const precoEfetivo = st.precoVenda > 0
+          ? st.precoVenda
+          : (st.qtdVendida > 0 ? st.faturamento / st.qtdVendida : 0);
+        return {
+          ...st,
+          precoVendaEfetivo: precoEfetivo,
+          precoCadastrado: st.precoVenda > 0
+        };
+      })
+      .sort((a, b) => b.qtdVendida - a.qtdVendida || a.cliente.localeCompare(b.cliente));
+
+    let totalEstLoja = 0;
+    let totalMin = 0;
+    let totalMax = 0;
+    storesList.forEach(st => {
+      totalEstLoja += st.estoqueLoja;
+      totalMin += st.minimo;
+      totalMax += st.maximo;
+    });
+
+    const estCd = cdStockMap[prod.key] || 0;
+
+    return {
+      ...prod,
+      estLoja: totalEstLoja,
+      estCd: estCd,
+      minimo: totalMin,
+      maximo: totalMax,
+      lojas: storesList
+    };
+  });
+
+  if (sortBy === 'faturamento') {
+    productList.sort((a, b) => b.faturamento - a.faturamento || b.qtdVendida - a.qtdVendida);
+  } else {
+    productList.sort((a, b) => b.qtdVendida - a.qtdVendida || b.faturamento - a.faturamento);
+  }
+
+  const top10 = productList.slice(0, 10);
+  lastDashTop10List = top10;
+
+  tbody.innerHTML = '';
+  if (top10.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Nenhum produto vendido nos filtros selecionados.</td></tr>`;
+    return;
+  }
+
+  top10.forEach((item, idx) => {
+    const isExpanded = !!expandedDashTop10Keys[item.key];
+    const tr = document.createElement('tr');
+    tr.className = `cursor-pointer transition-colors ${isExpanded ? 'bg-amber-500/10' : 'hover:bg-slate-800/60'}`;
+    tr.onclick = () => toggleDashTop10Row(item.key);
+
+    tr.innerHTML = `
+      <td class="p-3 text-center font-bold text-slate-400">
+        <span class="inline-flex items-center gap-1">
+          <i class="fa-solid ${isExpanded ? 'fa-chevron-down text-amber-400' : 'fa-chevron-right text-slate-500'} text-[10px]"></i>
+          ${idx + 1}º
+        </span>
+      </td>
+      <td class="p-3 text-xs font-mono text-slate-400">${item.ean || '-'}</td>
+      <td class="p-3 font-bold text-amber-400">${item.produto}</td>
+      <td class="p-3 text-center font-bold text-emerald-400">${item.estLoja}</td>
+      <td class="p-3 text-center font-bold text-blue-400">${item.estCd}</td>
+      <td class="p-3 text-center font-bold text-white">${item.qtdVendida}</td>
+      <td class="p-3 text-center text-slate-300">${item.minimo}</td>
+      <td class="p-3 text-center text-slate-300">${item.maximo}</td>
+    `;
+    tbody.appendChild(tr);
+
+    if (isExpanded) {
+      item.lojas.forEach(loja => {
+        const precoFmt = loja.precoVendaEfetivo > 0 ? formatCurrency(loja.precoVendaEfetivo) : '-';
+        const precoTitle = loja.precoCadastrado
+          ? 'Preço de venda cadastrado no estoque da loja'
+          : (loja.precoVendaEfetivo > 0 ? 'Preço médio praticado nas vendas da loja' : 'Sem preço informado');
+
+        const subTr = document.createElement('tr');
+        subTr.className = "bg-slate-950/90 text-[11px] md:text-xs border-l-2 border-l-amber-400/70";
+        subTr.innerHTML = `
+          <td class="p-2.5 text-center text-slate-600"><i class="fa-solid fa-turn-up fa-rotate-90 text-[10px]"></i></td>
+          <td class="p-2.5 text-[11px] font-mono text-slate-500">${item.ean || '-'}</td>
+          <td class="p-2.5 pl-6 font-semibold text-slate-200">
+            <div class="flex flex-wrap items-center gap-2">
+              <span><i class="fa-solid fa-store text-amber-400/80 mr-1.5 text-[11px]"></i>${loja.cliente}</span>
+              <span title="${precoTitle}" class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-500/10 text-amber-300 border border-amber-500/25">
+                Venda: ${precoFmt}
+              </span>
+            </div>
+          </td>
+          <td class="p-2.5 text-center font-semibold text-emerald-400">${loja.estoqueLoja}</td>
+          <td class="p-2.5 text-center text-blue-400/80">${item.estCd}</td>
+          <td class="p-2.5 text-center font-semibold text-slate-100">${loja.qtdVendida}</td>
+          <td class="p-2.5 text-center text-slate-400">${loja.minimo}</td>
+          <td class="p-2.5 text-center text-slate-400">${loja.maximo}</td>
+        `;
+        tbody.appendChild(subTr);
+      });
+    }
+  });
+}
+
+function exportDashTop10ProductsToExcel() {
+  if (!lastDashTop10List || lastDashTop10List.length === 0) {
+    alert("Nenhum produto no Top 10 para exportar.");
+    return;
+  }
+  const exportData = [];
+  lastDashTop10List.forEach((item, idx) => {
+    exportData.push({
+      "Posição": `${idx + 1}º`,
+      "Nível": "CONSOLIDADO",
+      "Loja / Cliente": "TODAS AS LOJAS",
+      "EAN": item.ean || '',
+      "Descrição": item.produto,
+      "Preço Venda": "",
+      "Est. Lj": item.estLoja,
+      "Est. CD": item.estCd,
+      "Qtd Vendida": item.qtdVendida,
+      "Mín": item.minimo,
+      "Máx": item.maximo
+    });
+    item.lojas.forEach(loja => {
+      exportData.push({
+        "Posição": `${idx + 1}º`,
+        "Nível": "LOJA",
+        "Loja / Cliente": loja.cliente,
+        "EAN": item.ean || '',
+        "Descrição": item.produto,
+        "Preço Venda": Number((loja.precoVendaEfetivo || 0).toFixed(2)),
+        "Est. Lj": loja.estoqueLoja,
+        "Est. CD": item.estCd,
+        "Qtd Vendida": loja.qtdVendida,
+        "Mín": loja.minimo,
+        "Máx": loja.maximo
+      });
+    });
+  });
+  exportToExcelFile(exportData, "top10_produtos_consolidado_lojas", "Top10");
 }
 
 function exportDashOutOfStockToExcel() {
