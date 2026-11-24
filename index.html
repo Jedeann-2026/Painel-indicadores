@@ -452,6 +452,48 @@ html.dark input[type="date"]::-webkit-calendar-picker-indicator {
 </div>
 </div>
 
+<div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col">
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3">
+    <div>
+      <h2 class="font-bold text-white text-sm md:text-base">
+        <i class="fa-solid fa-calendar-day text-amber-400 mr-2"></i>Comparativo por Dia da Semana no Mês
+      </h2>
+      <p id="weekdayChartSubtitle" class="text-[11px] md:text-xs text-slate-400 mt-0.5">
+        Comparação das ocorrências do mesmo dia da semana ao longo do mês.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-between md:justify-end">
+      <div class="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5">
+        <span class="text-[11px] text-slate-400 font-medium">Dia:</span>
+        <select id="weekdaySelect" onchange="renderWeekdayComparisonChart()" class="bg-transparent text-xs font-bold text-amber-400 focus:outline-none cursor-pointer">
+          <option value="0">Domingo</option>
+          <option value="1">Segunda-feira</option>
+          <option value="2">Terça-feira</option>
+          <option value="3">Quarta-feira</option>
+          <option value="4">Quinta-feira</option>
+          <option value="5">Sexta-feira</option>
+          <option value="6">Sábado</option>
+        </select>
+      </div>
+
+      <div class="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5">
+        <span class="text-[11px] text-slate-400 font-medium">Mês:</span>
+        <input type="month" id="weekdayMonthInput" onchange="renderWeekdayComparisonChart()" class="bg-transparent text-xs font-medium text-slate-200 focus:outline-none">
+      </div>
+
+      <button onclick="exportWeekdayComparisonToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center space-x-1 shrink-0">
+        <i class="fa-solid fa-file-excel"></i>
+        <span>Excel</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="relative flex-grow h-60 md:h-72">
+    <canvas id="chartWeekdayComparison"></canvas>
+  </div>
+</div>
+
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
 <div class="bg-slate-900 p-3.5 md:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col lg:col-span-2">
 <div class="flex justify-between items-center mb-3">
@@ -1509,6 +1551,8 @@ let chartTopValueInst = null;
 let chartTopQtyInst = null;
 let chartCategoryInst = null;
 let chartClientsInst = null;
+let chartWeekdayComparisonInst = null;
+let lastWeekdayComparisonExport = [];
 
 function formatLocalYYYYMMDD(dateObj) {
   const y = dateObj.getFullYear();
@@ -2329,6 +2373,7 @@ document.getElementById('card-preco-medio').innerText = formatCurrency(precoMedi
 renderStorePerformance(clientValueMap, filteredData, totalFaturamento);
 renderWeeklyPerformanceFourWeeks();
 renderCustomWeeklyComparison();
+renderWeekdayComparisonChart();
 renderCharts(prodValueMap, prodQtyMap, catValueMap, clientValueMap, filteredData);
 renderTurnoverTable(consolidatedProdMap);
 renderConsolidatedProducts(consolidatedProdMap);
@@ -3366,6 +3411,161 @@ const exportData = [1,2,3,4].map(id => ({
   "Participação (%)": totalCompFat > 0 ? Number(((weeklyTotals[id] / totalCompFat) * 100).toFixed(2)) : 0
 }));
 exportToExcelFile(exportData, "comparativo_semanal_personalizado", "Comparativo");
+}
+
+function initWeekdayComparisonDefaults() {
+    const weekdayEl = document.getElementById('weekdaySelect');
+    const monthEl = document.getElementById('weekdayMonthInput');
+    const hoje = new Date();
+
+    if (weekdayEl && !weekdayEl.dataset.initialized) {
+        weekdayEl.value = String(hoje.getDay());
+        weekdayEl.dataset.initialized = 'true';
+    }
+    if (monthEl && !monthEl.value) {
+        const ym = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+        monthEl.value = ym;
+    }
+}
+
+function renderWeekdayComparisonChart() {
+    const canvas = document.getElementById('chartWeekdayComparison');
+    if (!canvas) return;
+
+    initWeekdayComparisonDefaults();
+
+    const weekdayEl = document.getElementById('weekdaySelect');
+    const monthEl = document.getElementById('weekdayMonthInput');
+    const subtitleEl = document.getElementById('weekdayChartSubtitle');
+
+    const targetWeekday = weekdayEl ? parseInt(weekdayEl.value, 10) : new Date().getDay();
+    const hoje = new Date();
+    const todayStr = formatLocalYYYYMMDD(hoje);
+    const ymStr = (monthEl && monthEl.value)
+        ? monthEl.value
+        : `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+
+    const [yearStr, monthStr] = ymStr.split('-');
+    const year = parseInt(yearStr, 10);
+    const monthIdx = parseInt(monthStr, 10) - 1;
+
+    const nomesDias = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+    const nomeDiaSelecionado = nomesDias[targetWeekday] || 'Dia';
+
+    const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+    const matchingDates = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dt = new Date(year, monthIdx, d);
+        if (dt.getDay() === targetWeekday) {
+            const iso = `${yearStr}-${monthStr}-${String(d).padStart(2, '0')}`;
+            matchingDates.push(iso);
+        }
+    }
+
+    const selectedClient = document.getElementById('clientFilter') ? document.getElementById('clientFilter').value : 'all';
+    const selectedCat = document.getElementById('catFilter') ? document.getElementById('catFilter').value : 'all';
+    const selectedProd = document.getElementById('prodFilter') ? document.getElementById('prodFilter').value.trim().toLowerCase() : '';
+    const searchTerm = document.getElementById('searchInput') ? document.getElementById('searchInput').value.trim().toLowerCase() : '';
+
+    let baseData = Array.isArray(globalData) ? globalData : [];
+    if (selectedClient !== 'all') baseData = baseData.filter(row => row.cliente === selectedClient);
+    if (selectedCat !== 'all') baseData = baseData.filter(row => row.categoria === selectedCat);
+    if (selectedProd !== '') baseData = baseData.filter(row => String(row.produto || '').toLowerCase().includes(selectedProd));
+    if (searchTerm !== '') {
+        baseData = baseData.filter(row =>
+            String(row.produto || '').toLowerCase().includes(searchTerm) ||
+            String(row.cliente || '').toLowerCase().includes(searchTerm) ||
+            String(row.categoria || '').toLowerCase().includes(searchTerm) ||
+            (row.ean && String(row.ean).toLowerCase().includes(searchTerm))
+        );
+    }
+
+    const totalsByDate = {};
+    const qtyByDate = {};
+    matchingDates.forEach(d => { totalsByDate[d] = 0; qtyByDate[d] = 0; });
+
+    baseData.forEach(row => {
+        if (totalsByDate[row.data] !== undefined) {
+            totalsByDate[row.data] += (Number(row.qtd) || 0) * (Number(row.vlrUnit) || 0);
+            qtyByDate[row.data] += (Number(row.qtd) || 0);
+        }
+    });
+
+    const labels = matchingDates.map(iso => {
+        const [, mm, dd] = iso.split('-');
+        const label = `${dd}/${mm} (${nomeDiaSelecionado})`;
+        return iso === todayStr ? `${label} • Hoje` : label;
+    });
+    const values = matchingDates.map(iso => totalsByDate[iso]);
+    const barColors = matchingDates.map(iso => iso === todayStr ? '#10b981' : '#fbbf24');
+
+    lastWeekdayComparisonExport = matchingDates.map(iso => ({
+        "Data": iso.split('-').reverse().join('/'),
+        "Dia da Semana": nomeDiaSelecionado,
+        "Qtd Vendida": qtyByDate[iso],
+        "Faturamento (R$)": totalsByDate[iso]
+    }));
+
+    if (subtitleEl) {
+        const datasCurtas = matchingDates.map(iso => iso.split('-').slice(1).reverse().join('/')).join(', ');
+        subtitleEl.innerText = `Exibindo todas as ocorrências de ${nomeDiaSelecionado} em ${monthStr}/${yearStr}: ${datasCurtas}.`;
+    }
+
+    const isDark = document.documentElement.classList.contains('dark');
+    const gridLineColor = isDark ? '#1e293b' : '#e2e8f0';
+
+    const ctx = canvas.getContext('2d');
+    if (chartWeekdayComparisonInst) chartWeekdayComparisonInst.destroy();
+    chartWeekdayComparisonInst = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: `Faturamento - ${nomeDiaSelecionado} (R$)`,
+                data: values,
+                backgroundColor: barColors,
+                borderRadius: 8,
+                maxBarThickness: 64
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const idx = context.dataIndex;
+                            const iso = matchingDates[idx];
+                            const fat = formatCurrency(context.parsed.y || 0);
+                            const qtd = qtyByDate[iso] || 0;
+                            return ` ${fat} (${qtd} un.)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: {
+                    grid: { color: gridLineColor },
+                    ticks: {
+                        callback: function(val) {
+                            return 'R$ ' + Number(val).toLocaleString('pt-BR');
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function exportWeekdayComparisonToExcel() {
+    if (!lastWeekdayComparisonExport || lastWeekdayComparisonExport.length === 0) {
+        alert("Nenhum dado disponível para exportar.");
+        return;
+    }
+    exportToExcelFile(lastWeekdayComparisonExport, "comparativo_dia_semana", "Dia_Semana");
 }
 
 function exportTurnoverToExcel() { exportConsolidatedToExcel(); }
