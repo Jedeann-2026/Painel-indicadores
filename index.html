@@ -196,6 +196,11 @@ html.dark input[type="date"]::-webkit-calendar-picker-indicator {
 <i class="fa-solid fa-trash-can text-xs"></i>
 <span>Limpar Base</span>
 </button>
+
+<button onclick="verificarEEnviarAlertaDiario(true)" class="bg-sky-600/20 hover:bg-sky-600 text-sky-400 hover:text-white border border-sky-500/40 px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 shadow-sm w-full sm:w-auto" title="Disparar agora o e-mail diário de itens com estoque <= mínimo para Jedeann e Cristiane">
+<i class="fa-solid fa-envelope text-xs"></i>
+<span>Testar Alerta E-mail</span>
+</button>
 </div>
 </div>
 
@@ -1206,6 +1211,7 @@ async function carregarDadosDoPainel() {
     populateFilterDropdowns();
     updateAllViews();
     renderEntries();
+    await verificarEEnviarAlertaDiario(false);
 }
 
 function exportSingleEntryToExcel(numPedido, event) {
@@ -1760,9 +1766,9 @@ function switchTab(tabName) {
 document.getElementById(`tab-${tabName}`).classList.remove('hidden');
 document.getElementById(`btn-tab-${tabName}`).className = "px-3 py-2 rounded-lg text-xs md:text-sm font-bold transition-all bg-amber-400 text-slate-950 shadow-sm whitespace-nowrap";
 
-if(tabName === 'dashboard') renderDashboard();
-else if(tabName === 'stock') renderStockView();
-else if(tabName === 'projection') renderProjection();
+if(tabName === 'dashboard') { renderDashboard(); verificarEEnviarAlertaDiario(false); }
+else if(tabName === 'stock') { renderStockView(); verificarEEnviarAlertaDiario(false); }
+else if(tabName === 'projection') { renderProjection(); verificarEEnviarAlertaDiario(false); }
 else if(tabName === 'entries') renderEntries();
 }
 
@@ -4397,6 +4403,92 @@ function aplicarPeriodoGeral(valor, aba) {
 function applyProjDatePreset() { currentPageProj = 1; renderProjection(); }
 function onProjCustomDateChange() { currentPageProj = 1; renderProjection(); }
 function onStockCustomDateChange() { resetStockPagesAndRender(); }
+
+const EDGE_FUNCTION_ALERTA_URL = `${SUPABASE_URL}/functions/v1/alerta-estoque-minimo`;
+
+function obterDataHojeLocal() {
+    const agora = new Date();
+    const ano = agora.getFullYear();
+    const mes = String(agora.getMonth() + 1).padStart(2, '0');
+    const dia = String(agora.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+}
+
+function coletarItensAbaixoOuIgualMinimo() {
+    const criticos = [];
+    if (!globalOfficialStock || typeof globalOfficialStock !== 'object') return criticos;
+
+    for (const key of Object.keys(globalOfficialStock)) {
+        const item = globalOfficialStock[key];
+        if (!item) continue;
+
+        const cliente = String(item.cliente || 'Geral').trim();
+        if (typeof ehCdCliente === 'function' && ehCdCliente(cliente)) continue;
+
+        const estoque = Number(item.estoque) || 0;
+        const minimo = Number(item.minimo) || 0;
+        const maximo = Number(item.maximo) || 0;
+
+        if (minimo > 0 && estoque <= minimo) {
+            criticos.push({
+                cliente,
+                produto: String(item.produto || key).trim(),
+                ean: String(item.ean || '-').trim(),
+                estoque,
+                minimo,
+                maximo
+            });
+        }
+    }
+    return criticos;
+}
+
+async function verificarEEnviarAlertaDiario(forcar = false) {
+    const hoje = obterDataHojeLocal();
+    const chaveStorage = 'nexxa_last_email_alert_date';
+
+    if (!forcar && localStorage.getItem(chaveStorage) === hoje) {
+        return;
+    }
+
+    const itensCriticos = coletarItensAbaixoOuIgualMinimo();
+    if (itensCriticos.length === 0) {
+        if (forcar) {
+            alert('Nenhum produto com estoque <= mínimo (com mínimo > 0) encontrado.');
+        }
+        return;
+    }
+
+    try {
+        const resp = await fetch(EDGE_FUNCTION_ALERTA_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'apikey': SUPABASE_KEY
+            },
+            body: JSON.stringify({
+                data: hoje,
+                force: forcar
+            })
+        });
+
+        const resultado = await resp.json().catch(() => ({}));
+        if (resp.ok && resultado.ok) {
+            localStorage.setItem(chaveStorage, hoje);
+            if (forcar) {
+                alert(`Alerta de e-mail processado com sucesso (${itensCriticos.length} item(ns) com estoque <= mínimo).`);
+            }
+        } else if (forcar) {
+            alert(`Erro ao enviar alerta: ${resultado.error || resp.statusText}`);
+        }
+    } catch (err) {
+        console.warn('Falha ao acionar alerta diário por e-mail:', err);
+        if (forcar) {
+            alert('Falha de conexão ao chamar a Edge Function de e-mail.');
+        }
+    }
+}
 
 window.onload = async function() {
 initTheme();
